@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Github, ArrowRight, Loader2, AlertCircle, Lock, FileCode2 } from "lucide-react";
+import { GitBranch, ArrowRight, Loader2, AlertCircle, Lock, FileCode2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -89,7 +89,7 @@ export function GitHubImportModal({ children, isProUser, onImport }: GitHubImpor
       <DialogContent className="border-white/20 bg-[#0a0a0a] text-white sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
-            <Github className="h-5 w-5" />
+            <GitBranch className="h-5 w-5" />
             Import from GitHub
           </DialogTitle>
           <DialogDescription className="text-white/60">

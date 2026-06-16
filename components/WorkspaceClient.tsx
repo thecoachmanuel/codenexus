@@ -8,7 +8,7 @@ import { MobileBlocker } from "./MobileBlocker";
 import { GitHubImportModal } from "./GitHubImportModal";
 import { MIN_CREDITS_TO_GENERATE } from "@/lib/constants";
 import { toast } from "sonner";
-import { Github } from "lucide-react";
+import { GitBranch } from "lucide-react";
 import type {
   Message,
   FileData,
@@ -419,7 +419,7 @@ export function WorkspaceClient({
                 title="Import from GitHub"
                 className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/60 hover:border-white/40 hover:bg-white/10 hover:text-white transition-all"
               >
-                <Github className="h-3.5 w-3.5" />
+                <GitBranch className="h-3.5 w-3.5" />
               </button>
             </GitHubImportModal>
           }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Zap, Github } from "lucide-react";
+import { Zap, GitBranch } from "lucide-react";
 import { ProjectCard } from "@/components/ProjectCard";
 import Link from "next/link";
 import { getUserProjects } from "@/actions/projects";
@@ -85,7 +85,7 @@ export default function ProjectsPage() {
               onImport={handleGitHubImport}
             >
               <Button variant="ghost" className="cursor-pointer border border-white/20 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white">
-                <Github className="h-3.5 w-3.5" />
+                <GitBranch className="h-3.5 w-3.5" />
                 Import from GitHub
               </Button>
             </GitHubImportModal>
