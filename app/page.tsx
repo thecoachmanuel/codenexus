@@ -76,20 +76,22 @@ export default function LandingPage() {
           }}
         />
 
-        {/* Colorful radial glow — tightened to top center so it doesn't wash out the screen */}
+        {/* Colorful radial glow — using screen blend mode to eliminate muddy gray fade */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
               "radial-gradient(ellipse 50% 40% at 50% -10%, rgba(99,102,241,0.2) 0%, rgba(59,130,246,0.15) 40%, rgba(0,0,0,0) 80%)",
+            mixBlendMode: "screen",
           }}
         />
-        {/* Subtle warm accent glow bottom-left — tightened */}
+        {/* Subtle warm accent glow bottom-left */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
               "radial-gradient(ellipse 35% 30% at 10% 100%, rgba(168,85,247,0.1) 0%, rgba(0,0,0,0) 80%)",
+            mixBlendMode: "screen",
           }}
         />
 
@@ -140,15 +142,20 @@ export default function LandingPage() {
                 <Button
                   onClick={handleSubmit}
                   disabled={!prompt.trim()}
-                  className="h-8 rounded-full px-5 font-semibold"
-                  variant={prompt.trim() ? "default" : "secondary"}
+                  className={cn(
+                    "h-8 rounded-full px-5 font-semibold transition-all",
+                    prompt.trim()
+                      ? "bg-white text-black hover:bg-white/90"
+                      : "bg-white/10 text-white/40"
+                  )}
+                  variant="ghost"
                 >
                   Generate
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               ) : (
                 <Link href="/sign-up">
-                  <Button className="h-8 rounded-full bg-white px-5 font-semibold">
+                  <Button className="h-8 rounded-full bg-white text-black px-5 font-semibold hover:bg-white/90">
                     Generate
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
@@ -162,7 +169,7 @@ export default function LandingPage() {
               <button
                 key={s}
                 onClick={() => handleSuggestion(s)}
-                className="rounded-full border border-white/20 bg-white/4 px-3 py-1.5 text-sm text-white/70 hover:border-white/15 hover:bg-white/8 hover:text-white/70"
+                className="rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-white/80 hover:border-white/30 hover:bg-white/10 hover:text-white"
               >
                 {s}
               </button>
