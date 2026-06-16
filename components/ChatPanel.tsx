@@ -31,6 +31,7 @@ interface ChatPanelProps {
   userId: string;
   workspaceId: string | null;
   appTitle: string | null;
+  githubImportButton?: React.ReactNode;
 }
 
 export function ChatPanel({
@@ -45,6 +46,7 @@ export function ChatPanel({
   userId,
   workspaceId,
   appTitle,
+  githubImportButton,
 }: ChatPanelProps) {
   const { user } = useAuthContext();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -130,20 +132,23 @@ export function ChatPanel({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/6 px-2 py-3">
         <BlueTitle>{appTitle}</BlueTitle>
-        <PricingModal reason={noCredits ? "credits" : "upgrade"}>
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-[11px] transition-colors",
-              noCredits
-                ? "bg-red-500/15 text-red-400/80 hover:bg-red-500/25"
-                : "bg-white/6 text-white/60 hover:bg-white/10 hover:text-white/50"
-            )}
-          >
-            {noCredits
-              ? "No credits · Upgrade"
-              : `${credits} credit${credits !== 1 ? "s" : ""}`}
-          </span>
-        </PricingModal>
+        <div className="flex items-center gap-1.5">
+          {githubImportButton}
+          <PricingModal reason={noCredits ? "credits" : "upgrade"}>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[11px] transition-colors",
+                noCredits
+                  ? "bg-red-500/15 text-red-400/80 hover:bg-red-500/25"
+                  : "bg-white/6 text-white/60 hover:bg-white/10 hover:text-white/50"
+              )}
+            >
+              {noCredits
+                ? "No credits · Upgrade"
+                : `${credits} credit${credits !== 1 ? "s" : ""}`}
+            </span>
+          </PricingModal>
+        </div>
       </div>
 
       {/* Messages */}

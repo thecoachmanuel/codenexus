@@ -37,8 +37,8 @@ export default function RootLayout({
       <body className={`${lora.variable} ${dmSans.variable} font-sans`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
-          forcedTheme="dark"
+          defaultTheme="system"
+          enableSystem
           disableTransitionOnChange
         >
           <AuthProvider>

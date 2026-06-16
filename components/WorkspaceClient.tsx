@@ -5,8 +5,10 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { ChatPanel } from "./ChatPanel";
 import { CodePanel } from "./CodePanel";
 import { MobileBlocker } from "./MobileBlocker";
+import { GitHubImportModal } from "./GitHubImportModal";
 import { MIN_CREDITS_TO_GENERATE } from "@/lib/constants";
 import { toast } from "sonner";
+import { Github } from "lucide-react";
 import type {
   Message,
   FileData,
@@ -64,6 +66,31 @@ export function WorkspaceClient({
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusLog, setStatusLog] = useState<StatusStep[]>([]);
   const [isImproving, setIsImproving] = useState(false);
+
+  // Read GitHub import from sessionStorage (set by the projects page)
+  useEffect(() => {
+    if (workspace) return; // Don't override an existing workspace
+    try {
+      const raw = sessionStorage.getItem("github_import");
+      if (!raw) return;
+      sessionStorage.removeItem("github_import");
+      const { fileData: imported, repoName } = JSON.parse(raw) as {
+        fileData: FileData;
+        repoName: string;
+      };
+      setFileData(imported);
+      setMessages([
+        {
+          role: "assistant",
+          content: `✅ Successfully imported **${repoName}** from GitHub.\n\n${Object.keys(imported.files).length} files loaded into your workspace. You can now ask me to modify, refactor, add features, or explain any part of the code.`,
+        },
+      ]);
+    } catch {
+      // ignore
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   // AbortController refs — used to cancel in-flight streams
   const generateAbortRef = useRef<AbortController | null>(null);
@@ -349,6 +376,19 @@ export function WorkspaceClient({
     setFileData(patches);
   }, []);
 
+  // Handle GitHub repo import — loads files into workspace without AI generation
+  const handleGitHubImport = useCallback((imported: FileData, repoName: string) => {
+    setFileData(imported);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant" as const,
+        content: `✅ Successfully imported **${repoName}** from GitHub.\n\n${Object.keys(imported.files).length} files loaded into your workspace. You can now ask me to modify, refactor, add features, or explain any part of the code.`,
+      },
+    ]);
+    toast.success(`Imported ${repoName} — ${Object.keys(imported.files).length} files loaded.`);
+  }, []);
+
   return (
     <>
       {/* Mobile blocker — visible only on small screens */}
@@ -370,6 +410,19 @@ export function WorkspaceClient({
           userId={userId}
           workspaceId={workspaceId}
           appTitle={fileData?.title ?? workspace?.title ?? null}
+          githubImportButton={
+            <GitHubImportModal
+              isProUser={userPlan === "pro"}
+              onImport={handleGitHubImport}
+            >
+              <button
+                title="Import from GitHub"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/60 hover:border-white/40 hover:bg-white/10 hover:text-white transition-all"
+              >
+                <Github className="h-3.5 w-3.5" />
+              </button>
+            </GitHubImportModal>
+          }
         />
         <div className="w-px shrink-0 bg-white/6" />
         <CodePanel

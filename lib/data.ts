@@ -1,4 +1,4 @@
-import { Sparkles, Zap, Code2, Eye, Package, ImageIcon } from "lucide-react";
+import { Sparkles, Zap, Code2, Eye, Package, ImageIcon, Github } from "lucide-react";
 
 export const SUGGESTIONS = [
   "A Spotify stats dashboard with charts",
@@ -39,6 +39,11 @@ export const FEATURES = [
     icon: ImageIcon,
     label: "Image-aware prompts",
     desc: "Attach screenshots or mockups to your prompt. The AI reads them and generates code that matches your design.",
+  },
+  {
+    icon: Github,
+    label: "GitHub repo import",
+    desc: "Pro users can import any public GitHub repository directly into their workspace. Paste a URL and continue building with AI.",
   },
 ];
 

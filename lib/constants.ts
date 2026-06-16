@@ -60,6 +60,7 @@ export const PRICING_PLANS = [
       "Live preview",
       "Export to zip",
       "Image uploads",
+      "GitHub repo import",
       "Access to CodeNexus Pro Agent",
     ],
   },
