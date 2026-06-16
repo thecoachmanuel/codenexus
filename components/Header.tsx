@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Zap, ArrowRight, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { checkUserServer } from "@/lib/checkUserServer";
@@ -14,41 +15,19 @@ export default async function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-white/6 bg-white/7 backdrop-blur-md">
       <nav className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 select-none group">
-          {/* Neon C icon */}
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 40 40"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="shrink-0"
-          >
-            <defs>
-              <linearGradient id="cGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#38bdf8" />
-                <stop offset="50%" stopColor="#818cf8" />
-                <stop offset="100%" stopColor="#c084fc" />
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="1.5" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            <path
-              d="M30 12.5A14 14 0 1 0 30 27.5"
-              stroke="url(#cGrad)"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              filter="url(#glow)"
-            />
-          </svg>
+        <Link href="/" className="flex items-center gap-1 select-none">
+          {/* Neon C icon — mix-blend-mode:screen makes the black bg invisible */}
+          <Image
+            src="/logo-short.jpeg"
+            alt="Crevo icon"
+            width={80}
+            height={80}
+            className="h-14 w-auto"
+            style={{ mixBlendMode: "screen" }}
+          />
           {/* Wordmark */}
           <span
-            className="text-xl font-semibold tracking-tight text-white"
+            className="text-xl font-semibold tracking-tight -ml-1"
             style={{
               background: "linear-gradient(90deg, #ffffff 60%, #a5b4fc 100%)",
               WebkitBackgroundClip: "text",
