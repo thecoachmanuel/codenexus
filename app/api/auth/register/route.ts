@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
       userId: user._id.toString(),
       email: user.email,
       name: user.name,
+      plan: user.plan,
     });
 
     await setSessionCookie(token);
