@@ -69,23 +69,23 @@ export default function SignUpPage() {
           </div>
           <div className="text-center">
             <h1 className="text-lg font-semibold text-white">Create your account</h1>
-            <p className="mt-1 text-sm text-white/40">
+            <p className="mt-1 text-base text-white/70">
               Start building for free · 10 generations included
             </p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-white/8 bg-white/3 p-6 backdrop-blur-sm">
+        <div className="rounded-2xl border border-white/20 bg-white/3 p-6 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-base text-red-400">
                 {error}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-white/50" htmlFor="name">
+              <label className="text-sm font-medium text-white/80" htmlFor="name">
                 Full name
               </label>
               <input
@@ -95,13 +95,13 @@ export default function SignUpPage() {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
+                className="w-full rounded-xl border border-white/20 bg-white/4 px-4 py-3 text-base text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
                 placeholder="Alex Johnson"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-white/50" htmlFor="email">
+              <label className="text-sm font-medium text-white/80" htmlFor="email">
                 Email
               </label>
               <input
@@ -111,13 +111,13 @@ export default function SignUpPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
+                className="w-full rounded-xl border border-white/20 bg-white/4 px-4 py-3 text-base text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
                 placeholder="you@example.com"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-white/50" htmlFor="password">
+              <label className="text-sm font-medium text-white/80" htmlFor="password">
                 Password
               </label>
               <div className="relative">
@@ -128,7 +128,7 @@ export default function SignUpPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 pr-11 text-sm text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
+                  className="w-full rounded-xl border border-white/20 bg-white/4 px-4 py-3 pr-11 text-base text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
                   placeholder="••••••••"
                 />
                 <button
@@ -160,13 +160,13 @@ export default function SignUpPage() {
                       >
                         <Check
                           className={`h-2 w-2 transition-colors ${
-                            ok ? "text-emerald-400" : "text-white/20"
+                            ok ? "text-emerald-400" : "text-white/40"
                           }`}
                         />
                       </div>
                       <span
                         className={`text-[11px] transition-colors ${
-                          ok ? "text-emerald-400/80" : "text-white/30"
+                          ok ? "text-emerald-400/80" : "text-white/60"
                         }`}
                       >
                         {label}
@@ -180,7 +180,7 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-semibold text-black transition-all hover:bg-white/90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-base font-semibold text-black transition-all hover:bg-white/90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -194,14 +194,14 @@ export default function SignUpPage() {
           </form>
         </div>
 
-        <p className="mt-4 text-center text-sm text-white/30">
+        <p className="mt-4 text-center text-base text-white/60">
           Already have an account?{" "}
-          <Link href="/sign-in" className="text-white/60 underline-offset-2 hover:text-white hover:underline transition-colors">
+          <Link href="/sign-in" className="text-white/90 underline-offset-2 hover:text-white hover:underline transition-colors">
             Sign in
           </Link>
         </p>
 
-        <p className="mt-3 text-center text-xs text-white/20">
+        <p className="mt-3 text-center text-sm text-white/40">
           No credit card required
         </p>
       </div>

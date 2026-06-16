@@ -33,11 +33,11 @@ export function ProjectCard({ projects }: ProjectCardProps) {
 
             {/* Top row */}
             <div className="mb-2 flex items-start justify-between gap-2">
-              <p className="line-clamp-1 text-sm font-medium leading-snug text-white/80">
+              <p className="line-clamp-1 text-base font-medium leading-snug text-white">
                 {title}
               </p>
               <DeleteProjectModal project={project}>
-                <span className="relative z-10 text-white/20 hover:text-red-400">
+                <span className="relative z-10 text-white/40 hover:text-red-400">
                   <Trash2 className="h-3.5 w-3.5" />
                 </span>
               </DeleteProjectModal>
@@ -45,7 +45,7 @@ export function ProjectCard({ projects }: ProjectCardProps) {
 
             {/* First prompt preview */}
             {project.firstPrompt && (
-              <p className="mb-3 line-clamp-2 text-[12px] leading-relaxed text-white/30">
+              <p className="mb-3 line-clamp-2 text-[12px] leading-relaxed text-white/60">
                 {project.firstPrompt}
               </p>
             )}
@@ -56,7 +56,7 @@ export function ProjectCard({ projects }: ProjectCardProps) {
                 <MessageSquare className="h-3 w-3" />
                 {msgCount} message{msgCount !== 1 ? "s" : ""}
               </span>
-              <span className="text-[11px] text-white/20">{timeAgo}</span>
+              <span className="text-[11px] text-white/40">{timeAgo}</span>
             </div>
           </div>
         );

@@ -71,12 +71,12 @@ export function PricingModal({
   return (
     <Dialog>
       <DialogTrigger className={"cursor-pointer"}>{children}</DialogTrigger>
-      <DialogContent className="border-white/8 bg-[#0f0f0f] p-0 text-white sm:max-w-5xl max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="border-white/20 bg-[#0f0f0f] p-0 text-white sm:max-w-5xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="font-serif text-xl tracking-tight text-white/90">
             <BlueTitle className="text-4xl">{title}</BlueTitle>
           </DialogTitle>
-          <DialogDescription className="text-sm text-white/35">
+          <DialogDescription className="text-base text-white/35">
             {description}
           </DialogDescription>
         </DialogHeader>
@@ -112,7 +112,7 @@ export function PricingModal({
 
                 {/* Plan name + active badge */}
                 <div className="mb-1 flex items-center gap-2">
-                  <p className="text-sm font-semibold text-white/90">
+                  <p className="text-base font-semibold text-white/90">
                     {plan.label}
                   </p>
                   {isActive && (
@@ -123,7 +123,7 @@ export function PricingModal({
                 </div>
 
                 {/* Description */}
-                <p className="mb-6 text-xs leading-relaxed text-white/35">
+                <p className="mb-6 text-sm leading-relaxed text-white/35">
                   {plan.description}
                 </p>
 
@@ -137,10 +137,10 @@ export function PricingModal({
                     )}
                   </span>
                   {plan.price > 0 && (
-                    <span className="text-sm text-white/30">/mo</span>
+                    <span className="text-base text-white/60">/mo</span>
                   )}
                 </div>
-                <p className="mb-6 text-xs text-white/25">
+                <p className="mb-6 text-sm text-white/25">
                   {plan.price === 0 ? "Always free" : "Only billed monthly"}
                 </p>
 
@@ -157,11 +157,11 @@ export function PricingModal({
                         <Check
                           className={cn(
                             "h-2.5 w-2.5",
-                            plan.featured ? "text-blue-400" : "text-white/50"
+                            plan.featured ? "text-blue-400" : "text-white/80"
                           )}
                         />
                       </div>
-                      <span className="text-xs text-white/55">{f}</span>
+                      <span className="text-sm text-white/55">{f}</span>
                     </div>
                   ))}
                 </div>
@@ -171,7 +171,7 @@ export function PricingModal({
                   {isActive ? (
                     <Button
                       disabled
-                      className="w-full rounded-full text-sm font-semibold opacity-50 cursor-not-allowed border border-white/10 bg-transparent text-white/60"
+                      className="w-full rounded-full text-base font-semibold opacity-50 cursor-not-allowed border border-white/25 bg-transparent text-white/90"
                       variant="ghost"
                     >
                       ✓ Current plan
@@ -180,7 +180,7 @@ export function PricingModal({
                     isSignedIn ? (
                       <Button
                         disabled
-                        className="w-full rounded-full text-sm font-semibold opacity-50 cursor-not-allowed border border-white/10 bg-transparent text-white/60"
+                        className="w-full rounded-full text-base font-semibold opacity-50 cursor-not-allowed border border-white/25 bg-transparent text-white/90"
                         variant="ghost"
                       >
                         Default plan
@@ -188,7 +188,7 @@ export function PricingModal({
                     ) : (
                       <Link href="/sign-up">
                         <Button
-                          className="w-full rounded-full text-sm font-semibold border border-white/10 bg-transparent text-white/60 hover:bg-white/6 hover:text-white/90"
+                          className="w-full rounded-full text-base font-semibold border border-white/25 bg-transparent text-white/90 hover:bg-white/6 hover:text-white/90"
                           variant="ghost"
                         >
                           Get started free
@@ -201,10 +201,10 @@ export function PricingModal({
                       onClick={() => handleUpgrade(plan.key)}
                       disabled={isLoading || !!loadingPlan}
                       className={cn(
-                        "w-full rounded-full text-sm font-semibold transition-all",
+                        "w-full rounded-full text-base font-semibold transition-all",
                         plan.featured
                           ? "bg-blue-500 text-white hover:bg-blue-400 active:scale-95"
-                          : "border border-white/10 bg-transparent text-white/60 hover:bg-white/6 hover:text-white/90"
+                          : "border border-white/25 bg-transparent text-white/90 hover:bg-white/6 hover:text-white/90"
                       )}
                       variant="ghost"
                     >

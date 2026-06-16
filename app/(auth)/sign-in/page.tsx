@@ -59,21 +59,21 @@ function SignInContent() {
           </div>
           <div className="text-center">
             <h1 className="text-lg font-semibold text-white">Welcome back</h1>
-            <p className="mt-1 text-sm text-white/40">Sign in to your CodeNexus account</p>
+            <p className="mt-1 text-base text-white/70">Sign in to your CodeNexus account</p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-white/8 bg-white/3 p-6 backdrop-blur-sm">
+        <div className="rounded-2xl border border-white/20 bg-white/3 p-6 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-base text-red-400">
                 {error}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-white/50" htmlFor="email">
+              <label className="text-sm font-medium text-white/80" htmlFor="email">
                 Email
               </label>
               <input
@@ -83,13 +83,13 @@ function SignInContent() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
+                className="w-full rounded-xl border border-white/20 bg-white/4 px-4 py-3 text-base text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
                 placeholder="you@example.com"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-white/50" htmlFor="password">
+              <label className="text-sm font-medium text-white/80" htmlFor="password">
                 Password
               </label>
               <div className="relative">
@@ -100,7 +100,7 @@ function SignInContent() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 pr-11 text-sm text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
+                  className="w-full rounded-xl border border-white/20 bg-white/4 px-4 py-3 pr-11 text-base text-white placeholder:text-white/20 focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-colors"
                   placeholder="••••••••"
                 />
                 <button
@@ -120,7 +120,7 @@ function SignInContent() {
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-semibold text-black transition-all hover:bg-white/90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-base font-semibold text-black transition-all hover:bg-white/90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -134,9 +134,9 @@ function SignInContent() {
           </form>
         </div>
 
-        <p className="mt-4 text-center text-sm text-white/30">
+        <p className="mt-4 text-center text-base text-white/60">
           Don&apos;t have an account?{" "}
-          <Link href="/sign-up" className="text-white/60 underline-offset-2 hover:text-white hover:underline transition-colors">
+          <Link href="/sign-up" className="text-white/90 underline-offset-2 hover:text-white hover:underline transition-colors">
             Sign up free
           </Link>
         </p>

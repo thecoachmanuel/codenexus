@@ -136,7 +136,7 @@ export function ChatPanel({
               "rounded-full px-2 py-0.5 text-[11px] transition-colors",
               noCredits
                 ? "bg-red-500/15 text-red-400/80 hover:bg-red-500/25"
-                : "bg-white/6 text-white/30 hover:bg-white/10 hover:text-white/50"
+                : "bg-white/6 text-white/60 hover:bg-white/10 hover:text-white/50"
             )}
           >
             {noCredits
@@ -153,7 +153,7 @@ export function ChatPanel({
       >
         {messages.length === 0 && !isGenerating && (
           <div className="flex h-full items-center justify-center">
-            <p className="text-center text-xs text-white/20">
+            <p className="text-center text-sm text-white/40">
               Describe what you want to build…
             </p>
           </div>
@@ -179,7 +179,7 @@ export function ChatPanel({
                         />
                       )}
                       <div className="rounded-2xl rounded-br-sm bg-white/10 px-3.5 py-2.5">
-                        <p className="text-[13px] leading-relaxed text-white/80 wrap-break-word">
+                        <p className="text-[13px] leading-relaxed text-white wrap-break-word">
                           {msg.content}
                         </p>
                       </div>
@@ -211,7 +211,7 @@ export function ChatPanel({
                         // Empty placeholder — show Cline thinking indicator
                         <div className="flex items-center gap-2">
                           <Wand2 className="h-3 w-3 shrink-0 text-blue-400/60 animate-pulse" />
-                          <span className="text-[12px] text-white/30 animate-pulse">
+                          <span className="text-[12px] text-white/60 animate-pulse">
                             Cline is thinking…
                           </span>
                         </div>
@@ -232,7 +232,7 @@ export function ChatPanel({
                         </div>
                       ) : (
                         // Normal completed assistant message
-                        <div className="prose prose-sm prose-invert max-w-none wrap-break-word text-[13px] leading-relaxed text-white/70 [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-blue-300/80 [&_code]:text-xs [&_code]:break-all [&_li]:my-0.5 [&_p]:my-1 [&_pre]:overflow-x-auto! [&_pre]:whitespace-pre-wrap! [&_ul]:my-1">
+                        <div className="prose prose-sm prose-invert max-w-none wrap-break-word text-[13px] leading-relaxed text-white [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-blue-300/80 [&_code]:text-xs [&_code]:break-all [&_li]:my-0.5 [&_p]:my-1 [&_pre]:overflow-x-auto! [&_pre]:whitespace-pre-wrap! [&_ul]:my-1">
                           <ReactMarkdown>{msg.content}</ReactMarkdown>
                         </div>
                       )}
@@ -302,7 +302,7 @@ export function ChatPanel({
             You&apos;ve used all your credits
           </p>
           <PricingModal reason="credits">
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-full text-xs active:scale-95 cursor-pointer bg-white text-black px-3">
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-full text-sm active:scale-95 cursor-pointer bg-white text-black px-3">
               <Sparkles className="h-3 w-3" />
               Upgrade plan
             </span>
@@ -322,7 +322,7 @@ export function ChatPanel({
             />
             <button
               onClick={() => setPendingImageUrl(null)}
-              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/80 text-white/60 hover:text-white"
+              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/80 text-white/90 hover:text-white"
             >
               <X className="h-2.5 w-2.5" />
             </button>
@@ -336,7 +336,7 @@ export function ChatPanel({
               ? "border-white/4"
               : noCredits
               ? "border-white/4 opacity-60"
-              : "border-white/8 hover:border-white/12"
+              : "border-white/20 hover:border-white/12"
           )}
         >
           <textarea
@@ -355,7 +355,7 @@ export function ChatPanel({
                 : "Ask AI to modify…"
             }
             rows={1}
-            className="w-full resize-none bg-transparent px-3.5 pb-2 pt-3 text-[13px] text-white/80 placeholder:text-white/20 focus:outline-none"
+            className="w-full resize-none bg-transparent px-3.5 pb-2 pt-3 text-[13px] text-white placeholder:text-white/20 focus:outline-none"
             style={{ maxHeight: 160 }}
           />
 
@@ -387,7 +387,7 @@ export function ChatPanel({
               <Button
                 size="icon"
                 onClick={onStop}
-                className="h-7 w-7 rounded-lg bg-white/10 text-white/60 hover:bg-white/20 hover:text-white active:scale-95 transition-all"
+                className="h-7 w-7 rounded-lg bg-white/10 text-white/90 hover:bg-white/20 hover:text-white active:scale-95 transition-all"
               >
                 <Square className="h-3 w-3 fill-current" />
               </Button>
@@ -400,7 +400,7 @@ export function ChatPanel({
                   "h-7 w-7 rounded-lg transition-all",
                   canSubmit
                     ? "bg-white text-black hover:bg-white/90 active:scale-95"
-                    : "bg-white/8 text-white/20 shadow-none"
+                    : "bg-white/8 text-white/40 shadow-none"
                 )}
               >
                 <ArrowUp className="h-3.5 w-3.5" />

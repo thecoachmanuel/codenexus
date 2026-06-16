@@ -12,11 +12,11 @@ import { getSession } from "@/lib/auth";
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-32 text-center">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-white/8 bg-white/4">
-        <Zap className="h-5 w-5 text-white/20" />
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-white/4">
+        <Zap className="h-5 w-5 text-white/40" />
       </div>
-      <p className="mb-1 text-sm font-medium text-white/40">No projects yet</p>
-      <p className="mb-6 text-xs text-white/20">
+      <p className="mb-1 text-base font-medium text-white/70">No projects yet</p>
+      <p className="mb-6 text-sm text-white/40">
         Head to the homepage and describe what you want to build.
       </p>
       <Link
@@ -44,7 +44,7 @@ export default async function ProjectsPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <BlueTitle className="text-6xl">Projects</BlueTitle>
-            <p className="mt-3 text-sm text-white/30">
+            <p className="mt-3 text-base text-white/60">
               All your AI-generated apps in one place.
             </p>
           </div>

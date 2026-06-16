@@ -17,7 +17,7 @@ export const BlueTitle = ({
 );
 
 export const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <p className="inline-flex items-center gap-2 text-xs font-semibold text-blue-400 tracking-[0.14em] uppercase mb-4">
+  <p className="inline-flex items-center gap-2 text-sm font-semibold text-blue-400 tracking-[0.14em] uppercase mb-4">
     <span className="w-4 h-px bg-blue-400" />
     {children}
     <span className="w-4 h-px bg-blue-400" />

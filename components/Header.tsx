@@ -31,13 +31,13 @@ export default async function Header() {
             <>
               <Link
                 href="/projects"
-                className="text-[13px] font-medium text-white/40 transition-colors hover:text-white/80"
+                className="text-[13px] font-medium text-white/70 transition-colors hover:text-white/80"
               >
                 Projects
               </Link>
 
               <PricingModal>
-                <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 text-xs text-white/70 cursor-pointer hover:border-white/20 hover:bg-white/10 transition-colors">
+                <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/25 bg-white/5 px-3 text-sm text-white cursor-pointer hover:border-white/20 hover:bg-white/10 transition-colors">
                   <Zap className="h-3 w-3 fill-white/70" />
                   {user.credits} credits
                   {user.plan !== "free" && (
@@ -62,7 +62,7 @@ export default async function Header() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-[13px] font-medium text-white/50 hover:text-white/90 hover:bg-transparent"
+                  className="text-[13px] font-medium text-white/80 hover:text-white/90 hover:bg-transparent"
                 >
                   Sign in
                 </Button>

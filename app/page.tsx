@@ -86,7 +86,7 @@ export default function LandingPage() {
           <BlueTitle>from a single prompt.</BlueTitle>
         </h1>
 
-        <p className="mx-auto mt-6 max-w-xl text-balance text-base leading-relaxed text-white/40 z-10">
+        <p className="mx-auto mt-6 max-w-xl text-balance text-base leading-relaxed text-white/70 z-10">
           Describe what you want to build. AI writes the code, picks the
           packages, and renders a live preview all inside your browser.
         </p>
@@ -97,7 +97,7 @@ export default function LandingPage() {
               "rounded-2xl border bg-[#111111] duration-200",
               isFocused
                 ? "border-white/20 ring-1 ring-white/8"
-                : "border-white/8"
+                : "border-white/20"
             )}
           >
             <textarea
@@ -109,12 +109,12 @@ export default function LandingPage() {
               onBlur={() => setIsFocused(false)}
               placeholder={PLACEHOLDERS[placeholderIndex]}
               rows={1}
-              className="w-full resize-none bg-transparent px-5 pb-4 pt-5 text-sm placeholder:text-white/20 focus:outline-none sm:text-base"
+              className="w-full resize-none bg-transparent px-5 pb-4 pt-5 text-base placeholder:text-white/20 focus:outline-none sm:text-base"
               style={{ minHeight: 56, maxHeight: 200 }}
             />
 
             <div className="flex items-center justify-between border-t border-white/6 px-4 py-2.5">
-              <span className="text-xs text-white/20">
+              <span className="text-sm text-white/40">
                 Press ⏎ to generate · Shift+⏎ for new line
               </span>
 
@@ -144,7 +144,7 @@ export default function LandingPage() {
               <button
                 key={s}
                 onClick={() => handleSuggestion(s)}
-                className="rounded-full border border-white/8 bg-white/4 px-3 py-1.5 text-xs text-white/40 hover:border-white/15 hover:bg-white/8 hover:text-white/70"
+                className="rounded-full border border-white/20 bg-white/4 px-3 py-1.5 text-sm text-white/70 hover:border-white/15 hover:bg-white/8 hover:text-white/70"
               >
                 {s}
               </button>
@@ -152,14 +152,14 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <p className="mt-10 text-xs text-white/20">
+        <p className="mt-10 text-sm text-white/40">
           No credit card required · 10 free generations on sign up
         </p>
       </section>
 
       {/* BROWSER MOCKUP */}
       <section className="px-4 pb-32">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-white/8 bg-[#0f0f0f] shadow-2xl shadow-black/60">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-white/20 bg-[#0f0f0f] shadow-2xl shadow-black/60">
           <div className="flex items-center gap-2 border-b border-white/6 px-4 py-3">
             <div className="flex gap-1.5">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -168,7 +168,7 @@ export default function LandingPage() {
             </div>
 
             <div className="mx-auto flex h-6 w-64 items-center justify-center rounded-md bg-white/5 px-3">
-              <span className="text-xs text-white/25">codenexus.app/workspace</span>
+              <span className="text-sm text-white/25">codenexus.app/workspace</span>
             </div>
           </div>
 
@@ -176,7 +176,7 @@ export default function LandingPage() {
             {/* Chat panel */}
             <div className="flex w-80 flex-col border-r border-white/6 bg-[#0d0d0d]">
               <div className="border-b border-white/6 px-4 py-3">
-                <p className="text-xs uppercase tracking-wider text-white/30">
+                <p className="text-sm uppercase tracking-wider text-white/60">
                   Chat
                 </p>
               </div>
@@ -184,7 +184,7 @@ export default function LandingPage() {
               <div className="flex-1 space-y-4 px-4 py-4">
                 <div className="flex justify-end">
                   <div className="max-w-55 rounded-2xl rounded-br-sm bg-white/10 px-3.5 py-2.5">
-                    <p className="text-xs text-white/80">
+                    <p className="text-sm text-white">
                       Build a kanban board with 3 columns and drag-and-drop
                     </p>
                   </div>
@@ -196,7 +196,7 @@ export default function LandingPage() {
                   </div>
 
                   <div className="rounded-2xl rounded-tl-sm bg-white/5 px-3.5 py-2.5">
-                    <p className="text-xs text-white/60">
+                    <p className="text-sm text-white/90">
                       I&apos;ll build a Kanban board with Todo, In Progress, and
                       Done columns. I&apos;ll use{" "}
                       <code className="text-blue-400/80">@dnd-kit/core</code>{" "}
@@ -223,20 +223,20 @@ export default function LandingPage() {
 
               <div className="border-t border-white/6 px-3 py-3">
                 <div className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
-                  <span className="flex-1 text-xs text-white/20">
+                  <span className="flex-1 text-sm text-white/40">
                     Ask AI to modify…
                   </span>
-                  <ArrowRight className="h-3.5 w-3.5 text-white/20" />
+                  <ArrowRight className="h-3.5 w-3.5 text-white/40" />
                 </div>
               </div>
             </div>
 
             <div className="flex flex-1 flex-col">
               <div className="flex items-center gap-1 border-b border-white/6 px-4">
-                <button className="border-b-2 border-blue-400 px-3 py-2.5 text-xs text-white">
+                <button className="border-b-2 border-blue-400 px-3 py-2.5 text-sm text-white">
                   Preview
                 </button>
-                <button className="px-3 py-2.5 text-xs text-white/30">
+                <button className="px-3 py-2.5 text-sm text-white/60">
                   Code
                 </button>
               </div>
@@ -245,11 +245,11 @@ export default function LandingPage() {
                 {["Todo", "In Progress", "Done"].map((col, ci) => (
                   <div key={col} className="flex w-1/3 flex-col gap-2">
                     <div className="mb-1 flex items-center justify-between">
-                      <span className="text-xs uppercase tracking-wider text-white/40">
+                      <span className="text-sm uppercase tracking-wider text-white/70">
                         {col}
                       </span>
 
-                      <span className="rounded-full bg-white/8 px-1.5 py-0.5 text-xs text-white/30">
+                      <span className="rounded-full bg-white/8 px-1.5 py-0.5 text-sm text-white/60">
                         {[3, 2, 1][ci]}
                       </span>
                     </div>
@@ -257,7 +257,7 @@ export default function LandingPage() {
                     {Array.from({ length: [3, 2, 1][ci] }).map((_, i) => (
                       <div
                         key={i}
-                        className="rounded-lg border border-white/8 bg-[#1a1a1a] p-2.5"
+                        className="rounded-lg border border-white/20 bg-[#1a1a1a] p-2.5"
                       >
                         <div
                           className="mb-1.5 h-2 rounded-full bg-white/15"
@@ -287,11 +287,11 @@ export default function LandingPage() {
               key={label}
               className="group bg-[#0a0a0a] p-7 hover:bg-[#0f0f0f]"
             >
-              <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg border border-white/8 bg-white/4 group-hover:border-white/15 group-hover:bg-white/8">
-                <Icon className="h-4 w-4 text-white/60 group-hover:text-blue-400/70" />
+              <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/4 group-hover:border-white/15 group-hover:bg-white/8">
+                <Icon className="h-4 w-4 text-white/90 group-hover:text-blue-400/70" />
               </div>
-              <p className="mb-2 text-sm font-semibold">{label}</p>
-              <p className="text-sm leading-relaxed text-white/40">{desc}</p>
+              <p className="mb-2 text-base font-semibold">{label}</p>
+              <p className="text-base leading-relaxed text-white/70">{desc}</p>
             </div>
           ))}
         </div>
@@ -308,8 +308,8 @@ export default function LandingPage() {
           {STEPS.map((step, i) => (
             <div key={step.number} className="flex gap-6">
               <div className="flex flex-col items-center">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/4">
-                  <span className="font-mono text-xs font-semibold text-white/50">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/4">
+                  <span className="font-mono text-sm font-semibold text-white/80">
                     {step.number}
                   </span>
                 </div>
@@ -320,11 +320,11 @@ export default function LandingPage() {
               </div>
 
               <div className="pb-10 pt-1.5">
-                <p className="mb-1.5 text-sm font-semibold sm:text-base">
+                <p className="mb-1.5 text-base font-semibold sm:text-base">
                   {step.label}
                 </p>
 
-                <p className="text-sm leading-relaxed text-white/40">
+                <p className="text-base leading-relaxed text-white/70">
                   {step.desc}
                 </p>
               </div>
@@ -339,7 +339,7 @@ export default function LandingPage() {
           <SectionLabel>Simple pricing</SectionLabel>
           <SectionHeading gray="Start free," blue="scale when ready." />
 
-          <p className="mx-auto mt-4 max-w-sm text-sm text-white/35">
+          <p className="mx-auto mt-4 max-w-sm text-base text-white/35">
             No credit card required. Upgrade or downgrade anytime.
           </p>
         </div>
@@ -369,7 +369,7 @@ export default function LandingPage() {
                   "relative flex flex-col rounded-2xl border p-7 transition-colors",
                   plan.featured
                     ? "border-blue-500/25 bg-blue-500/4"
-                    : "border-white/8 bg-[#0f0f0f]"
+                    : "border-white/20 bg-[#0f0f0f]"
                 )}
               >
                 {/* Most popular pill */}
@@ -383,7 +383,7 @@ export default function LandingPage() {
 
                 {/* Plan name + active badge */}
                 <div className="mb-1 flex items-center gap-2">
-                  <p className="text-sm font-semibold text-white/90">
+                  <p className="text-base font-semibold text-white/90">
                     {plan.label}
                   </p>
                   {isActive && (
@@ -394,7 +394,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Description */}
-                <p className="mb-6 text-xs leading-relaxed text-white/35">
+                <p className="mb-6 text-sm leading-relaxed text-white/35">
                   {plan.description}
                 </p>
 
@@ -408,10 +408,10 @@ export default function LandingPage() {
                     )}
                   </span>
                   {plan.price > 0 && (
-                    <span className="text-sm text-white/30">/mo</span>
+                    <span className="text-base text-white/60">/mo</span>
                   )}
                 </div>
-                <p className="mb-6 text-xs text-white/25">
+                <p className="mb-6 text-sm text-white/25">
                   {plan.price === 0 ? "Always free" : "Only billed monthly"}
                 </p>
 
@@ -428,11 +428,11 @@ export default function LandingPage() {
                         <Check
                           className={cn(
                             "h-2.5 w-2.5",
-                            plan.featured ? "text-blue-400" : "text-white/50"
+                            plan.featured ? "text-blue-400" : "text-white/80"
                           )}
                         />
                       </div>
-                      <span className="text-xs text-white/55">{f}</span>
+                      <span className="text-sm text-white/55">{f}</span>
                     </div>
                   ))}
                 </div>
@@ -442,7 +442,7 @@ export default function LandingPage() {
                   {isActive ? (
                     <Button
                       disabled
-                      className="w-full rounded-full text-sm font-semibold opacity-50 cursor-not-allowed border border-white/10 bg-transparent text-white/60"
+                      className="w-full rounded-full text-base font-semibold opacity-50 cursor-not-allowed border border-white/25 bg-transparent text-white/90"
                       variant="ghost"
                     >
                       ✓ Current plan
@@ -451,7 +451,7 @@ export default function LandingPage() {
                     isSignedIn ? (
                       <Button
                         disabled
-                        className="w-full rounded-full text-sm font-semibold opacity-50 cursor-not-allowed border border-white/10 bg-transparent text-white/60"
+                        className="w-full rounded-full text-base font-semibold opacity-50 cursor-not-allowed border border-white/25 bg-transparent text-white/90"
                         variant="ghost"
                       >
                         Default plan
@@ -459,7 +459,7 @@ export default function LandingPage() {
                     ) : (
                       <Link href="/sign-up">
                         <Button
-                          className="w-full rounded-full text-sm font-semibold border border-white/10 bg-transparent text-white/60 hover:bg-white/6 hover:text-white/90"
+                          className="w-full rounded-full text-base font-semibold border border-white/25 bg-transparent text-white/90 hover:bg-white/6 hover:text-white/90"
                           variant="ghost"
                         >
                           Get started free
@@ -471,10 +471,10 @@ export default function LandingPage() {
                     <PricingModal>
                       <Button
                         className={cn(
-                          "w-full rounded-full text-sm font-semibold transition-all",
+                          "w-full rounded-full text-base font-semibold transition-all",
                           plan.featured
                             ? "bg-blue-500 text-white hover:bg-blue-400 active:scale-95"
-                            : "border border-white/10 bg-transparent text-white/60 hover:bg-white/6 hover:text-white/90"
+                            : "border border-white/25 bg-transparent text-white/90 hover:bg-white/6 hover:text-white/90"
                         )}
                         variant="ghost"
                       >
@@ -486,10 +486,10 @@ export default function LandingPage() {
                     <Link href="/sign-up">
                       <Button
                         className={cn(
-                          "w-full rounded-full text-sm font-semibold transition-all",
+                          "w-full rounded-full text-base font-semibold transition-all",
                           plan.featured
                             ? "bg-blue-500 text-white hover:bg-blue-400 active:scale-95"
-                            : "border border-white/10 bg-transparent text-white/60 hover:bg-white/6 hover:text-white/90"
+                            : "border border-white/25 bg-transparent text-white/90 hover:bg-white/6 hover:text-white/90"
                         )}
                         variant="ghost"
                       >
@@ -506,7 +506,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ───────────────────────────────────────────────────────────── */}
-      <section className="relative mx-auto mb-32 max-w-5xl overflow-hidden rounded-2xl border border-white/8 px-10 py-24 text-center">
+      <section className="relative mx-auto mb-32 max-w-5xl overflow-hidden rounded-2xl border border-white/20 px-10 py-24 text-center">
         <HoleBackground
           strokeColor="rgba(255,255,255,0.05)" // blur
           numberOfLines={36}
@@ -523,7 +523,7 @@ export default function LandingPage() {
 
         <SectionHeading gray="Start building," blue="for free." />
 
-        <p className="mb-8 text-sm leading-relaxed text-white/40">
+        <p className="mb-8 text-base leading-relaxed text-white/70">
           Get 10 free generations on sign up. No credit card required.
           <br />
           Upgrade when you&apos;re ready.
