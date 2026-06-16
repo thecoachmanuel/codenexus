@@ -61,17 +61,35 @@ export default function LandingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] selection:bg-white/20">
+    <main className="min-h-screen bg-[#000000] selection:bg-white/20">
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center overflow-hidden px-4 pb-24 pt-40 text-center">
+      <section className="relative flex flex-col items-center overflow-hidden bg-[#000000] px-4 pb-24 pt-40 text-center">
+        {/* Dark grid animation — fully masked to black at edges */}
         <HoleBackground
-          strokeColor="rgba(255,255,255,0.05)" // blur
+          strokeColor="rgba(255,255,255,0.07)"
           className="absolute inset-0 h-full w-full"
           style={{
             maskImage:
-              "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
+              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 50%, transparent 100%)",
             WebkitMaskImage:
-              "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
+              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 50%, transparent 100%)",
+          }}
+        />
+
+        {/* Colorful radial glow — stays vibrant, no gray */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 50% at 50% -10%, rgba(99,102,241,0.18) 0%, rgba(59,130,246,0.10) 40%, transparent 70%)",
+          }}
+        />
+        {/* Subtle warm accent glow bottom-left */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 45% 35% at 10% 100%, rgba(168,85,247,0.08) 0%, transparent 70%)",
           }}
         />
 
@@ -159,7 +177,7 @@ export default function LandingPage() {
 
       {/* BROWSER MOCKUP */}
       <section className="px-4 pb-32">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-white/20 bg-[#0f0f0f] shadow-2xl shadow-black/60">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-white/20 bg-[#0a0a0a] shadow-2xl shadow-black/80">
           <div className="flex items-center gap-2 border-b border-white/6 px-4 py-3">
             <div className="flex gap-1.5">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -285,7 +303,7 @@ export default function LandingPage() {
           {FEATURES.map(({ icon: Icon, label, desc }) => (
             <div
               key={label}
-              className="group bg-[#0a0a0a] p-7 hover:bg-[#0f0f0f]"
+              className="group bg-[#000000] p-7 hover:bg-[#0a0a0a]"
             >
               <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/4 group-hover:border-white/15 group-hover:bg-white/8">
                 <Icon className="h-4 w-4 text-white/90 group-hover:text-blue-400/70" />
@@ -369,7 +387,7 @@ export default function LandingPage() {
                   "relative flex flex-col rounded-2xl border p-7 transition-colors",
                   plan.featured
                     ? "border-blue-500/25 bg-blue-500/4"
-                    : "border-white/20 bg-[#0f0f0f]"
+                    : "border-white/20 bg-[#0a0a0a]"
                 )}
               >
                 {/* Most popular pill */}
