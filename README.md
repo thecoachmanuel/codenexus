@@ -1,8 +1,8 @@
-# Full Stack Agentic App Builder with Next JS, Supabase, Gemini AI, Cline SDK, Shadcn UI Tutorial 🔥🔥
+# CodeNexus: Agentic App Builder 🔥🔥
 
-## https://www.youtube.com/watch?v=UUK93oW0SaA
+A full-stack AI-powered React app generator where users describe what they want to build, and the AI writes production-ready React code that renders live in the browser — just like Bolt.new or v0.
 
-<img width="1280" height="720" alt="1" src="https://github.com/user-attachments/assets/0170ace8-9451-40b0-8d8e-d5534a05bba1" />
+Users get a live Sandpack preview, a persistent chat history, image upload support, and a credit-based subscription system via Paystack. Pro users can trigger a Cline AI agent that autonomously improves the generated app file by file.
 
 ---
 
@@ -17,88 +17,49 @@
 
 ---
 
-## Overview
-
-A full-stack AI-powered React app generator where users describe what they want to build, and the AI writes production-ready React code that renders live in the browser — just like Bolt.new or Lovable.
-
-Users get a live Sandpack preview, a persistent chat history, image upload support, and a credit-based subscription system. Pro users can trigger a Cline AI agent that autonomously improves the generated app file by file.
-
----
-
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 15 (App Router, TypeScript) |
-| Auth + Billing | Clerk |
-| Database | Supabase (via Prisma) |
-| Image Storage | Supabase Storage |
-| Rate Limiting | Arcjet |
-| AI Model | Gemini 3.5 Flash |
+| Framework | Next.js 16 (App Router, TypeScript) |
+| Auth | Custom JWT (httpOnly cookies) + bcryptjs |
+| Billing | Paystack |
+| Database | MongoDB (via Mongoose) |
+| Image Storage | Inline Base64 Data URLs |
+| AI Model | Gemini 2.5 Flash (with Multi-Key Rotation) |
 | AI Agent (Improve) | Cline SDK (`@cline/sdk`) |
 | Code Editor + Preview | Sandpack (`@codesandbox/sandpack-react`) |
 | Styling | Tailwind CSS v4 + Shadcn UI |
-| ORM | Prisma (Postgres adapter) |
 
 ---
 
 ## Features
 
-### Landing Page
-- Prompt textarea with rotating placeholders and suggestion chips
-- Live browser mockup preview
-- Features section, how-it-works steps, pricing table (Clerk `<PricingTable />`)
-- Dark theme throughout
+### Authentication (JWT)
+- Custom Email & Password authentication
+- Secure `httpOnly` cookies for 7-day session persistence
+- Protected `/workspace` and `/projects` routes via Next.js middleware (`proxy.ts`)
 
-### Auth (Clerk)
-- Google OAuth sign-in
-- User auto-created in Supabase on first login with free credits
-- Plan detection via Clerk `has()` — credits top-up on plan upgrade
-- Pricing modal accessible from the header credit badge
-
-### Workspace
-- Split-panel layout: Chat (left) + Code/Preview (right)
-- Full persistent chat history stored in Supabase
-- AI responses rendered with `react-markdown` and a live blinking cursor during streaming
-- Image upload via paperclip → Supabase Storage → CDN URL injected into prompt
-- Auto-scroll, hidden scrollbar, user avatars
+### Billing (Paystack)
+- Fully integrated Paystack payment flow
+- Users can upgrade to "Starter" or "Pro" plans
+- Credits top-up automatically upon successful webhook verification or client-side verify
 
 ### AI Code Generation (`/api/gen-ai-code`)
-- Gemini 3.5 Flash with `thinkingConfig` enabled
-- Streams Gemini thought labels as live status steps in the chat panel
+- Powered by Gemini 2.5 Flash
+- **Multi-Key Rotation**: Automatically cycles through multiple API keys (`GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, etc.) to bypass free-tier rate limits and 429 errors.
 - Returns strict JSON: `{ assistantMessage, title, files, dependencies }`
-- npm registry validation — hallucinated packages silently filtered
-- Atomic DB transaction: workspace upsert + credit deduction in one operation
+- Image uploads are instantly converted to Base64 and attached to prompts, avoiding the need for external cloud storage buckets.
 
-### Improve with AI — Cline SDK (`/api/improve`) — Pro + Starter
+### Improve with AI — Cline SDK (`/api/improve`)
 - Cline `Agent` with two tools: `update_file` + `done_improving`
 - Agent streams reasoning live into the chat panel as it works
 - Files patched one at a time via SSE — Sandpack updates without remounting
-- `lifecycle: { completesRun: true }` ends the agent cleanly after all files are done
 - Gated to Starter and Pro plans
-
-### Fix with AI
-- Sandpack listens for runtime + compile errors
-- Error banner appears in Preview tab with "Fix with AI" button
-- Injects the error + context into Gemini and triggers a new generation
 
 ### Code Panel (Sandpack)
 - Preview and Code tabs — auto-switches to Preview after each generation
-- Built-in CodeMirror editor (read-only), file explorer
-- Tailwind v3 loaded via CDN inside the preview iframe
-- Smart re-keying: `SandpackProvider` only remounts when file paths change, not contents
 - Export to ZIP — downloads a ready-to-run CRA project with `package.json`
-
-### Projects Page
-- Grid of all past workspaces with title, first prompt preview, message count, timestamp
-- Delete project with confirmation modal
-- Empty state with CTA
-
-### Token / Credit System
-- Free: 10 credits · Starter: 50 · Pro: 150
-- Cost: 1 credit per generation or improve
-- Checked client-side and server-side (402 response as backup)
-- Credits top up additively on plan upgrade, preserved on downgrade
 
 ---
 
@@ -107,23 +68,16 @@ Users get a live Sandpack preview, a persistent chat history, image upload suppo
 ### Prerequisites
 
 - Node.js 22+
-- A Supabase project
-- A Clerk application
-- A Google AI Studio API key (Gemini)
+- A MongoDB cluster (e.g., MongoDB Atlas)
+- Paystack API keys
+- One or more Google AI Studio API keys (Gemini)
 
 ### Installation
 
 ```bash
-git clone https://github.com/roadsidecoder/buildai.git
-cd buildai
+git clone https://github.com/thecoachmanuel/codenexus.git
+cd codenexus
 npm install
-```
-
-Generate the Prisma client:
-
-```bash
-npx prisma generate
-npx prisma db push
 ```
 
 Run the development server:
@@ -138,48 +92,42 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Environment Variables
 
-Create a `.env.local` file in the root:
+Create a `.env.local` file in the root based on `.env.local.example`:
 
 ```env
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+# MongoDB
+MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@cluster...
 
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# JWT
+JWT_SECRET=replace_me_with_64_char_secret
 
-# Database (Supabase Postgres connection string)
-DATABASE_URL=
+# Gemini API Keys (auto-rotates to avoid rate limits)
+GEMINI_API_KEY_1=AIza...
+GEMINI_API_KEY_2=AIza...
+# Add more as needed
 
-# Google Gemini
-GEMINI_API_KEY=
+# Paystack
+PAYSTACK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_...
 
-# Arcjet
-ARCJET_KEY=
+# App URL (for Paystack callback)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Arcjet (Optional)
+# ARCJET_KEY=
 ```
 
 ---
 
 ## Database Setup
 
-The Prisma schema has two models:
+The MongoDB database uses Mongoose with two core collections:
 
-**User** — synced from Clerk on first login
-```
-id, clerkId, name, email, imageUrl, credits, plan, createdAt, updatedAt
-```
+**Users** (`lib/models/User.ts`)
+- Stores email, hashed password, credits, plan type, and timestamps.
 
-**Workspace** — one per AI session
-```
-id, userId (FK), title, messages (JSON), fileData (JSON), createdAt, updatedAt
-```
-
-`fileData` stores both generated files and validated dependencies as a single JSON blob.
-
-Supabase Storage bucket: `workspace-images` — public, organized by `userId/workspaceId/`.
+**Workspaces** (`lib/models/Workspace.ts`)
+- Stores the project title, AI chat history, and the generated files/dependencies blob. Associated with a User ID.
 
 ---
 
