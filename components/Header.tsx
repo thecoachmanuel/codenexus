@@ -18,7 +18,7 @@ export default async function Header() {
         <Link href="/" className="flex items-center gap-2 select-none">
           <Image
             src="/logo.png"
-            alt="CodeNexus"
+            alt="Crevo"
             width={100}
             height={100}
             className="h-9 w-auto rounded-md"

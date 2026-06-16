@@ -61,7 +61,7 @@ export const PRICING_PLANS = [
       "Export to zip",
       "Image uploads",
       "GitHub repo import",
-      "Access to CodeNexus Pro Agent",
+      "Access to Crevo Pro Agent",
     ],
   },
 ] as const;

@@ -1,4 +1,4 @@
-# CodeNexus: Agentic App Builder 🔥🔥
+# Crevo: Agentic App Builder 🔥🔥
 
 A full-stack AI-powered React app generator where users describe what they want to build, and the AI writes production-ready React code that renders live in the browser — just like Bolt.new or v0.
 
@@ -75,8 +75,8 @@ Users get a live Sandpack preview, a persistent chat history, image upload suppo
 ### Installation
 
 ```bash
-git clone https://github.com/thecoachmanuel/codenexus.git
-cd codenexus
+git clone https://github.com/thecoachmanuel/crevo.git
+cd crevo
 npm install
 ```
 

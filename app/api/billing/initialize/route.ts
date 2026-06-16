@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   }
 
   const amount = PLAN_AMOUNTS_KOBO[planKey];
-  const reference = `codenexus_${planKey}_${user._id}_${crypto.randomBytes(8).toString("hex")}`;
+  const reference = `crevo_${planKey}_${user._id}_${crypto.randomBytes(8).toString("hex")}`;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   const result = await initializeTransaction({

@@ -278,7 +278,7 @@ export function WorkspaceClient({
 
         if (res.status === 403) {
           toast.error(
-            "Upgrade to Starter or Pro to use Improve with CodeNexus Agent."
+            "Upgrade to Starter or Pro to use Improve with Crevo Agent."
           );
           setMessages((prev) => prev.slice(0, -2));
           return;

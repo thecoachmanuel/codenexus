@@ -59,7 +59,7 @@ function SignInContent() {
           </div>
           <div className="text-center">
             <h1 className="text-lg font-semibold text-white">Welcome back</h1>
-            <p className="mt-1 text-base text-white/70">Sign in to your CodeNexus account</p>
+            <p className="mt-1 text-base text-white/70">Sign in to your Crevo account</p>
           </div>
         </div>
 

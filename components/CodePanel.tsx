@@ -204,7 +204,7 @@ function SandpackInner({
       const zip = new JSZip();
 
       const packageJson = {
-        name: "codenexus-app",
+        name: "crevo-app",
         version: "1.0.0",
         private: true,
         dependencies: {
@@ -231,7 +231,7 @@ function SandpackInner({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CodeNexus App</title>
+    <title>Crevo App</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
@@ -263,7 +263,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
 
       zip.file(
         "README.md",
-        `# Forge App\n\nGenerated with [CodeNexus](https://codenexus.app).\n\n## Getting started\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``
+        `# Crevo App\n\nGenerated with [Crevo](https://crevo.app).\n\n## Getting started\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``
       );
 
       const blob = await zip.generateAsync({ type: "blob" });
@@ -275,7 +275,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-|-$/g, "")}.zip`
-        : "codenexus-app.zip";
+        : "crevo-app.zip";
       a.download = zipName;
       a.click();
       URL.revokeObjectURL(url);
