@@ -85,7 +85,7 @@ export function GitHubImportModal({ children, isProUser, onImport }: GitHubImpor
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setError(""); setRepoUrl(""); setResult(null); } }}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger className="cursor-pointer">{children}</DialogTrigger>
       <DialogContent className="border-white/20 bg-[#0a0a0a] text-white sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
