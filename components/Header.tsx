@@ -25,9 +25,9 @@ export default async function Header() {
             className="h-14 w-auto"
             style={{ mixBlendMode: "screen" }}
           />
-          {/* Wordmark */}
+          {/* Wordmark — hidden on mobile, visible on sm+ */}
           <span
-            className="text-xl font-semibold tracking-tight -ml-1"
+            className="hidden sm:inline text-xl font-semibold tracking-tight -ml-1"
             style={{
               background: "linear-gradient(90deg, #ffffff 60%, #a5b4fc 100%)",
               WebkitBackgroundClip: "text",
