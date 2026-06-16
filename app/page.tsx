@@ -64,17 +64,7 @@ export default function LandingPage() {
     <main className="min-h-screen bg-[#000000] selection:bg-white/20">
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <section className="relative flex flex-col items-center overflow-hidden bg-[#000000] px-4 pb-24 pt-40 text-center">
-        {/* Dark grid animation — significantly reduced opacity so it doesn't look gray */}
-        <HoleBackground
-          strokeColor="rgba(255,255,255,0.02)"
-          className="absolute inset-0 h-full w-full"
-          style={{
-            maskImage:
-              "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
-          }}
-        />
+        {/* Pure black background with ONLY the colorful light */}
 
         {/* Colorful radial glow — using screen blend mode to eliminate muddy gray fade */}
         <div
