@@ -64,32 +64,32 @@ export default function LandingPage() {
     <main className="min-h-screen bg-[#000000] selection:bg-white/20">
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <section className="relative flex flex-col items-center overflow-hidden bg-[#000000] px-4 pb-24 pt-40 text-center">
-        {/* Dark grid animation — fully masked to black at edges */}
+        {/* Dark grid animation — significantly reduced opacity so it doesn't look gray */}
         <HoleBackground
-          strokeColor="rgba(255,255,255,0.07)"
+          strokeColor="rgba(255,255,255,0.02)"
           className="absolute inset-0 h-full w-full"
           style={{
             maskImage:
-              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 50%, transparent 100%)",
+              "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 50%, transparent 100%)",
+              "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
           }}
         />
 
-        {/* Colorful radial glow — stays vibrant, no gray */}
+        {/* Colorful radial glow — tightened to top center so it doesn't wash out the screen */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 70% 50% at 50% -10%, rgba(99,102,241,0.18) 0%, rgba(59,130,246,0.10) 40%, transparent 70%)",
+              "radial-gradient(ellipse 50% 40% at 50% -10%, rgba(99,102,241,0.2) 0%, rgba(59,130,246,0.15) 40%, rgba(0,0,0,0) 80%)",
           }}
         />
-        {/* Subtle warm accent glow bottom-left */}
+        {/* Subtle warm accent glow bottom-left — tightened */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 45% 35% at 10% 100%, rgba(168,85,247,0.08) 0%, transparent 70%)",
+              "radial-gradient(ellipse 35% 30% at 10% 100%, rgba(168,85,247,0.1) 0%, rgba(0,0,0,0) 80%)",
           }}
         />
 
