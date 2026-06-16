@@ -19,9 +19,9 @@ export default async function Header() {
           <Image
             src="/logo.png"
             alt="Crevo"
-            width={100}
-            height={100}
-            className="h-9 w-auto rounded-md"
+            width={140}
+            height={140}
+            className="h-10 w-auto"
           />
         </Link>
 
