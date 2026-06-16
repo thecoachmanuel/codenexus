@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthContext } from "@/components/AuthProvider";
-import { ArrowRight, Zap, ChevronRight, Check } from "lucide-react";
+import { ArrowRight, Zap, ChevronRight, Check, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { HoleBackground } from "@/components/animate-ui/components/backgrounds/hole";
@@ -175,6 +175,13 @@ export default function LandingPage() {
                 {s}
               </button>
             ))}
+          </div>
+
+          <div className="md:hidden mt-8 rounded-lg border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-200/90 text-left max-w-sm mx-auto flex gap-3 items-start">
+            <Monitor className="h-5 w-5 shrink-0 mt-0.5" />
+            <p>
+              <strong>Desktop recommended:</strong> You can start a project from here, but you'll need a laptop or desktop screen to view the live preview and code editor.
+            </p>
           </div>
         </div>
 

@@ -71,14 +71,14 @@ export default function ProjectsPage() {
     <main className="min-h-screen bg-[#0a0a0a] px-4 py-10">
       <div className="mx-auto max-w-5xl">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <BlueTitle className="text-6xl">Projects</BlueTitle>
+            <BlueTitle className="text-4xl sm:text-5xl md:text-6xl break-words">Projects</BlueTitle>
             <p className="mt-3 text-base text-white/60">
               All your AI-generated apps in one place.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* GitHub Import Button */}
             <GitHubImportModal
               isProUser={userPlan === "pro"}
