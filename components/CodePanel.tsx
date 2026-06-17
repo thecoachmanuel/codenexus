@@ -23,12 +23,14 @@ import {
   Monitor,
   Tablet,
   Smartphone,
+  Github,
 } from "lucide-react";
 import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PricingModal } from "@/components/PricingModal";
+import { GitHubExportModal } from "@/components/GitHubExportModal";
 import type { FileData, StatusStep } from "@/types/workspace";
 
 // ─── Placeholder ──────────────────────────────────────────────────────────────
@@ -388,17 +390,32 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             </PricingModal>
           )}
 
+          <GitHubExportModal
+            fileData={fileData}
+            appTitle={appTitle}
+          >
+            <Button
+              variant="ghost"
+              disabled={isExporting || !fileData}
+              className="text-white/70 hover:text-white"
+            >
+              <Github className="h-3.5 w-3.5 mr-1.5" />
+              <span className="hidden sm:inline">GitHub</span>
+            </Button>
+          </GitHubExportModal>
+
           <Button
             variant="ghost"
             onClick={handleExportZip}
             disabled={isExporting || !fileData}
           >
             {isExporting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
             ) : (
-              <Download className="h-3.5 w-3.5" />
+              <Download className="h-3.5 w-3.5 mr-1.5" />
             )}
-            Download
+            <span className="hidden sm:inline">Download</span>
+            <span className="sm:hidden">ZIP</span>
           </Button>
         </div>
       </div>

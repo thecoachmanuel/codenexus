@@ -9,6 +9,7 @@ export interface IUser extends Document {
   credits: number;
   plan: "free" | "starter" | "pro";
   usedDiscountPlans: string[]; // plan keys where one-time discount has been used
+  githubToken?: string; // encrypted GitHub PAT for repo export
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +23,7 @@ const UserSchema = new Schema<IUser>(
     credits: { type: Number, default: 10 },
     plan: { type: String, enum: ["free", "starter", "pro"], default: "free" },
     usedDiscountPlans: { type: [String], default: [] },
+    githubToken: { type: String, default: "" },
   },
   { timestamps: true }
 );
