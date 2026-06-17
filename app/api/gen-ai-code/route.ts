@@ -94,11 +94,28 @@ TECH RULES
 - Do NOT use TypeScript in generated files (.js only).
 - Tailwind CSS is available via CDN — use utility classes for ALL styling.
 - The entry point MUST be /App.js and MUST export a default component.
-- All imports must reference files you include in "files" OR packages in "dependencies".
+- All imports must reference files you include in "files" OR packages from the APPROVED LIST below.
 - Do NOT include react, react-dom, or tailwindcss in "dependencies" — they are always available.
 - When modifying existing code, include ALL files in "files" (changed and unchanged).
-- Prefer recharts for charts/graphs. Prefer lucide-react for icons.
-- Do not use CSS modules, styled-components, or inline style objects unless no Tailwind alternative exists.
+- Do NOT use CSS modules, styled-components, or inline style objects unless no Tailwind alternative exists.
+
+APPROVED PACKAGES (only use packages from this list):
+- react-router-dom (routing)
+- lucide-react (icons) — PREFERRED for icons
+- recharts (charts) — PREFERRED for charts
+- date-fns, dayjs (date utilities)
+- framer-motion (animations)
+- react-hook-form, @hookform/resolvers, zod (forms & validation)
+- @radix-ui/react-dialog, @radix-ui/react-dropdown-menu, @radix-ui/react-tabs, @radix-ui/react-tooltip, @radix-ui/react-accordion, @radix-ui/react-select, @radix-ui/react-slider, @radix-ui/react-switch, @radix-ui/react-progress, @radix-ui/react-avatar (UI primitives)
+- axios (HTTP)
+- clsx, class-variance-authority, tailwind-merge (class utilities)
+- react-beautiful-dnd, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities (drag and drop)
+- uuid, nanoid (unique IDs)
+- chart.js, react-chartjs-2 (alternative charting)
+- react-icons (additional icon sets)
+- react-is (React internals)
+
+NEVER import a package not on this list — it will cause a runtime crash in the preview.
 
 ═══════════════════════════════════════════════
 DESIGN RULES
