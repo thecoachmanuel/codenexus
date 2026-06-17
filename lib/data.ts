@@ -1,12 +1,30 @@
 import { Sparkles, Zap, Code2, Eye, Package, ImageIcon, GitBranch } from "lucide-react";
 
-export const SUGGESTIONS = [
-  "A sleek crypto portfolio tracker with charts",
-  "An interactive travel itinerary planner",
-  "A modern real estate property dashboard",
-  "A fitness workout logging app with graphs",
-  "A minimalist habit tracker with daily streaks",
-  "A task management tool for remote teams",
+export const SUGGESTIONS_SETS = [
+  [
+    "A sleek crypto portfolio tracker with charts",
+    "An interactive travel itinerary planner",
+    "A modern real estate property dashboard",
+    "A fitness workout logging app with graphs",
+    "A minimalist habit tracker with daily streaks",
+    "A task management tool for remote teams",
+  ],
+  [
+    "A personal finance dashboard with budgets",
+    "A recipe and meal planning application",
+    "A real-time weather app with animated icons",
+    "A digital library organizer and tracker",
+    "A language learning flashcard app",
+    "An AI-powered daily journaling tool",
+  ],
+  [
+    "A podcast discovery and player interface",
+    "A virtual plant care reminder system",
+    "A collaborative kanban board with drag-and-drop",
+    "A local events and community meetup finder",
+    "A subscription management tracker",
+    "A vintage-style pomodoro timer",
+  ]
 ];
 
 export const FEATURES = [

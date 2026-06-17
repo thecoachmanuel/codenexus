@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { HoleBackground } from "@/components/animate-ui/components/backgrounds/hole";
 import { Badge } from "@/components/ui/badge";
-import { FEATURES, PLACEHOLDERS, STEPS, SUGGESTIONS } from "@/lib/data";
+import { FEATURES, PLACEHOLDERS, STEPS, SUGGESTIONS_SETS } from "@/lib/data";
 import { PRICING_PLANS } from "@/lib/constants";
 import {
   BlueTitle,
@@ -27,7 +27,12 @@ export default function LandingPage() {
   const [prompt, setPrompt] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
+  const [suggestions, setSuggestions] = useState(SUGGESTIONS_SETS[0]);
 
+  useEffect(() => {
+    // Pick random suggestion set on mount to avoid hydration mismatch
+    setSuggestions(SUGGESTIONS_SETS[Math.floor(Math.random() * SUGGESTIONS_SETS.length)]);
+  }, []);
   useEffect(() => {
     if (isFocused || prompt) return;
     const t = setInterval(() => {
@@ -166,7 +171,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap justify-center gap-2">
-            {SUGGESTIONS.map((s) => (
+            {suggestions.map((s) => (
               <button
                 key={s}
                 onClick={() => handleSuggestion(s)}
