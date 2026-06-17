@@ -55,25 +55,25 @@ const PLACEHOLDER_FILES = {
 // ─── Base dependencies ────────────────────────────────────────────────────────
 
 const BASE_DEPENDENCIES: Record<string, string> = {
-  // React ecosystem
-  "react-is": "^18.2.0",
-  "react-router-dom": "^6.16.0",
-  // Icons
-  "lucide-react": "^0.260.0",
-  // Charts
-  "recharts": "^2.9.0",
-  // Date utilities
-  "date-fns": "^2.30.0",
-  // Animations
-  "framer-motion": "^10.16.4",
-  // Forms
-  "react-hook-form": "^7.47.0",
-  "@hookform/resolvers": "^3.3.2",
-  "zod": "^3.22.4",
-  // Utilities
-  "clsx": "^2.0.0",
-  "tailwind-merge": "^1.14.0",
-  "uuid": "^9.0.0",
+  "react-is": "latest",
+  "react-router-dom": "latest",
+  "lucide-react": "latest",
+  recharts: "latest",
+  "date-fns": "latest",
+  "framer-motion": "latest",
+  "react-hook-form": "latest",
+  "@hookform/resolvers": "latest",
+  zod: "latest",
+  "@radix-ui/react-dialog": "latest",
+  "@radix-ui/react-dropdown-menu": "latest",
+  "@radix-ui/react-tabs": "latest",
+  "@radix-ui/react-tooltip": "latest",
+  "@radix-ui/react-accordion": "latest",
+  "@radix-ui/react-select": "latest",
+  axios: "latest",
+  clsx: "latest",
+  "class-variance-authority": "latest",
+  "tailwind-merge": "latest",
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -131,20 +131,16 @@ function SandpackInner({
   // This runs whenever fileData changes (e.g. after improve completes).
   // SandpackProvider key only changes when the file path set changes,
   // so this is the safe way to update existing file contents.
-  const prevFilesRef = useRef<Record<string, { code: string }>>(fileData?.files ?? {});
+  const prevFilesRef = useRef<Record<string, { code: string }>>({});
   useEffect(() => {
     if (!fileData?.files) return;
     const prev = prevFilesRef.current;
-    let updated = false;
     for (const [path, { code }] of Object.entries(fileData.files)) {
       if (prev[path]?.code !== code) {
         sandpack.updateFile(path, code);
-        updated = true;
       }
     }
-    if (updated) {
-      prevFilesRef.current = fileData.files;
-    }
+    prevFilesRef.current = fileData.files;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileData?.files]);
 
@@ -208,7 +204,7 @@ function SandpackInner({
       const zip = new JSZip();
 
       const packageJson = {
-        name: "crevo-app",
+        name: "codenexus-app",
         version: "1.0.0",
         private: true,
         dependencies: {
@@ -235,7 +231,7 @@ function SandpackInner({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Crevo App</title>
+    <title>CodeNexus App</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
@@ -267,7 +263,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
 
       zip.file(
         "README.md",
-        `# Crevo App\n\nGenerated with [Crevo](https://crevo.app).\n\n## Getting started\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``
+        `# Forge App\n\nGenerated with [CodeNexus](https://codenexus.app).\n\n## Getting started\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``
       );
 
       const blob = await zip.generateAsync({ type: "blob" });
@@ -279,7 +275,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-|-$/g, "")}.zip`
-        : "crevo-app.zip";
+        : "codenexus-app.zip";
       a.download = zipName;
       a.click();
       URL.revokeObjectURL(url);
@@ -512,15 +508,15 @@ export function CodePanel({
     ...(fileData?.dependencies ?? {}),
   };
 
-  // Key on workspaceId or placeholder state so it remounts when switching projects or first generation
-  const workspaceKey = fileData ? "loaded" : "placeholder";
+  // Key only on file path set — NOT on file contents.
+  // Content changes go through sandpack.updateFile() inside SandpackInner.
+  // This prevents Sandpack from remounting when only code changes.
   const filePathKey = Object.keys(files).sort().join("|");
-  const providerKey = `${workspaceKey}|${filePathKey}`;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <SandpackProvider
-        key={providerKey}
+        key={filePathKey}
         template="react"
         theme={dracula}
         files={files}
