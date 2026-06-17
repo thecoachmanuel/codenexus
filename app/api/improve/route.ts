@@ -77,9 +77,14 @@ export async function POST(request: NextRequest) {
             .describe("One sentence explaining what you changed and why"),
         }),
         async execute({ path, code, reason }) {
-          patchedFiles[path] = { code };
-          enqueue(sseEvent("file_patch", { path, code, reason }));
-          return `Updated ${path}: ${reason}`;
+          let normalizedPath = path;
+          if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+          if (normalizedPath.startsWith("/src/") && normalizedPath.endsWith("App.js")) {
+            normalizedPath = "/App.js";
+          }
+          patchedFiles[normalizedPath] = { code };
+          enqueue(sseEvent("file_patch", { path: normalizedPath, code, reason }));
+          return `Updated ${normalizedPath}: ${reason}`;
         },
       });
 
