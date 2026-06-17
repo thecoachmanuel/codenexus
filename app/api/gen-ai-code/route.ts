@@ -279,12 +279,24 @@ export async function POST(request: NextRequest) {
           return;
         }
 
+        // ── Normalize File Paths ──────────────────────────────────────────────
+        const normalizedFiles: Record<string, { code: string }> = {};
+        for (const [key, value] of Object.entries(files)) {
+          let path = key;
+          if (!path.startsWith("/")) path = "/" + path;
+          // Map /src/App.js -> /App.js because Sandpack template="react" expects /App.js
+          if (path.startsWith("/src/") && path.endsWith("App.js")) {
+            path = "/App.js";
+          }
+          normalizedFiles[path] = value;
+        }
+
         // ── Validate npm packages ──────────────────────────────────────────────
 
         enqueue(sseEvent("status", { message: "Validating packages…" }));
         const validatedDeps = await validateDependencies(dependencies ?? {});
         const newFileData: FileData = {
-          files,
+          files: normalizedFiles,
           dependencies: validatedDeps,
           title: aiTitle,
         };

@@ -131,16 +131,20 @@ function SandpackInner({
   // This runs whenever fileData changes (e.g. after improve completes).
   // SandpackProvider key only changes when the file path set changes,
   // so this is the safe way to update existing file contents.
-  const prevFilesRef = useRef<Record<string, { code: string }>>({});
+  const prevFilesRef = useRef<Record<string, { code: string }>>(fileData?.files ?? {});
   useEffect(() => {
     if (!fileData?.files) return;
     const prev = prevFilesRef.current;
+    let updated = false;
     for (const [path, { code }] of Object.entries(fileData.files)) {
       if (prev[path]?.code !== code) {
         sandpack.updateFile(path, code);
+        updated = true;
       }
     }
-    prevFilesRef.current = fileData.files;
+    if (updated) {
+      prevFilesRef.current = fileData.files;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileData?.files]);
 
@@ -508,15 +512,15 @@ export function CodePanel({
     ...(fileData?.dependencies ?? {}),
   };
 
-  // Key only on file path set — NOT on file contents.
-  // Content changes go through sandpack.updateFile() inside SandpackInner.
-  // This prevents Sandpack from remounting when only code changes.
+  // Key on workspaceId or placeholder state so it remounts when switching projects or first generation
+  const workspaceKey = fileData ? "loaded" : "placeholder";
   const filePathKey = Object.keys(files).sort().join("|");
+  const providerKey = `${workspaceKey}|${filePathKey}`;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <SandpackProvider
-        key={filePathKey}
+        key={providerKey}
         template="react"
         theme={dracula}
         files={files}
