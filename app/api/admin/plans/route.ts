@@ -31,8 +31,8 @@ export async function PUT(request: NextRequest) {
 
   plan.label = label ?? plan.label;
   plan.description = description ?? plan.description;
-  plan.price = price ?? plan.price;
-  plan.credits = credits ?? plan.credits;
+  plan.price = price !== undefined ? Number(price) : plan.price;
+  plan.credits = credits !== undefined ? Number(credits) : plan.credits;
   plan.features = features ?? plan.features;
   plan.featured = featured ?? plan.featured;
   plan.discountPercent = discountPercent ?? plan.discountPercent;

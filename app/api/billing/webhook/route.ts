@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
       const updatePayload: Record<string, unknown> = {
         plan: planKey,
-        credits: user.credits + planCredits,
+        credits: Number(user.credits) + Number(planCredits),
       };
 
       if (discountApplied && discountOneTimePerUser) {
