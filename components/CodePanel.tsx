@@ -434,7 +434,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
           <TabsContent
             value="preview"
             keepMounted
-            className="mt-0 flex-1 min-h-0 w-full bg-[#0a0a0a] overflow-auto relative"
+            className="mt-0 flex-1 min-h-0 w-full bg-[#0a0a0a] overflow-auto relative flex flex-col"
           >
             {/* Viewport Toggles (only visible in preview tab) */}
             {activeTab === "preview" && (
@@ -481,7 +481,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
                   ? "h-[812px] w-[375px] shrink-0 overflow-hidden rounded-[2.5rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
                   : previewMode === "tablet"
                   ? "h-[1024px] w-[768px] shrink-0 overflow-hidden rounded-[2rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
-                  : "h-full w-full"
+                  : "flex-1 w-full h-full"
               }`}
             >
               <SandpackPreview
