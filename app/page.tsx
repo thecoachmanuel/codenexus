@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthContext } from "@/components/AuthProvider";
-import { ArrowRight, Zap, ChevronRight, Check, Monitor } from "lucide-react";
+import { ArrowRight, Zap, ChevronRight, Check, Monitor, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { HoleBackground } from "@/components/animate-ui/components/backgrounds/hole";
@@ -27,6 +27,7 @@ export default function LandingPage() {
   const [prompt, setPrompt] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [suggestions, setSuggestions] = useState(SUGGESTIONS_SETS[0]);
 
   useEffect(() => {
@@ -63,6 +64,30 @@ export default function LandingPage() {
   const handleSuggestion = (s: string) => {
     setPrompt(s);
     textareaRef.current?.focus();
+  };
+
+  const handleEnhancePrompt = async () => {
+    if (!prompt.trim() || isEnhancing) return;
+    if (!isSignedIn) {
+      router.push("/sign-up");
+      return;
+    }
+    try {
+      setIsEnhancing(true);
+      const res = await fetch("/api/enhance-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      if (data.enhancedPrompt) {
+        setPrompt(data.enhancedPrompt);
+      }
+    } catch (error) {
+      console.error("Failed to enhance prompt:", error);
+    } finally {
+      setIsEnhancing(false);
+    }
   };
 
   return (
@@ -140,33 +165,69 @@ export default function LandingPage() {
             />
 
             <div className="flex items-center justify-between border-t border-white/6 px-4 py-2.5">
-              <span className="text-sm text-white/40">
+              <span className="text-sm text-white/40 hidden sm:inline">
                 Press ⏎ to generate · Shift+⏎ for new line
               </span>
 
-              {isSignedIn ? (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!prompt.trim()}
-                  className={cn(
-                    "h-8 rounded-full px-5 font-semibold transition-all",
-                    prompt.trim()
-                      ? "bg-white text-black hover:bg-white/90"
-                      : "bg-white/10 text-white/40"
-                  )}
-                  variant="ghost"
-                >
-                  Generate
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              ) : (
-                <Link href="/sign-up">
-                  <Button className="h-8 rounded-full bg-white text-black px-5 font-semibold hover:bg-white/90">
+              <div className="flex items-center gap-2 ml-auto">
+                {isSignedIn ? (
+                  <Button
+                    onClick={handleEnhancePrompt}
+                    disabled={!prompt.trim() || isEnhancing}
+                    className={cn(
+                      "h-8 rounded-full px-4 font-semibold transition-all",
+                      prompt.trim()
+                        ? "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                        : "bg-white/5 text-white/30"
+                    )}
+                    variant="ghost"
+                  >
+                    <Sparkles className={cn("h-3.5 w-3.5 mr-1.5", isEnhancing && "animate-pulse text-blue-300")} />
+                    <span className="hidden sm:inline">{isEnhancing ? "Improving..." : "Improve with AI"}</span>
+                    <span className="sm:hidden">{isEnhancing ? "..." : "Improve"}</span>
+                  </Button>
+                ) : (
+                  <Link href="/sign-up">
+                    <Button
+                      className={cn(
+                        "h-8 rounded-full px-4 font-semibold transition-all",
+                        prompt.trim()
+                          ? "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                          : "bg-white/5 text-white/30"
+                      )}
+                      variant="ghost"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                      <span className="hidden sm:inline">Improve with AI</span>
+                      <span className="sm:hidden">Improve</span>
+                    </Button>
+                  </Link>
+                )}
+
+                {isSignedIn ? (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!prompt.trim()}
+                    className={cn(
+                      "h-8 rounded-full px-5 font-semibold transition-all",
+                      prompt.trim()
+                        ? "bg-white text-black hover:bg-white/90"
+                        : "bg-white/10 text-white/40"
+                    )}
+                    variant="ghost"
+                  >
                     Generate
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
-                </Link>
-              )}
+                ) : (
+                  <Link href="/sign-up">
+                    <Button className="h-8 rounded-full bg-white text-black px-5 font-semibold hover:bg-white/90">
+                      Generate
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
 
