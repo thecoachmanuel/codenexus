@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Zap, ArrowRight, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { checkUserServer } from "@/lib/checkUserServer";
@@ -16,13 +15,12 @@ export default async function Header() {
       <nav className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-1 select-none">
-          {/* Neon C icon — mix-blend-mode:screen makes the black bg invisible */}
-          <Image
+          {/* Neon C icon — transparent PNG, no background */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/logo-short.png"
             alt="Crevo icon"
-            width={80}
-            height={80}
-            className="h-10 w-auto"
+            className="h-10 w-auto bg-transparent"
           />
           {/* Wordmark — hidden on mobile, visible on sm+ */}
           <span

@@ -31,6 +31,7 @@ if (typeof globalForGemini.geminiKeyIndex === "undefined") {
 const API_KEYS = collectApiKeys();
 
 export const DEFAULT_MODEL = "gemini-2.5-flash";
+export const PRO_MODEL = "gemini-2.5-pro";
 
 // ─── Get current client (sticky) ──────────────────────────────────────────────────
 
