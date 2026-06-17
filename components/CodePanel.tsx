@@ -516,65 +516,14 @@ export function CodePanel({
   const workspaceKey = fileData ? "loaded" : "placeholder";
   const filePathKey = Object.keys(files).sort().join("|");
   const providerKey = `${workspaceKey}|${filePathKey}`;
-  
-  // ── Switch to Vite to prevent CRA TIME_OUT ──────────────────────────────────
-  const VITE_CONFIG = `import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-  esbuild: {
-    loader: 'jsx',
-    include: /.*\\.jsx?$/,
-    exclude: []
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      loader: {
-        '.js': 'jsx',
-      },
-    },
-  },
-})`;
-
-  const INDEX_HTML = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Preview</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/index.jsx"></script>
-  </body>
-</html>`;
-
-  const INDEX_JSX = `import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.js'
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)`;
-
-  const filesToRender = {
-    "/vite.config.js": { code: VITE_CONFIG, hidden: true },
-    "/index.html": { code: INDEX_HTML, hidden: true },
-    "/index.jsx": { code: INDEX_JSX, hidden: true },
-    ...files,
-  };
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <SandpackProvider
         key={providerKey}
-        template="vite-react"
+        template="react"
         theme={dracula}
-        files={filesToRender}
+        files={files}
         customSetup={{ dependencies }}
         options={{
           externalResources: ["https://cdn.tailwindcss.com"],
