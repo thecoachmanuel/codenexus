@@ -16,6 +16,7 @@ export interface AuthUser {
   credits: number;
   plan: string;
   imageUrl: string;
+  usedDiscountPlans?: string[];
 }
 
 interface AuthContextValue {

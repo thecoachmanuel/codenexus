@@ -23,6 +23,7 @@ export async function GET() {
       credits: user.credits,
       plan: user.plan,
       imageUrl: user.imageUrl,
+      usedDiscountPlans: user.usedDiscountPlans ?? [],
     },
   });
 }
