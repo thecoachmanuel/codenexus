@@ -15,12 +15,13 @@ export default async function Header() {
       <nav className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-1 select-none">
-          {/* Neon C icon — transparent PNG, no background */}
+          {/* Neon C icon */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo-short.png"
+            src="/logo-neon.png"
             alt="Crevo icon"
-            className="h-10 w-auto bg-transparent"
+            className="h-10 w-auto rounded-lg"
+            style={{ mixBlendMode: "screen" }}
           />
           {/* Wordmark — hidden on mobile, visible on sm+ */}
           <span
