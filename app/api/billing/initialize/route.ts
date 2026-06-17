@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
+import Setting from "@/lib/models/Setting";
 import { initializeTransaction, PLAN_AMOUNTS_CENTS } from "@/lib/billing";
 import { PLANS } from "@/lib/constants";
 import type { Plan } from "@/types/plans";
@@ -24,14 +25,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "User not found" }, { status: 404 });
   }
 
-  const amount = PLAN_AMOUNTS_CENTS[planKey];
+  // Fetch exchange rate or default to 1500
+  const settings = await Setting.findOne();
+  const exchangeRate = settings?.exchangeRate || 1500;
+
+  // Convert USD cents to USD dollars, then to NGN, then to Kobo
+  const usdDollars = PLAN_AMOUNTS_CENTS[planKey] / 100;
+  const ngnAmount = usdDollars * exchangeRate;
+  const koboAmount = Math.round(ngnAmount * 100);
+
   const reference = `crevo_${planKey}_${user._id}_${crypto.randomBytes(8).toString("hex")}`;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   const result = await initializeTransaction({
     email: user.email,
-    amount: amount,
-    currency: "USD",
+    amount: koboAmount,
     reference,
     metadata: {
       userId: user._id.toString(),
