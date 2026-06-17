@@ -263,7 +263,10 @@ export function WorkspaceClient({
   const handleImprove = useCallback(
     async (userRequest: string) => {
       if (isGenerating || isImproving) return;
-      if (credits < MIN_CREDITS_TO_GENERATE) return;
+      if (credits < MIN_CREDITS_TO_GENERATE) {
+        toast.error("You don't have enough credits to improve this app.");
+        return;
+      }
       if (!workspaceIdRef.current) return;
 
       // Read fileData from ref — never stale, never causes recreating this fn

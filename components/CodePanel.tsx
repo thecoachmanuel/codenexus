@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   SandpackProvider,
   SandpackLayout,
@@ -593,7 +593,16 @@ export function CodePanel({
     if (fileData) setActiveTab("preview");
   }, [fileData]);
 
-  const files = fileData?.files ?? PLACEHOLDER_FILES;
+  const files = useMemo(() => {
+    if (!fileData) return PLACEHOLDER_FILES;
+    const f = { ...fileData.files };
+    // Map /App.jsx back to /App.js to support code generated during vite-react phase
+    if (f["/App.jsx"] && !f["/App.js"]) {
+      f["/App.js"] = f["/App.jsx"];
+      delete f["/App.jsx"];
+    }
+    return f;
+  }, [fileData]);
   const dependencies = {
     ...BASE_DEPENDENCIES,
     ...(fileData?.dependencies ?? {}),
