@@ -152,3 +152,9 @@
     transform: translateX(200%);
   }
 }
+
+/* Move Sandpack preview action buttons (refresh/open in new tab) up */
+.sp-preview-actions {
+  bottom: 3rem !important;
+  right: 1rem !important;
+}
