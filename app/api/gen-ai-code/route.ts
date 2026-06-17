@@ -101,14 +101,10 @@ TECH RULES
 
 PACKAGE RULES:
 - You CAN use ANY real npm package. Just declare it in the "dependencies" field of your JSON response.
-- The following packages are pre-bundled and do NOT need to be declared in dependencies (but you can still use them):
-  react-router-dom, lucide-react, recharts, date-fns, dayjs, framer-motion, react-hook-form,
-  @hookform/resolvers, zod, axios, clsx, class-variance-authority, tailwind-merge,
-  react-beautiful-dnd, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities,
-  uuid, nanoid, chart.js, react-chartjs-2, react-icons,
-  @radix-ui/react-dialog, @radix-ui/react-dropdown-menu, @radix-ui/react-tabs,
-  @radix-ui/react-tooltip, @radix-ui/react-accordion, @radix-ui/react-select,
-  @radix-ui/react-slider, @radix-ui/react-switch, @radix-ui/react-progress, @radix-ui/react-avatar
+- The following packages are pre-bundled and do NOT need to be declared in dependencies:
+  react-router-dom, lucide-react, recharts, date-fns, framer-motion,
+  react-hook-form, @hookform/resolvers, zod, clsx, tailwind-merge, uuid
+- For any OTHER package (e.g. axios, dayjs, react-beautiful-dnd, @dnd-kit/core, react-icons, chart.js, @radix-ui/* etc.) declare it in "dependencies" and it will be fetched automatically.
 - NEVER invent package names that don't exist on npm — this will crash the preview.
 - Prefer pre-bundled packages when they cover the use case (e.g. use lucide-react for icons, recharts for charts).
 

@@ -55,44 +55,25 @@ const PLACEHOLDER_FILES = {
 // ─── Base dependencies ────────────────────────────────────────────────────────
 
 const BASE_DEPENDENCIES: Record<string, string> = {
+  // React ecosystem
   "react-is": "^18.2.0",
   "react-router-dom": "^6.16.0",
+  // Icons
   "lucide-react": "^0.260.0",
+  // Charts
   "recharts": "^2.9.0",
+  // Date utilities
   "date-fns": "^2.30.0",
+  // Animations
   "framer-motion": "^10.16.4",
+  // Forms
   "react-hook-form": "^7.47.0",
   "@hookform/resolvers": "^3.3.2",
   "zod": "^3.22.4",
-  "@radix-ui/react-dialog": "^1.0.5",
-  "@radix-ui/react-dropdown-menu": "^2.0.6",
-  "@radix-ui/react-tabs": "^1.0.4",
-  "@radix-ui/react-tooltip": "^1.0.7",
-  "@radix-ui/react-accordion": "^1.1.2",
-  "@radix-ui/react-select": "^2.0.0",
-  "@radix-ui/react-slider": "^1.1.2",
-  "@radix-ui/react-switch": "^1.0.3",
-  "@radix-ui/react-progress": "^1.0.3",
-  "@radix-ui/react-avatar": "^1.0.4",
-  "@radix-ui/react-badge": "^1.0.0",
-  "axios": "^1.5.1",
-  "clsx": "^2.0.0",
-  "class-variance-authority": "^0.7.0",
-  "tailwind-merge": "^1.14.0",
-  // Drag and drop
-  "react-beautiful-dnd": "^13.1.1",
-  "@dnd-kit/core": "^6.0.8",
-  "@dnd-kit/sortable": "^7.0.2",
-  "@dnd-kit/utilities": "^3.2.1",
   // Utilities
+  "clsx": "^2.0.0",
+  "tailwind-merge": "^1.14.0",
   "uuid": "^9.0.0",
-  "nanoid": "^3.3.6",
-  "dayjs": "^1.11.10",
-  // Chart/viz
-  "chart.js": "^4.4.0",
-  "react-chartjs-2": "^5.2.0",
-  // Icons
-  "react-icons": "^4.11.0",
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
