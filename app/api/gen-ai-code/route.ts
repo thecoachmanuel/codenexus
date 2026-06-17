@@ -77,7 +77,13 @@ RULES:
 7. Do not include react, react-dom, or tailwindcss in "dependencies" — they are always available.
 8. When modifying existing code, include ALL files (both changed and unchanged) in "files".
 9. Keep code clean, readable, and production-quality.
-10. If the user attaches an image, use it as a design reference and match the layout/style as closely as possible.`;
+10. If the user attaches an image, use it as a design reference and match the layout/style as closely as possible.
+11. NEVER use local image paths (like /assets/img.png) because they won't exist.
+12. NEVER use source.unsplash.com (it is deprecated and broken).
+13. For placeholder images, ALWAYS use reliable URLs like:
+    - https://picsum.photos/seed/{random}/800/600 (for photos)
+    - https://placehold.co/600x400/png (for generic placeholders)
+    - https://ui-avatars.com/api/?name=John+Doe&background=random (for avatars)`;
 
 
 // ─── Gemini contents builder ──────────────────────────────────────────────────
