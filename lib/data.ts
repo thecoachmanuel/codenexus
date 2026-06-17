@@ -1,12 +1,12 @@
 import { Sparkles, Zap, Code2, Eye, Package, ImageIcon, GitBranch } from "lucide-react";
 
 export const SUGGESTIONS = [
-  "A Spotify stats dashboard with charts",
-  "A kanban board with drag and drop",
-  "A weather app with animated icons",
-  "A personal finance tracker",
-  "A recipe finder with filters",
-  "A pomodoro timer with tasks",
+  "A sleek crypto portfolio tracker with charts",
+  "An interactive travel itinerary planner",
+  "A modern real estate property dashboard",
+  "A fitness workout logging app with graphs",
+  "A minimalist habit tracker with daily streaks",
+  "A task management tool for remote teams",
 ];
 
 export const FEATURES = [
