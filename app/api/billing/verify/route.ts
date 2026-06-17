@@ -17,29 +17,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/?billing=failed", request.url));
     }
 
-    const { userId, planKey, currentPlan, currentCredits, planCredits } =
+    const { userId, planKey, currentPlan, currentCredits, planCredits,
+            discountApplied, discountOneTimePerUser } =
       result.metadata as {
         userId: string;
         planKey: Plan;
         currentPlan: Plan;
         currentCredits: number;
         planCredits: number;
+        discountApplied?: boolean;
+        discountOneTimePerUser?: boolean;
       };
 
     await connectDB();
 
     const existingPlan = await getPlanByKey(currentPlan);
     const existingPlanCredits = existingPlan?.credits ?? 0;
-    
+
     const newPlanCredits = planCredits as number;
     const creditDelta = newPlanCredits - existingPlanCredits;
     const newCredits =
       creditDelta > 0 ? currentCredits + creditDelta : currentCredits;
 
-    await User.findByIdAndUpdate(userId, {
+    const updatePayload: Record<string, unknown> = {
       plan: planKey,
       credits: newCredits,
-    });
+    };
+
+    // If one-time discount was used, record it so user pays full price next time
+    if (discountApplied && discountOneTimePerUser) {
+      updatePayload["$addToSet"] = { usedDiscountPlans: planKey };
+    }
+
+    await User.findByIdAndUpdate(userId, updatePayload);
 
     return NextResponse.redirect(new URL("/projects?billing=success", request.url));
   } catch (err) {

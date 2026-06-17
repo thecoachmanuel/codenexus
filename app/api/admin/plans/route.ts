@@ -17,7 +17,7 @@ export async function PUT(request: NextRequest) {
   if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { key, label, description, price, credits, features, featured } = body;
+  const { key, label, description, price, credits, features, featured, discountPercent, discountOneTimePerUser } = body;
 
   if (!key) {
     return NextResponse.json({ message: "Plan key is required" }, { status: 400 });
@@ -35,6 +35,8 @@ export async function PUT(request: NextRequest) {
   plan.credits = credits ?? plan.credits;
   plan.features = features ?? plan.features;
   plan.featured = featured ?? plan.featured;
+  plan.discountPercent = discountPercent ?? plan.discountPercent;
+  plan.discountOneTimePerUser = discountOneTimePerUser ?? plan.discountOneTimePerUser;
 
   await plan.save();
 

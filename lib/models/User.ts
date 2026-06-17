@@ -8,6 +8,7 @@ export interface IUser extends Document {
   imageUrl: string;
   credits: number;
   plan: "free" | "starter" | "pro";
+  usedDiscountPlans: string[]; // plan keys where one-time discount has been used
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,6 +21,7 @@ const UserSchema = new Schema<IUser>(
     imageUrl: { type: String, default: "" },
     credits: { type: Number, default: 10 },
     plan: { type: String, enum: ["free", "starter", "pro"], default: "free" },
+    usedDiscountPlans: { type: [String], default: [] },
   },
   { timestamps: true }
 );

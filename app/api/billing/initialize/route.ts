@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   }
 
   await connectDB();
-  
+
   const selectedPlan = await getPlanByKey(planKey);
   if (!selectedPlan || selectedPlan.price <= 0) {
     return NextResponse.json({ message: "Invalid or free plan selected" }, { status: 400 });
@@ -30,12 +30,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "User not found" }, { status: 404 });
   }
 
+  // Determine effective price after discount
+  let effectivePrice = selectedPlan.price;
+  let discountApplied = false;
+
+  if (selectedPlan.discountPercent > 0) {
+    const alreadyUsedDiscount = user.usedDiscountPlans?.includes(planKey);
+    // Apply discount if: no one-time restriction, OR one-time but user hasn't used it yet
+    if (!selectedPlan.discountOneTimePerUser || !alreadyUsedDiscount) {
+      effectivePrice = selectedPlan.price * (1 - selectedPlan.discountPercent / 100);
+      discountApplied = true;
+    }
+  }
+
   // Fetch exchange rate or default to 1500
   const settings = await Setting.findOne();
   const exchangeRate = settings?.exchangeRate || 1500;
 
   // Convert USD dollars to NGN, then to Kobo
-  const ngnAmount = selectedPlan.price * exchangeRate;
+  const ngnAmount = effectivePrice * exchangeRate;
   const koboAmount = Math.round(ngnAmount * 100);
 
   const reference = `crevo_${planKey}_${user._id}_${crypto.randomBytes(8).toString("hex")}`;
@@ -51,10 +64,11 @@ export async function POST(request: NextRequest) {
       currentPlan: user.plan,
       currentCredits: user.credits,
       planCredits: selectedPlan.credits,
+      discountApplied,
+      discountOneTimePerUser: selectedPlan.discountOneTimePerUser,
     },
     callbackUrl: `${appUrl}/api/billing/verify?reference=${reference}`,
   });
 
   return NextResponse.json({ authorizationUrl: result.authorizationUrl });
 }
-

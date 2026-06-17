@@ -482,14 +482,19 @@ export default function LandingPage() {
                     : "border-white/20 bg-[#0a0a0a]"
                 )}
               >
-                {/* Most popular pill */}
-                {plan.featured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="rounded-full border border-blue-500/20 bg-[#0a0a0a] px-3 py-1 text-[11px] font-medium text-blue-400">
+                {/* Most popular pill and Discount pill */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-2">
+                  {plan.featured && (
+                    <span className="rounded-full border border-blue-500/20 bg-[#0a0a0a] px-3 py-1 text-[11px] font-medium text-blue-400 whitespace-nowrap">
                       Most popular
                     </span>
-                  </div>
-                )}
+                  )}
+                  {plan.discountPercent > 0 && (!plan.discountOneTimePerUser || !user?.usedDiscountPlans?.includes(plan.key)) && (
+                    <span className="rounded-full border border-emerald-500/20 bg-[#0a0a0a] px-3 py-1 text-[11px] font-bold text-emerald-400 whitespace-nowrap">
+                      {plan.discountPercent}% OFF
+                    </span>
+                  )}
+                </div>
 
                 {/* Plan name + active badge */}
                 <div className="mb-1 flex items-center gap-2">
@@ -509,12 +514,24 @@ export default function LandingPage() {
                 </p>
 
                 {/* Price */}
-                <div className="mb-1 flex items-baseline gap-1">
-                  <span className="font-serif text-4xl">
+                <div className="mb-1 flex items-baseline gap-2">
+                  <span className="font-serif text-4xl flex items-center gap-2">
                     {plan.price === 0 ? (
                       <GrayTitle>$0</GrayTitle>
                     ) : (
-                      <BlueTitle>${plan.price}</BlueTitle>
+                      <>
+                        {plan.discountPercent > 0 && 
+                         (!plan.discountOneTimePerUser || !user?.usedDiscountPlans?.includes(plan.key)) && (
+                          <span className="text-xl font-medium text-white/30 line-through">
+                            ${plan.price}
+                          </span>
+                        )}
+                        <BlueTitle>
+                          ${plan.discountPercent > 0 && (!plan.discountOneTimePerUser || !user?.usedDiscountPlans?.includes(plan.key))
+                              ? (plan.price * (1 - plan.discountPercent / 100)).toFixed(2).replace(/\.00$/, '')
+                              : plan.price}
+                        </BlueTitle>
+                      </>
                     )}
                   </span>
                   {plan.price > 0 && (

@@ -8,6 +8,8 @@ export interface IPlan {
   credits: number;
   features: string[];
   featured: boolean;
+  discountPercent: number;       // 0 = no discount, e.g. 20 = 20% off
+  discountOneTimePerUser: boolean; // if true, user only gets discount once
 }
 
 const planSchema = new mongoose.Schema<IPlan>(
@@ -19,6 +21,8 @@ const planSchema = new mongoose.Schema<IPlan>(
     credits: { type: Number, required: true },
     features: { type: [String], default: [] },
     featured: { type: Boolean, default: false },
+    discountPercent: { type: Number, default: 0 },
+    discountOneTimePerUser: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

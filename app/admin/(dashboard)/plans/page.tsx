@@ -14,6 +14,8 @@ type Plan = {
   credits: number;
   features: string[];
   featured: boolean;
+  discountPercent: number;
+  discountOneTimePerUser: boolean;
 };
 
 export default function AdminPlansPage() {
@@ -100,10 +102,17 @@ export default function AdminPlansPage() {
           <div
             key={plan.key}
             className={cn(
-              "flex flex-col bg-[#111] rounded-xl border p-6 transition-colors",
+              "flex flex-col bg-[#111] rounded-xl border p-6 transition-colors relative",
               plan.featured ? "border-blue-500/30" : "border-white/10"
             )}
           >
+            {plan.discountPercent > 0 && (
+              <div className="absolute -top-3 right-4">
+                <span className="px-2 py-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded-full border border-emerald-500/20 shadow-sm">
+                  {plan.discountPercent}% OFF
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white">{plan.label}</h2>
               {plan.featured && (
@@ -114,11 +123,20 @@ export default function AdminPlansPage() {
             </div>
             <p className="text-sm text-white/40 mb-6 flex-1">{plan.description}</p>
             <div className="space-y-1 mb-6">
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-white">${plan.price}</span>
+              <div className="flex items-baseline gap-2">
+                {plan.discountPercent > 0 && (
+                  <span className="text-xl font-medium text-white/30 line-through">
+                    ${plan.price}
+                  </span>
+                )}
+                <span className="text-3xl font-bold text-white">
+                  ${plan.discountPercent > 0 
+                      ? (plan.price * (1 - plan.discountPercent / 100)).toFixed(2).replace(/\.00$/, '')
+                      : plan.price}
+                </span>
                 <span className="text-white/40 text-sm">/mo</span>
               </div>
-              <div className="text-sm text-blue-400 font-medium">
+              <div className="text-sm text-blue-400 font-medium pt-1">
                 {plan.credits} Credits included
               </div>
             </div>
@@ -188,6 +206,35 @@ export default function AdminPlansPage() {
                     min="0"
                     required
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white/70">Discount Percentage</label>
+                  <input
+                    type="number"
+                    value={editingPlan.discountPercent ?? 0}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, discountPercent: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                    min="0"
+                    max="100"
+                    placeholder="e.g. 20 for 20% off"
+                  />
+                  <p className="text-xs text-white/40">Set to 0 for no discount.</p>
+                </div>
+                <div className="space-y-2 flex items-center pt-8 gap-2">
+                  <input
+                    type="checkbox"
+                    id="discountOneTimePerUser"
+                    checked={editingPlan.discountOneTimePerUser ?? false}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, discountOneTimePerUser: e.target.checked })}
+                    className="rounded border-white/20 bg-black/50"
+                    disabled={!editingPlan.discountPercent || editingPlan.discountPercent <= 0}
+                  />
+                  <label htmlFor="discountOneTimePerUser" className={cn("text-sm", (!editingPlan.discountPercent || editingPlan.discountPercent <= 0) ? "text-white/30" : "text-white/70")}>
+                    One-time use per user
+                  </label>
                 </div>
               </div>
 

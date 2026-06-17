@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       event.event === "charge.success" &&
       event.data?.status === "success"
     ) {
-      const { userId, planKey } = event.data?.metadata ?? {};
+      const { userId, planKey, discountApplied, discountOneTimePerUser } = event.data?.metadata ?? {};
       if (!userId || !planKey) return NextResponse.json({ received: true });
 
       const user = await User.findById(userId);
@@ -35,11 +35,16 @@ export async function POST(request: NextRequest) {
       const currentPlanCredits = currentPlan?.credits ?? 0;
       const creditDelta = planCredits - currentPlanCredits;
 
-      await User.findByIdAndUpdate(userId, {
+      const updatePayload: Record<string, unknown> = {
         plan: planKey,
-        credits:
-          creditDelta > 0 ? user.credits + creditDelta : user.credits,
-      });
+        credits: creditDelta > 0 ? user.credits + creditDelta : user.credits,
+      };
+
+      if (discountApplied && discountOneTimePerUser) {
+        updatePayload["$addToSet"] = { usedDiscountPlans: planKey };
+      }
+
+      await User.findByIdAndUpdate(userId, updatePayload);
     }
 
     return NextResponse.json({ received: true });
