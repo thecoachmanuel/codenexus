@@ -11,16 +11,10 @@ export {
 
 export type { InitializeParams, InitializeResult, VerifyResult } from "./paystack";
 
-// ─── Plan to amount mapping (in kobo for NGN) ─────────────────────────────────
+// ─── Plan to amount mapping (in smallest currency unit) ──────────────────────
 // To support multiple currencies, add a getCurrencyAmount(planKey, currency) helper.
 
-export const PLAN_AMOUNTS_KOBO: Record<string, number> = {
-  starter: 9 * 100 * 100,  // $9 → 900 kobo per cent (adjust for NGN rate)
-  pro: 29 * 100 * 100,      // $29
+export const PLAN_AMOUNTS_CENTS: Record<string, number> = {
+  starter: 900,  // $9.00
+  pro: 2900,     // $29.00
 };
-
-// When using Stripe, amounts would be in cents:
-// export const PLAN_AMOUNTS_CENTS: Record<string, number> = {
-//   starter: 900,   // $9.00
-//   pro: 2900,      // $29.00
-// };

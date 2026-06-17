@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
-import { initializeTransaction, PLAN_AMOUNTS_KOBO } from "@/lib/billing";
+import { initializeTransaction, PLAN_AMOUNTS_CENTS } from "@/lib/billing";
 import { PLANS } from "@/lib/constants";
 import type { Plan } from "@/types/plans";
 import crypto from "crypto";
@@ -24,13 +24,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "User not found" }, { status: 404 });
   }
 
-  const amount = PLAN_AMOUNTS_KOBO[planKey];
+  const amount = PLAN_AMOUNTS_CENTS[planKey];
   const reference = `crevo_${planKey}_${user._id}_${crypto.randomBytes(8).toString("hex")}`;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   const result = await initializeTransaction({
     email: user.email,
-    amountKobo: amount,
+    amount: amount,
+    currency: "USD",
     reference,
     metadata: {
       userId: user._id.toString(),

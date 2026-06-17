@@ -20,7 +20,8 @@ function paystackFetch(path: string, options?: RequestInit) {
 
 export interface InitializeParams {
   email: string;
-  amountKobo: number; // amount in kobo (NGN) or lowest currency unit
+  amount: number; // amount in lowest currency unit (e.g. cents or kobo)
+  currency?: string; // e.g. "USD", "NGN"
   reference: string;
   metadata?: Record<string, unknown>;
   callbackUrl: string;
@@ -39,7 +40,8 @@ export async function initializeTransaction(
     method: "POST",
     body: JSON.stringify({
       email: params.email,
-      amount: params.amountKobo,
+      amount: params.amount,
+      currency: params.currency,
       reference: params.reference,
       metadata: params.metadata,
       callback_url: params.callbackUrl,
