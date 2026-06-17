@@ -421,7 +421,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
 
         <SandpackLayout
           style={{
-            height: "100%",
+            height: "100vh",
             border: "none",
             borderRadius: 0,
             background: "transparent",
@@ -481,7 +481,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
               }`}
             >
               <SandpackPreview
-                style={{ height: "100%" }}
+                style={{ height: previewMode === "desktop" ? "89%" : "100%" }}
                 showOpenInCodeSandbox={false}
               />
             </div>
