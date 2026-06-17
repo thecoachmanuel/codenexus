@@ -6,7 +6,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
 import { CREDIT_COST_PER_GENERATION } from "@/lib/constants";
-import { getApiKey, PRO_MODEL } from "@/lib/gemini";
+import { getApiKey, DEFAULT_MODEL } from "@/lib/gemini";
 import type { FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
       const agent = new Agent({
         providerId: "gemini",
-        modelId: PRO_MODEL,
+        modelId: DEFAULT_MODEL,
         apiKey: getApiKey(),
         maxIterations: 8,
         systemPrompt: `You are an expert React developer improving a live browser preview app.
