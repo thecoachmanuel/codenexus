@@ -421,7 +421,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
 
         <SandpackLayout
           style={{
-            height: "100vh",
+            height: "100%",
             border: "none",
             borderRadius: 0,
             background: "transparent",
