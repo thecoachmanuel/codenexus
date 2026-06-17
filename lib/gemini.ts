@@ -32,11 +32,10 @@ const API_KEYS = collectApiKeys();
 
 export const DEFAULT_MODEL = "gemini-2.5-flash";
 
-// ─── Get next client in round-robin order ────────────────────────────────────
+// ─── Get current client (sticky) ──────────────────────────────────────────────────
 
-function nextClient(): { client: GoogleGenAI; keyIndex: number } {
+function getCurrentClient(): { client: GoogleGenAI; keyIndex: number } {
   const keyIndex = globalForGemini.geminiKeyIndex % API_KEYS.length;
-  globalForGemini.geminiKeyIndex = (keyIndex + 1) % API_KEYS.length;
   return { client: new GoogleGenAI({ apiKey: API_KEYS[keyIndex] }), keyIndex };
 }
 
@@ -53,7 +52,7 @@ export async function generateContentStream(options: GenerateOptions) {
   const maxAttempts = API_KEYS.length;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const { client, keyIndex } = nextClient();
+    const { client, keyIndex } = getCurrentClient();
     try {
       return await client.models.generateContentStream({
         model,
@@ -68,7 +67,9 @@ export async function generateContentStream(options: GenerateOptions) {
           err.message.toLowerCase().includes("quota"));
 
       if (isRateLimit && attempt < maxAttempts - 1) {
-        console.warn(`[gemini] Key ${keyIndex + 1} rate-limited, trying next key...`);
+        console.warn(`[gemini] Key ${keyIndex + 1} rate-limited, rotating to next key...`);
+        // Rotate to the next key permanently for this process
+        globalForGemini.geminiKeyIndex = (keyIndex + 1) % API_KEYS.length;
         continue;
       }
       throw err;
@@ -80,12 +81,11 @@ export async function generateContentStream(options: GenerateOptions) {
 // ─── For non-streaming (agent / cline SDK) ────────────────────────────────────
 
 export function getGeminiClient(): GoogleGenAI {
-  const { client } = nextClient();
+  const { client } = getCurrentClient();
   return client;
 }
 
 export function getApiKey(): string {
   const keyIndex = globalForGemini.geminiKeyIndex % API_KEYS.length;
-  globalForGemini.geminiKeyIndex = (keyIndex + 1) % API_KEYS.length;
   return API_KEYS[keyIndex];
 }

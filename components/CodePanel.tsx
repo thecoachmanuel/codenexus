@@ -20,6 +20,9 @@ import {
   Bot,
   Loader2,
   ArrowUp,
+  Monitor,
+  Tablet,
+  Smartphone,
 } from "lucide-react";
 import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
@@ -79,6 +82,7 @@ const BASE_DEPENDENCIES: Record<string, string> = {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ActiveTab = "preview" | "code";
+type PreviewMode = "desktop" | "mobile" | "tablet";
 
 interface CodePanelProps {
   fileData: FileData | null;
@@ -122,6 +126,7 @@ function SandpackInner({
 }) {
   const { sandpack, listen } = useSandpack();
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("desktop");
   const [isExporting, setIsExporting] = useState(false);
   const [improveInput, setImproveInput] = useState("");
   const [showImproveInput, setShowImproveInput] = useState(false);
@@ -425,12 +430,61 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
           <TabsContent
             value="preview"
             keepMounted
-            className="mt-0 h-full w-full"
+            className="mt-0 h-full w-full bg-[#0a0a0a] overflow-auto relative"
           >
-            <SandpackPreview
-              style={{ height: "89%" }}
-              showOpenInCodeSandbox={false}
-            />
+            {/* Viewport Toggles (only visible in preview tab) */}
+            {activeTab === "preview" && (
+              <div className="absolute top-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1 backdrop-blur-md shadow-lg">
+                <button
+                  onClick={() => setPreviewMode("mobile")}
+                  className={`rounded-md p-1.5 transition-colors ${
+                    previewMode === "mobile"
+                      ? "bg-white/20 text-white shadow-sm"
+                      : "text-white/40 hover:bg-white/10 hover:text-white/80"
+                  }`}
+                  title="Mobile Preview"
+                >
+                  <Smartphone className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPreviewMode("tablet")}
+                  className={`rounded-md p-1.5 transition-colors ${
+                    previewMode === "tablet"
+                      ? "bg-white/20 text-white shadow-sm"
+                      : "text-white/40 hover:bg-white/10 hover:text-white/80"
+                  }`}
+                  title="Tablet Preview"
+                >
+                  <Tablet className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPreviewMode("desktop")}
+                  className={`rounded-md p-1.5 transition-colors ${
+                    previewMode === "desktop"
+                      ? "bg-white/20 text-white shadow-sm"
+                      : "text-white/40 hover:bg-white/10 hover:text-white/80"
+                  }`}
+                  title="Desktop Preview"
+                >
+                  <Monitor className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
+            <div
+              className={`transition-all duration-500 ease-in-out mx-auto ${
+                previewMode === "mobile"
+                  ? "h-[812px] w-[375px] shrink-0 overflow-hidden rounded-[2.5rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
+                  : previewMode === "tablet"
+                  ? "h-[1024px] w-[768px] shrink-0 overflow-hidden rounded-[2rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
+                  : "h-full w-full"
+              }`}
+            >
+              <SandpackPreview
+                style={{ height: "100%" }}
+                showOpenInCodeSandbox={false}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent

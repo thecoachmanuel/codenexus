@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { connectDB } from "@/lib/mongodb";
+import User from "@/lib/models/User";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const DEFAULT_FILE_LIMIT = 50;
@@ -51,8 +53,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  // 2. Pro plan check
-  if (session.plan !== "pro") {
+  // 2. Pro plan check via database (so users who just upgraded don't need to re-login)
+  await connectDB();
+  const user = await User.findById(session.userId).select("plan");
+  
+  if (!user || user.plan !== "pro") {
     return NextResponse.json(
       { message: "GitHub import is a Pro feature. Upgrade to Pro to use it." },
       { status: 403 }
