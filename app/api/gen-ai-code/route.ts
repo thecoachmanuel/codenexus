@@ -94,28 +94,23 @@ TECH RULES
 - Do NOT use TypeScript in generated files (.js only).
 - Tailwind CSS is available via CDN — use utility classes for ALL styling.
 - The entry point MUST be /App.js and MUST export a default component.
-- All imports must reference files you include in "files" OR packages from the APPROVED LIST below.
+- All imports must reference files you include in "files" OR real npm packages declared in "dependencies".
 - Do NOT include react, react-dom, or tailwindcss in "dependencies" — they are always available.
 - When modifying existing code, include ALL files in "files" (changed and unchanged).
 - Do NOT use CSS modules, styled-components, or inline style objects unless no Tailwind alternative exists.
 
-APPROVED PACKAGES (only use packages from this list):
-- react-router-dom (routing)
-- lucide-react (icons) — PREFERRED for icons
-- recharts (charts) — PREFERRED for charts
-- date-fns, dayjs (date utilities)
-- framer-motion (animations)
-- react-hook-form, @hookform/resolvers, zod (forms & validation)
-- @radix-ui/react-dialog, @radix-ui/react-dropdown-menu, @radix-ui/react-tabs, @radix-ui/react-tooltip, @radix-ui/react-accordion, @radix-ui/react-select, @radix-ui/react-slider, @radix-ui/react-switch, @radix-ui/react-progress, @radix-ui/react-avatar (UI primitives)
-- axios (HTTP)
-- clsx, class-variance-authority, tailwind-merge (class utilities)
-- react-beautiful-dnd, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities (drag and drop)
-- uuid, nanoid (unique IDs)
-- chart.js, react-chartjs-2 (alternative charting)
-- react-icons (additional icon sets)
-- react-is (React internals)
-
-NEVER import a package not on this list — it will cause a runtime crash in the preview.
+PACKAGE RULES:
+- You CAN use ANY real npm package. Just declare it in the "dependencies" field of your JSON response.
+- The following packages are pre-bundled and do NOT need to be declared in dependencies (but you can still use them):
+  react-router-dom, lucide-react, recharts, date-fns, dayjs, framer-motion, react-hook-form,
+  @hookform/resolvers, zod, axios, clsx, class-variance-authority, tailwind-merge,
+  react-beautiful-dnd, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities,
+  uuid, nanoid, chart.js, react-chartjs-2, react-icons,
+  @radix-ui/react-dialog, @radix-ui/react-dropdown-menu, @radix-ui/react-tabs,
+  @radix-ui/react-tooltip, @radix-ui/react-accordion, @radix-ui/react-select,
+  @radix-ui/react-slider, @radix-ui/react-switch, @radix-ui/react-progress, @radix-ui/react-avatar
+- NEVER invent package names that don't exist on npm — this will crash the preview.
+- Prefer pre-bundled packages when they cover the use case (e.g. use lucide-react for icons, recharts for charts).
 
 ═══════════════════════════════════════════════
 DESIGN RULES
