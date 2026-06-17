@@ -36,7 +36,7 @@ import type { FileData, StatusStep } from "@/types/workspace";
 // ─── Placeholder ──────────────────────────────────────────────────────────────
 
 const PLACEHOLDER_FILES = {
-  "/App.js": {
+  "/App.jsx": {
     code: `export default function App() {
   return (
     <div style={{
@@ -592,7 +592,7 @@ export function CodePanel({
     <div className="flex flex-1 flex-col overflow-hidden">
       <SandpackProvider
         key={providerKey}
-        template="react"
+        template="vite-react"
         theme={dracula}
         files={files}
         customSetup={{ dependencies }}
