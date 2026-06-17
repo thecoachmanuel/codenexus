@@ -25,6 +25,7 @@ export type {
 
 interface WorkspaceClientProps {
   initialPrompt: string | null;
+  initialImageUrl: string | null;
   workspace: WorkspaceData | null;
   userCredits: number;
   userId: string;
@@ -48,6 +49,7 @@ function parseFileData(raw: unknown): FileData | null {
 
 export function WorkspaceClient({
   initialPrompt,
+  initialImageUrl,
   workspace,
   userCredits,
   userId,
@@ -405,6 +407,7 @@ export function WorkspaceClient({
           statusLog={statusLog}
           credits={credits}
           initialPrompt={initialPrompt}
+          initialImageUrl={initialImageUrl}
           onGenerate={handleGenerate}
           onStop={handleStop}
           userId={userId}

@@ -26,6 +26,7 @@ interface ChatPanelProps {
   statusLog: StatusStep[];
   credits: number;
   initialPrompt: string | null;
+  initialImageUrl: string | null;
   onGenerate: (prompt: string, imageUrl?: string) => Promise<void>;
   onStop: () => void;
   userId: string;
@@ -41,6 +42,7 @@ export function ChatPanel({
   statusLog,
   credits,
   initialPrompt,
+  initialImageUrl,
   onGenerate,
   onStop,
   userId,
@@ -83,7 +85,7 @@ export function ChatPanel({
     if (!initialPrompt || hasAutoSubmittedRef.current || messages.length > 0)
       return;
     hasAutoSubmittedRef.current = true;
-    onGenerate(initialPrompt);
+    onGenerate(initialPrompt, initialImageUrl ?? undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

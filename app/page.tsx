@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthContext } from "@/components/AuthProvider";
-import { ArrowRight, Zap, ChevronRight, Check, Monitor, Sparkles } from "lucide-react";
+import { ArrowRight, Zap, ChevronRight, Check, Monitor, Sparkles, Paperclip, X, ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { HoleBackground } from "@/components/animate-ui/components/backgrounds/hole";
@@ -19,6 +19,13 @@ import {
 } from "@/components/reusables";
 import { PricingModal } from "@/components/PricingModal";
 
+// Image upload limits per plan
+const IMAGE_LIMITS: Record<string, number> = {
+  free: 0,
+  starter: 3,
+  pro: 10,
+};
+
 export default function LandingPage() {
   const { isSignedIn, user } = useAuthContext();
   const router = useRouter();
@@ -30,6 +37,14 @@ export default function LandingPage() {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [suggestions, setSuggestions] = useState(SUGGESTIONS_SETS[0]);
   const [plans, setPlans] = useState<any[]>([]);
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadCount, setUploadCount] = useState(0);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const userPlan = (user?.plan ?? "free") as string;
+  const imageLimit = IMAGE_LIMITS[userPlan] ?? 0;
+  const canUploadImage = isSignedIn && imageLimit > 0 && uploadCount < imageLimit;
 
   useEffect(() => {
     // Pick random suggestion set on mount to avoid hydration mismatch
@@ -60,7 +75,9 @@ export default function LandingPage() {
 
   const handleSubmit = () => {
     if (!prompt.trim() || !isSignedIn) return;
-    router.push(`/workspace?prompt=${encodeURIComponent(prompt.trim())}`);
+    const params = new URLSearchParams({ prompt: prompt.trim() });
+    if (pendingImageUrl) params.set("imageUrl", pendingImageUrl);
+    router.push(`/workspace?${params.toString()}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -73,6 +90,27 @@ export default function LandingPage() {
   const handleSuggestion = (s: string) => {
     setPrompt(s);
     textareaRef.current?.focus();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    if (!canUploadImage) return;
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setPendingImageUrl(data.url);
+      setUploadCount((c) => c + 1);
+    } catch {
+      // silent
+    } finally {
+      setIsUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   };
 
   const handleEnhancePrompt = async () => {
@@ -162,6 +200,27 @@ export default function LandingPage() {
                 : "border-white/20"
             )}
           >
+            {/* Image preview strip */}
+            {pendingImageUrl && (
+              <div className="relative mx-4 mt-3 w-fit">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={pendingImageUrl}
+                  alt="Design reference"
+                  className="h-20 w-20 rounded-xl object-cover ring-1 ring-white/20"
+                />
+                <button
+                  onClick={() => setPendingImageUrl(null)}
+                  className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-black/90 text-white/90 ring-1 ring-white/20 hover:text-white transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+                <span className="absolute -bottom-1.5 left-1 rounded-sm bg-emerald-500/20 px-1 py-0.5 text-[9px] font-bold text-emerald-400 leading-none">
+                  DESIGN REF
+                </span>
+              </div>
+            )}
+
             <textarea
               ref={textareaRef}
               value={prompt}
@@ -176,11 +235,68 @@ export default function LandingPage() {
             />
 
             <div className="flex items-center justify-between border-t border-white/6 px-4 py-2.5">
-              <span className="text-sm text-white/40 hidden sm:inline">
-                Press ⏎ to generate · Shift+⏎ for new line
-              </span>
+              {/* Left side — image upload */}
+              <div className="flex items-center gap-2">
+                {isSignedIn && imageLimit > 0 ? (
+                  // Paid plan — show upload button
+                  <>
+                    <button
+                      onClick={() => fileRef.current?.click()}
+                      disabled={isUploading || uploadCount >= imageLimit}
+                      title={uploadCount >= imageLimit ? `Limit of ${imageLimit} image${imageLimit !== 1 ? "s" : ""} reached` : `Upload design reference (${uploadCount}/${imageLimit} used)`}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium transition-all",
+                        uploadCount >= imageLimit
+                          ? "cursor-not-allowed text-white/20"
+                          : pendingImageUrl
+                          ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/20"
+                          : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70"
+                      )}
+                    >
+                      {isUploading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="h-3.5 w-3.5" />
+                      )}
+                      <span className="hidden sm:inline">
+                        {isUploading
+                          ? "Uploading…"
+                          : pendingImageUrl
+                          ? "Image attached"
+                          : "Add image"}
+                      </span>
+                      <span className="text-[10px] opacity-60">
+                        {uploadCount}/{imageLimit}
+                      </span>
+                    </button>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                  </>
+                ) : isSignedIn ? (
+                  // Free plan — show locked state with upgrade prompt
+                  <PricingModal reason="upgrade">
+                    <button
+                      title="Upgrade to Starter or Pro to upload design images"
+                      className="flex items-center gap-1.5 rounded-full bg-white/4 px-2.5 py-1.5 text-[12px] text-white/25 transition-all hover:bg-white/8 hover:text-white/40 cursor-pointer"
+                    >
+                      <Paperclip className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Add image</span>
+                      <span className="rounded-sm bg-white/10 px-1 py-0.5 text-[9px] font-bold">STARTER+</span>
+                    </button>
+                  </PricingModal>
+                ) : (
+                  <span className="text-sm text-white/30 hidden sm:inline">
+                    Press ⏎ to generate
+                  </span>
+                )}
+              </div>
 
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-2">
                 {isSignedIn ? (
                   <Button
                     onClick={handleEnhancePrompt}

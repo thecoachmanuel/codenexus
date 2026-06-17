@@ -2,13 +2,13 @@ import { WorkspaceClient } from "@/components/WorkspaceClient";
 import { getWorkspaceUser, getWorkspaceById } from "@/actions/workspace";
 
 interface WorkspacePageProps {
-  searchParams: Promise<{ prompt?: string; id?: string }>;
+  searchParams: Promise<{ prompt?: string; id?: string; imageUrl?: string }>;
 }
 
 export default async function WorkspacePage({
   searchParams,
 }: WorkspacePageProps) {
-  const { prompt, id } = await searchParams;
+  const { prompt, id, imageUrl } = await searchParams;
 
   const user = await getWorkspaceUser();
 
@@ -20,6 +20,7 @@ export default async function WorkspacePage({
   return (
     <WorkspaceClient
       initialPrompt={prompt ?? null}
+      initialImageUrl={imageUrl ?? null}
       workspace={workspace}
       userCredits={user.credits}
       userId={user.id}
