@@ -6,7 +6,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
 import { CREDIT_COST_PER_GENERATION } from "@/lib/constants";
-import { getApiKey, DEFAULT_MODEL } from "@/lib/gemini";
+import { getApiKey, PRO_MODEL } from "@/lib/gemini";
 import type { FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 
@@ -112,9 +112,9 @@ export async function POST(request: NextRequest) {
 
       const agent = new Agent({
         providerId: "gemini",
-        modelId: DEFAULT_MODEL,
+        modelId: PRO_MODEL,
         apiKey: getApiKey(),
-        maxIterations: 12,
+        maxIterations: 8,
         systemPrompt: `You are an expert React developer improving a live browser preview app.
 
 The app uses React (functional components), Tailwind CSS for styling, and runs in Sandpack.
@@ -139,7 +139,7 @@ RULES:
 - NEVER use local image paths (like /assets/img.png).
 - NEVER use source.unsplash.com.
 - For placeholder images, ALWAYS use:
-  - https://loremflickr.com/800/600/{keyword} (for contextual photos)
+  - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true (for contextual photos)
   - https://placehold.co/600x400/png (for generic)
   - https://ui-avatars.com/api/?name=John+Doe&background=random (for avatars)`,
         tools: [updateFileTool, doneImprovingTool],

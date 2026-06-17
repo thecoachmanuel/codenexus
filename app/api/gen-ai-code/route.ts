@@ -81,7 +81,7 @@ RULES:
 11. NEVER use local image paths (like /assets/img.png) because they won't exist.
 12. NEVER use source.unsplash.com (it is deprecated and broken).
 13. For placeholder images, ALWAYS use reliable URLs like:
-    - https://loremflickr.com/800/600/{keyword} (for contextual photos, replace {keyword} with the subject like 'car', 'house', etc)
+    - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true (for contextual photos, replace {keyword} with a detailed description)
     - https://placehold.co/600x400/png (for generic placeholders)
     - https://ui-avatars.com/api/?name=John+Doe&background=random (for avatars)`;
 
