@@ -1,11 +1,12 @@
 import { getSession } from "@/lib/auth";
 import { NextRequest } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Agent, createTool } from "@cline/sdk";
+import { z } from "zod";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
 import { CREDIT_COST_PER_GENERATION } from "@/lib/constants";
-import { getApiKey, DEFAULT_MODEL } from "@/lib/gemini";
+import { getApiKey, PRO_MODEL } from "@/lib/gemini";
 import type { FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 
@@ -14,54 +15,6 @@ import mongoose from "mongoose";
 function sseEvent(type: string, payload: object): string {
   return `data: ${JSON.stringify({ type, ...payload })}\n\n`;
 }
-
-// ─── Tool declarations ────────────────────────────────────────────────────────
-
-const tools = [
-  {
-    functionDeclarations: [
-      {
-        name: "update_file",
-        description:
-          "Update or rewrite a file in the React sandbox. Call once per file you need to change. Always write the COMPLETE file contents.",
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            path: {
-              type: Type.STRING,
-              description: "File path exactly as it appears, e.g. /App.js",
-            },
-            code: {
-              type: Type.STRING,
-              description: "Complete new contents of the file",
-            },
-            reason: {
-              type: Type.STRING,
-              description: "One sentence explaining what you changed and why",
-            },
-          },
-          required: ["path", "code", "reason"],
-        },
-      },
-      {
-        name: "done_improving",
-        description:
-          "Call this once when you have finished making ALL improvements. Do not call any more tools after this.",
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            summary: {
-              type: Type.STRING,
-              description:
-                "A short friendly summary of all the improvements you made (1–3 sentences)",
-            },
-          },
-          required: ["summary"],
-        },
-      },
-    ],
-  },
-];
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
@@ -78,8 +31,10 @@ export async function POST(request: NextRequest) {
     fileData: FileData;
   };
 
-  if (userId !== session.userId)
+  // Verify the userId matches the session
+  if (userId !== session.userId) {
     return Response.json({ message: "Unauthorized" }, { status: 401 });
+  }
 
   await connectDB();
 
@@ -87,13 +42,14 @@ export async function POST(request: NextRequest) {
   if (!user)
     return Response.json({ message: "User not found" }, { status: 404 });
 
+  // Pro-only gate
   if (user.plan !== "pro")
     return Response.json({ message: "Upgrade required" }, { status: 403 });
 
   if (user.credits < CREDIT_COST_PER_GENERATION)
     return Response.json({ message: "Insufficient credits" }, { status: 402 });
 
-  // ── Build the stream ────────────────────────────────────────────────────────
+  // ── Build the agent ────────────────────────────────────────────────────────
 
   const encoder = new TextEncoder();
 
@@ -107,11 +63,59 @@ export async function POST(request: NextRequest) {
       };
       let finalSummary = "";
 
+      const updateFileTool = createTool({
+        name: "update_file",
+        description:
+          "Update or rewrite a file in the React sandbox. Call once per file you need to change.",
+        inputSchema: z.object({
+          path: z
+            .string()
+            .describe("File path exactly as it appears, e.g. /App.js"),
+          code: z.string().describe("Complete new contents of the file"),
+          reason: z
+            .string()
+            .describe("One sentence explaining what you changed and why"),
+        }),
+        async execute({ path, code, reason }) {
+          let normalizedPath = path;
+          if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+          if (normalizedPath.startsWith("/src/") && normalizedPath.endsWith("App.js")) {
+            normalizedPath = "/App.js";
+          }
+          patchedFiles[normalizedPath] = { code };
+          enqueue(sseEvent("file_patch", { path: normalizedPath, code, reason }));
+          return `Updated ${normalizedPath}: ${reason}`;
+        },
+      });
+
+      const doneImprovingTool = createTool({
+        name: "done_improving",
+        description:
+          "Call this when you have finished making all improvements.",
+        inputSchema: z.object({
+          summary: z
+            .string()
+            .describe(
+              "A short friendly summary of all the improvements you made (1-3 sentences)"
+            ),
+        }),
+        lifecycle: { completesRun: true },
+        async execute({ summary }) {
+          finalSummary = summary;
+          return "Done.";
+        },
+      });
+
       const fileContext = Object.entries(fileData.files)
         .map(([path, { code }]) => `// ${path}\n${code}`)
         .join("\n\n---\n\n");
 
-      const systemPrompt = `You are an expert React developer improving a live browser preview app.
+      const agent = new Agent({
+        providerId: "gemini",
+        modelId: PRO_MODEL,
+        apiKey: getApiKey(),
+        maxIterations: 8,
+        systemPrompt: `You are an expert React developer improving a live browser preview app.
 
 The app uses React (functional components), Tailwind CSS for styling, and runs in Sandpack.
 You CANNOT use TypeScript, CSS modules, or real npm install — only what's already available.
@@ -137,99 +141,40 @@ RULES:
 - For placeholder images, ALWAYS use:
   - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true (for contextual photos)
   - https://placehold.co/600x400/png (for generic)
-  - https://ui-avatars.com/api/?name=John+Doe&background=random (for avatars)`;
+  - https://ui-avatars.com/api/?name=John+Doe&background=random (for avatars)`,
+        tools: [updateFileTool, doneImprovingTool],
+        toolPolicies: {
+          update_file: { autoApprove: true },
+          done_improving: { autoApprove: true },
+        },
+        onEvent: (event) => {
+          if (event.type === "content_start") {
+            if (event.contentType === "text" && event.text) {
+              enqueue(sseEvent("thinking", { text: event.text }));
+            } else if (event.contentType === "tool") {
+              const name = event.toolName;
+              if (name === "update_file") {
+                const inputObj = event.input as { path?: string } | undefined;
+                const path = inputObj?.path ?? "a file";
+                enqueue(
+                  sseEvent("thinking", { text: `\n\nUpdating \`${path}\`…` })
+                );
+              } else if (name === "done_improving") {
+                enqueue(
+                  sseEvent("thinking", { text: "\n\nFinalizing improvements…" })
+                );
+              }
+            }
+          }
+        },
+      });
 
       try {
         enqueue(sseEvent("status", { message: "Agent starting…" }));
+        const result = await agent.run(userRequest);
 
-        const ai = new GoogleGenAI({ apiKey: getApiKey() });
-
-        // Multi-turn agentic loop
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const history: any[] = [
-          {
-            role: "user",
-            parts: [{ text: userRequest }],
-          },
-        ];
-
-        const MAX_ITERATIONS = 10;
-        let isDone = false;
-
-        for (let iteration = 0; iteration < MAX_ITERATIONS && !isDone; iteration++) {
-          const response = await ai.models.generateContent({
-            model: DEFAULT_MODEL,
-            contents: history,
-            config: {
-              systemInstruction: systemPrompt,
-              tools,
-            },
-          });
-
-          const candidate = response.candidates?.[0];
-          if (!candidate?.content?.parts) break;
-
-          // Push model response to history
-          history.push({ role: "model", parts: candidate.content.parts });
-
-          // Process parts: stream thinking text and handle function calls
-          const functionResponses = [];
-          let hasToolCall = false;
-
-          for (const part of candidate.content.parts) {
-            if (part.text) {
-              enqueue(sseEvent("thinking", { text: part.text }));
-            }
-
-            if (part.functionCall) {
-              hasToolCall = true;
-              const { name, args } = part.functionCall;
-
-              if (name === "update_file" && args) {
-                let path = (args.path as string) ?? "/App.js";
-                const code = (args.code as string) ?? "";
-                const reason = (args.reason as string) ?? "";
-
-                if (!path.startsWith("/")) path = "/" + path;
-                // Normalize src/App.js -> /App.js
-                if (path.startsWith("/src/") && path.endsWith("App.js")) {
-                  path = "/App.js";
-                }
-
-                patchedFiles[path] = { code };
-                enqueue(sseEvent("file_patch", { path, code, reason }));
-                enqueue(sseEvent("thinking", { text: `\n\nUpdating \`${path}\`… ${reason}` }));
-
-                functionResponses.push({
-                  functionResponse: {
-                    name: "update_file",
-                    response: { output: `Updated ${path}: ${reason}` },
-                  },
-                });
-              }
-
-              if (name === "done_improving" && args) {
-                finalSummary = (args.summary as string) ?? "";
-                enqueue(sseEvent("thinking", { text: "\n\nFinalizing improvements…" }));
-                isDone = true;
-
-                functionResponses.push({
-                  functionResponse: {
-                    name: "done_improving",
-                    response: { output: "Done." },
-                  },
-                });
-              }
-            }
-          }
-
-          // If there were tool calls, add their responses to history and continue the loop
-          if (hasToolCall && functionResponses.length > 0) {
-            history.push({ role: "user", parts: functionResponses });
-          }
-
-          // If no tool call was made and not marked done, stop (model gave a plain text reply)
-          if (!hasToolCall) break;
+        if (result.finishReason === "error") {
+          throw new Error("Agent run failed due to an error");
         }
 
         const newFileData: FileData = {
@@ -254,7 +199,7 @@ RULES:
         enqueue(
           sseEvent("done", {
             fileData: newFileData,
-            summary: finalSummary || "Improvements applied.",
+            summary: finalSummary || result.text,
             creditsRemaining:
               updatedUser?.credits ?? user.credits - CREDIT_COST_PER_GENERATION,
           })
