@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import { signToken, setSessionCookie } from "@/lib/auth";
-import { PLANS } from "@/lib/constants";
+import { getPlanByKey } from "@/lib/plans";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,12 +34,15 @@ export async function POST(request: NextRequest) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    
+    const freePlan = await getPlanByKey("free");
+    const initialCredits = freePlan?.credits ?? 10;
 
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
-      credits: PLANS.free.credits,
+      credits: initialCredits,
       plan: "free",
     });
 

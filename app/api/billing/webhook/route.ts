@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import { verifyWebhookSignature } from "@/lib/billing";
-import { PLANS } from "@/lib/constants";
-import type { Plan } from "@/types/plans";
+import { getPlanByKey } from "@/lib/plans";
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -29,8 +28,11 @@ export async function POST(request: NextRequest) {
       const user = await User.findById(userId);
       if (!user) return NextResponse.json({ received: true });
 
-      const planCredits = PLANS[planKey as Plan]?.credits ?? 0;
-      const currentPlanCredits = PLANS[user.plan as Plan]?.credits ?? 0;
+      const newPlan = await getPlanByKey(planKey);
+      const currentPlan = await getPlanByKey(user.plan);
+      
+      const planCredits = newPlan?.credits ?? 0;
+      const currentPlanCredits = currentPlan?.credits ?? 0;
       const creditDelta = planCredits - currentPlanCredits;
 
       await User.findByIdAndUpdate(userId, {

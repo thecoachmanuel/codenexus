@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import { verifyTransaction } from "@/lib/billing";
-import { PLANS } from "@/lib/constants";
+import { getPlanByKey } from "@/lib/plans";
 import type { Plan } from "@/types/plans";
 
 export async function GET(request: NextRequest) {
@@ -28,7 +28,9 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    const existingPlanCredits = PLANS[currentPlan]?.credits ?? 0;
+    const existingPlan = await getPlanByKey(currentPlan);
+    const existingPlanCredits = existingPlan?.credits ?? 0;
+    
     const newPlanCredits = planCredits as number;
     const creditDelta = newPlanCredits - existingPlanCredits;
     const newCredits =
@@ -45,3 +47,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/?billing=error", request.url));
   }
 }
+

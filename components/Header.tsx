@@ -3,8 +3,6 @@ import { Zap, ArrowRight, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { checkUserServer } from "@/lib/checkUserServer";
 import { PricingModal } from "@/components/PricingModal";
-import type { Plan } from "@/types/plans";
-import { PLANS } from "@/lib/constants";
 import SignOutButton from "@/components/SignOutButton";
 
 export default async function Header() {

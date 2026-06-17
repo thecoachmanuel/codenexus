@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Folder, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, Folder, Settings, Package, Menu, X } from "lucide-react";
 import { LogoutButton } from "./LogoutButton";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/users", label: "Users", icon: Users, exact: false },
   { href: "/admin/projects", label: "Projects", icon: Folder, exact: false },
+  { href: "/admin/plans", label: "Plans", icon: Package, exact: false },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ];
 
@@ -51,12 +52,24 @@ export function AdminShell({
           <Link
             href="/admin"
             onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-2 font-bold text-lg tracking-tight select-none"
+            className="flex items-center gap-1 font-bold text-lg tracking-tight select-none"
           >
-            <div className="h-8 w-8 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30 shrink-0">
-              A
-            </div>
-            Crevo Admin
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-neon.png"
+              alt="Crevo icon"
+              className="h-10 w-auto rounded-lg"
+              style={{ mixBlendMode: "screen" }}
+            />
+            <span
+              style={{
+                background: "linear-gradient(90deg, #ffffff 60%, #a5b4fc 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Crevo Admin
+            </span>
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}

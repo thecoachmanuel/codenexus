@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { HoleBackground } from "@/components/animate-ui/components/backgrounds/hole";
 import { Badge } from "@/components/ui/badge";
 import { FEATURES, PLACEHOLDERS, STEPS, SUGGESTIONS_SETS } from "@/lib/data";
-import { PRICING_PLANS } from "@/lib/constants";
+import { PRICING_PLANS as FALLBACK_PLANS } from "@/lib/constants";
 import {
   BlueTitle,
   GrayTitle,
@@ -29,10 +29,19 @@ export default function LandingPage() {
   const [isFocused, setIsFocused] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [suggestions, setSuggestions] = useState(SUGGESTIONS_SETS[0]);
+  const [plans, setPlans] = useState<any[]>([]);
 
   useEffect(() => {
     // Pick random suggestion set on mount to avoid hydration mismatch
     setSuggestions(SUGGESTIONS_SETS[Math.floor(Math.random() * SUGGESTIONS_SETS.length)]);
+    
+    // Fetch dynamic plans
+    fetch("/api/plans")
+      .then(res => res.json())
+      .then(data => {
+        if (data.plans) setPlans(data.plans);
+      })
+      .catch(err => console.error("Failed to fetch plans", err));
   }, []);
   useEffect(() => {
     if (isFocused || prompt) return;
@@ -89,6 +98,8 @@ export default function LandingPage() {
       setIsEnhancing(false);
     }
   };
+
+  const displayPlans = plans.length > 0 ? plans : FALLBACK_PLANS;
 
   return (
     <main className="min-h-screen bg-[#000000] selection:bg-white/20">
@@ -444,7 +455,7 @@ export default function LandingPage() {
         </div>
 
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-3">
-          {PRICING_PLANS.map((plan) => {
+          {displayPlans.map((plan) => {
             const planOrder: Record<string, number> = {
               free: 0,
               starter: 1,
@@ -516,7 +527,7 @@ export default function LandingPage() {
 
                 {/* Feature list */}
                 <div className="mb-8 space-y-3 border-t border-white/6 pt-6">
-                  {plan.features.map((f) => (
+                  {plan.features.map((f: string) => (
                     <div key={f} className="flex items-center gap-2.5">
                       <div
                         className={cn(

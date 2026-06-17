@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { BlueTitle, GrayTitle } from "./reusables";
-import { PRICING_PLANS } from "@/lib/constants";
+import { PRICING_PLANS as FALLBACK_PLANS } from "@/lib/constants";
 import { useAuthContext } from "@/components/AuthProvider";
 import Link from "next/link";
 
@@ -30,6 +30,16 @@ export function PricingModal({
   const { isSignedIn, user } = useAuthContext();
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [plans, setPlans] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/plans")
+      .then(res => res.json())
+      .then(data => {
+        if (data.plans) setPlans(data.plans);
+      })
+      .catch(err => console.error("Failed to fetch plans", err));
+  }, []);
 
   const title =
     reason === "credits" ? "You're out of credits" : "Upgrade your plan";
@@ -82,7 +92,7 @@ export function PricingModal({
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-3 px-6 pb-6 sm:grid-cols-3">
-          {PRICING_PLANS.map((plan) => {
+          {(plans.length > 0 ? plans : FALLBACK_PLANS).map((plan) => {
             const isActive = isSignedIn && activePlanKey === plan.key;
             const isDowngrade =
               isSignedIn &&
