@@ -31,13 +31,8 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    const existingPlan = await getPlanByKey(currentPlan);
-    const existingPlanCredits = existingPlan?.credits ?? 0;
-
     const newPlanCredits = planCredits as number;
-    const creditDelta = newPlanCredits - existingPlanCredits;
-    const newCredits =
-      creditDelta > 0 ? currentCredits + creditDelta : currentCredits;
+    const newCredits = currentCredits + newPlanCredits;
 
     const updatePayload: Record<string, unknown> = {
       plan: planKey,

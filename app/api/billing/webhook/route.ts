@@ -29,15 +29,11 @@ export async function POST(request: NextRequest) {
       if (!user) return NextResponse.json({ received: true });
 
       const newPlan = await getPlanByKey(planKey);
-      const currentPlan = await getPlanByKey(user.plan);
-      
       const planCredits = newPlan?.credits ?? 0;
-      const currentPlanCredits = currentPlan?.credits ?? 0;
-      const creditDelta = planCredits - currentPlanCredits;
 
       const updatePayload: Record<string, unknown> = {
         plan: planKey,
-        credits: creditDelta > 0 ? user.credits + creditDelta : user.credits,
+        credits: user.credits + planCredits,
       };
 
       if (discountApplied && discountOneTimePerUser) {
