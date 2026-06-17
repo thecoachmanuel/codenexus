@@ -135,7 +135,13 @@ RULES:
 - Always write complete file contents — never partial snippets.
 - Keep all existing functionality unless asked to remove it.
 - The entry point is always /App.js with a default export.
-- All imports must reference files you've updated or packages in the available list above.`,
+- All imports must reference files you've updated or packages in the available list above.
+- NEVER use local image paths (like /assets/img.png).
+- NEVER use source.unsplash.com.
+- For placeholder images, ALWAYS use:
+  - https://loremflickr.com/800/600/{keyword} (for contextual photos)
+  - https://placehold.co/600x400/png (for generic)
+  - https://ui-avatars.com/api/?name=John+Doe&background=random (for avatars)`,
         tools: [updateFileTool, doneImprovingTool],
         toolPolicies: {
           update_file: { autoApprove: true },
