@@ -302,7 +302,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
     <Tabs
       value={activeTab}
       onValueChange={(v) => setActiveTab(v as ActiveTab)}
-      className="flex h-full flex-col gap-0"
+      className="flex h-full flex-col gap-0 min-h-0"
     >
       {/* Tabs + Actions bar */}
       <div className="flex items-center justify-between border-b border-white/6 px-2">
@@ -404,7 +404,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
       </div>
 
       {/* Content area */}
-      <div className="relative flex-1 overflow-hidden h-full">
+      <div className="relative flex-1 min-h-0 overflow-hidden flex flex-col">
         {(isGenerating || isImproving) && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-[#0a0a0a]/85 backdrop-blur-sm">
             <RingLoader color="#60a5fa" size={64} speedMultiplier={0.8} />
@@ -421,16 +421,20 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
 
         <SandpackLayout
           style={{
-            height: "100%",
+            flex: 1,
+            minHeight: 0,
             border: "none",
             borderRadius: 0,
             background: "transparent",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
           }}
         >
           <TabsContent
             value="preview"
             keepMounted
-            className="mt-0 h-full w-full bg-[#0a0a0a] overflow-auto relative"
+            className="mt-0 flex-1 min-h-0 w-full bg-[#0a0a0a] overflow-auto relative"
           >
             {/* Viewport Toggles (only visible in preview tab) */}
             {activeTab === "preview" && (
@@ -572,7 +576,7 @@ export function CodePanel({
   const providerKey = `${workspaceKey}|${filePathKey}`;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden min-h-0">
       <SandpackProvider
         key={providerKey}
         template="react"
