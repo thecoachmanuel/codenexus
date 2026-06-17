@@ -52,7 +52,7 @@ const GithubIcon = ({ className }: { className?: string }) => (
 );
 
 const PLACEHOLDER_FILES = {
-  "/App.jsx": {
+  "/App.js": {
     code: `export default function App() {
   return (
     <div style={{
@@ -608,7 +608,7 @@ export function CodePanel({
     <div className="flex flex-1 flex-col overflow-hidden">
       <SandpackProvider
         key={providerKey}
-        template="vite-react"
+        template="react"
         theme={dracula}
         files={files}
         customSetup={{ dependencies }}
