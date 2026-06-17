@@ -76,7 +76,11 @@ export default function LandingPage() {
   const handleSubmit = () => {
     if (!prompt.trim() || !isSignedIn) return;
     const params = new URLSearchParams({ prompt: prompt.trim() });
-    if (pendingImageUrl) params.set("imageUrl", pendingImageUrl);
+    if (pendingImageUrl) {
+      // Store image in sessionStorage to avoid enormous query params
+      sessionStorage.setItem("initial_image", pendingImageUrl);
+      params.set("hasImage", "1");
+    }
     router.push(`/workspace?${params.toString()}`);
   };
 
@@ -92,25 +96,31 @@ export default function LandingPage() {
     textareaRef.current?.focus();
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
     if (!canUploadImage) return;
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Upload failed");
-      const data = await res.json();
-      setPendingImageUrl(data.url);
-      setUploadCount((c) => c + 1);
-    } catch {
-      // silent
-    } finally {
-      setIsUploading(false);
+
+    // Limit file size to 4MB for sessionStorage safety
+    if (file.size > 4 * 1024 * 1024) {
+      alert("Image must be under 4 MB");
       if (fileRef.current) fileRef.current.value = "";
+      return;
     }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setPendingImageUrl(dataUrl);
+      setUploadCount((c) => c + 1);
+      setIsUploading(false);
+    };
+    reader.onerror = () => {
+      setIsUploading(false);
+    };
+    reader.readAsDataURL(file);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleEnhancePrompt = async () => {

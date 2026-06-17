@@ -26,7 +26,7 @@ interface ChatPanelProps {
   statusLog: StatusStep[];
   credits: number;
   initialPrompt: string | null;
-  initialImageUrl: string | null;
+  initialImageUrl: string | null | undefined;
   onGenerate: (prompt: string, imageUrl?: string) => Promise<void>;
   onStop: () => void;
   userId: string;
@@ -82,12 +82,15 @@ export function ChatPanel({
   }, [messages, isGenerating, isImproving]);
 
   useEffect(() => {
+    // undefined = image not yet resolved from sessionStorage, skip until it's ready
+    if (initialImageUrl === undefined) return;
+    // Fires once when initialImageUrl resolves to null (no image) or a data URL
     if (!initialPrompt || hasAutoSubmittedRef.current || messages.length > 0)
       return;
     hasAutoSubmittedRef.current = true;
     onGenerate(initialPrompt, initialImageUrl ?? undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialImageUrl]);
 
   const handleSubmit = async () => {
     const trimmed = input.trim();

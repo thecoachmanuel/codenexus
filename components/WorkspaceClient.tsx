@@ -69,6 +69,23 @@ export function WorkspaceClient({
   const [statusLog, setStatusLog] = useState<StatusStep[]>([]);
   const [isImproving, setIsImproving] = useState(false);
 
+  // Resolve image uploaded from the homepage (stored in sessionStorage to avoid huge query params).
+  // undefined = not yet resolved, null = no image, string = image data URL
+  const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null | undefined>(
+    initialImageUrl === "__from_session__" ? undefined : initialImageUrl
+  );
+  useEffect(() => {
+    if (initialImageUrl !== "__from_session__") return; // already set in initial state
+    try {
+      const img = sessionStorage.getItem("initial_image");
+      sessionStorage.removeItem("initial_image");
+      setResolvedImageUrl(img ?? null);
+    } catch {
+      setResolvedImageUrl(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Read GitHub import from sessionStorage (set by the projects page)
   useEffect(() => {
     if (workspace) return; // Don't override an existing workspace
@@ -407,7 +424,7 @@ export function WorkspaceClient({
           statusLog={statusLog}
           credits={credits}
           initialPrompt={initialPrompt}
-          initialImageUrl={initialImageUrl}
+          initialImageUrl={resolvedImageUrl}
           onGenerate={handleGenerate}
           onStop={handleStop}
           userId={userId}
