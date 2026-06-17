@@ -106,11 +106,31 @@ export default function AdminOverviewPage() {
       </div>
 
       {/* Recent Sign-ups */}
-      <div className="rounded-xl bg-[#111] border border-white/10 p-6">
+      <div className="rounded-xl bg-[#111] border border-white/10 p-4 sm:p-6">
         <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
           <UserCheck className="w-4 h-4 text-white/40" /> Recent Sign-ups
         </h2>
-        <div className="overflow-x-auto">
+
+        {/* Mobile: cards */}
+        <div className="sm:hidden space-y-3">
+          {stats.recentUsers.map((u, i) => (
+            <div key={i} className="rounded-lg bg-white/[0.03] border border-white/5 p-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-white truncate">{u.name}</p>
+                <p className="text-xs text-white/40 truncate">{u.email}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${PLAN_COLORS[u.plan]}`}>
+                  {u.plan}
+                </span>
+                <span className="text-xs text-white/30">{new Date(u.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10 text-white/40 text-xs uppercase">

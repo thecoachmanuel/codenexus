@@ -71,101 +71,149 @@ export default function AdminProjectsPage() {
         />
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl bg-[#111] border border-white/10 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b border-white/10">
-              <tr className="text-white/40 text-xs uppercase">
-                <th className="text-left px-5 py-3 font-medium">Project</th>
-                <th className="text-left px-5 py-3 font-medium">Owner</th>
-                <th className="text-left px-5 py-3 font-medium">Created</th>
-                <th className="text-left px-5 py-3 font-medium">Last Updated</th>
-                <th className="text-right px-5 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="py-16 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-white/30 mx-auto" />
-                  </td>
-                </tr>
-              ) : workspaces.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-16 text-center text-white/30 text-sm">No projects found.</td>
-                </tr>
-              ) : workspaces.map((w) => (
-                <tr key={w._id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                        <Folder className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <span className="font-medium text-white truncate max-w-[200px]">
-                        {w.title || <span className="text-white/30 italic">Untitled</span>}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3">
-                    {w.owner ? (
-                      <div>
-                        <div className="text-white/70">{w.owner.name}</div>
-                        <div className="text-white/30 text-xs">{w.owner.email}</div>
-                      </div>
-                    ) : (
-                      <span className="text-white/30 text-xs">Unknown</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-white/40 text-xs">
-                    {new Date(w.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-5 py-3 text-white/40 text-xs">
-                    {new Date(w.updatedAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => deleteWorkspace(w._id)}
-                        disabled={deletingId === w._id}
-                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
-                        title="Delete project"
-                      >
-                        {deletingId === w._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Loading state */}
+      {loading && (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-6 h-6 animate-spin text-white/30" />
         </div>
+      )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-white/10">
-            <p className="text-xs text-white/40">
-              Page {page} of {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 disabled:opacity-30 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 disabled:opacity-30 transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+      {!loading && workspaces.length === 0 && (
+        <div className="text-center py-16 text-white/30 text-sm">No projects found.</div>
+      )}
+
+      {/* Mobile: Cards */}
+      {!loading && workspaces.length > 0 && (
+        <div className="sm:hidden space-y-3">
+          {workspaces.map((w) => (
+            <div key={w._id} className="rounded-xl bg-[#111] border border-white/10 p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <Folder className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium text-white truncate block">
+                    {w.title || <span className="text-white/30 italic">Untitled</span>}
+                  </span>
+                  {w.owner ? (
+                    <span className="text-xs text-white/40 truncate block mt-0.5">
+                      {w.owner.name} ({w.owner.email})
+                    </span>
+                  ) : (
+                    <span className="text-xs text-white/30 block mt-0.5">Unknown Owner</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                <span className="text-xs text-white/30">
+                  {new Date(w.createdAt).toLocaleDateString()}
+                </span>
+                <button
+                  onClick={() => deleteWorkspace(w._id)}
+                  disabled={deletingId === w._id}
+                  className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                >
+                  {deletingId === w._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                </button>
+              </div>
             </div>
+          ))}
+        </div>
+      )}
+
+      {/* Desktop: Table */}
+      {!loading && workspaces.length > 0 && (
+        <div className="hidden sm:block rounded-xl bg-[#111] border border-white/10 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-white/10">
+                <tr className="text-white/40 text-xs uppercase">
+                  <th className="text-left px-5 py-3 font-medium">Project</th>
+                  <th className="text-left px-5 py-3 font-medium">Owner</th>
+                  <th className="text-left px-5 py-3 font-medium">Created</th>
+                  <th className="text-left px-5 py-3 font-medium">Last Updated</th>
+                  <th className="text-right px-5 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {workspaces.map((w) => (
+                  <tr key={w._id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                          <Folder className="w-4 h-4 text-emerald-400" />
+                        </div>
+                        <span className="font-medium text-white truncate max-w-[200px]">
+                          {w.title || <span className="text-white/30 italic">Untitled</span>}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3">
+                      {w.owner ? (
+                        <div>
+                          <div className="text-white/70">{w.owner.name}</div>
+                          <div className="text-white/30 text-xs">{w.owner.email}</div>
+                        </div>
+                      ) : (
+                        <span className="text-white/30 text-xs">Unknown</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-white/40 text-xs">
+                      {new Date(w.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3 text-white/40 text-xs">
+                      {new Date(w.updatedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => deleteWorkspace(w._id)}
+                          disabled={deletingId === w._id}
+                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+                          title="Delete project"
+                        >
+                          {deletingId === w._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-3 border-t border-white/10">
+              <p className="text-xs text-white/40">Page {page} of {totalPages}</p>
+              <div className="flex gap-2">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 disabled:opacity-30 transition-colors">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 disabled:opacity-30 transition-colors">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mobile Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="sm:hidden flex items-center justify-between">
+          <p className="text-xs text-white/40">Page {page} of {totalPages}</p>
+          <div className="flex gap-2">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 disabled:opacity-30">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 disabled:opacity-30">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
