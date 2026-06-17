@@ -99,7 +99,23 @@ function buildContents(messages: Message[], fileData: FileData | null) {
       let text = msg.content;
 
       if (msg.imageUrl) {
-        text = `[The user has attached an image. Use this URL directly in the generated app where relevant (as img src, background-image, etc.): ${msg.imageUrl}]\n\n${text}`;
+        if (msg.imageUrl.startsWith("data:image/")) {
+          const commaIndex = msg.imageUrl.indexOf(",");
+          if (commaIndex !== -1) {
+            const mimeType = msg.imageUrl.substring(5, msg.imageUrl.indexOf(";"));
+            const base64Data = msg.imageUrl.substring(commaIndex + 1);
+            
+            parts.push({
+              inlineData: {
+                data: base64Data,
+                mimeType: mimeType
+              }
+            });
+            text = `[The user has attached an image as a design reference. Use this layout/style as inspiration.]\n\n${text}`;
+          }
+        } else {
+          text = `[The user has attached an image. Use this URL directly in the generated app where relevant (as img src, background-image, etc.): ${msg.imageUrl}]\n\n${text}`;
+        }
       }
 
       const isLast = idx === trimmed.length - 1;
