@@ -18,12 +18,11 @@ export default async function Header() {
         <Link href="/" className="flex items-center gap-1 select-none">
           {/* Neon C icon — mix-blend-mode:screen makes the black bg invisible */}
           <Image
-            src="/logo-short.jpeg"
+            src="/logo-short.png"
             alt="Crevo icon"
             width={80}
             height={80}
-            className="h-14 w-auto"
-            style={{ mixBlendMode: "screen" }}
+            className="h-10 w-auto"
           />
           {/* Wordmark — hidden on mobile, visible on sm+ */}
           <span
