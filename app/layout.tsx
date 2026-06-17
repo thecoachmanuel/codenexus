@@ -6,6 +6,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/AuthProvider";
 
+import { HeaderWrapper } from "@/components/HeaderWrapper";
+
 const lora = Lora({
   subsets: ["latin"],
   weight: ["400", "500"],
@@ -42,7 +44,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <Header />
+            <HeaderWrapper>
+              <Header />
+            </HeaderWrapper>
             <main>{children}</main>
             <Toaster richColors />
           </AuthProvider>
