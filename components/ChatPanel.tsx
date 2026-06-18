@@ -28,6 +28,7 @@ interface ChatPanelProps {
   initialPrompt: string | null;
   initialImageUrl: string | null | undefined;
   onGenerate: (prompt: string, imageUrl?: string) => Promise<void>;
+  onFullstack?: (prompt: string) => Promise<void>;
   onStop: () => void;
   userId: string;
   workspaceId: string | null;
@@ -44,6 +45,7 @@ export function ChatPanel({
   initialPrompt,
   initialImageUrl,
   onGenerate,
+  onFullstack,
   onStop,
   userId,
   workspaceId,
@@ -402,19 +404,42 @@ export function ChatPanel({
                 <Square className="h-3 w-3 fill-current" />
               </Button>
             ) : (
-              <Button
-                size="icon"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                className={cn(
-                  "h-7 w-7 rounded-lg transition-all",
-                  canSubmit
-                    ? "bg-white text-black hover:bg-white/90 active:scale-95"
-                    : "bg-white/8 text-white/40 shadow-none"
+              <div className="flex items-center gap-1.5">
+                {onFullstack && (
+                  <Button
+                    onClick={() => {
+                      if (!canSubmit || user?.plan === "free") return;
+                      const trimmed = input.trim();
+                      setInput("");
+                      setPendingImageUrl(null);
+                      onFullstack(trimmed);
+                    }}
+                    disabled={!canSubmit || user?.plan === "free"}
+                    title={user?.plan === "free" ? "Upgrade to Starter/Pro" : "Build Fullstack App"}
+                    className={cn(
+                      "h-7 px-2 rounded-lg transition-all text-xs font-medium flex items-center gap-1",
+                      canSubmit && user?.plan !== "free"
+                        ? "bg-blue-600 text-white hover:bg-blue-500 active:scale-95"
+                        : "bg-white/5 text-white/25 shadow-none"
+                    )}
+                  >
+                    ⚡ Fullstack
+                  </Button>
                 )}
-              >
-                <ArrowUp className="h-3.5 w-3.5" />
-              </Button>
+                <Button
+                  size="icon"
+                  onClick={handleSubmit}
+                  disabled={!canSubmit}
+                  className={cn(
+                    "h-7 w-7 rounded-lg transition-all",
+                    canSubmit
+                      ? "bg-white text-black hover:bg-white/90 active:scale-95"
+                      : "bg-white/8 text-white/40 shadow-none"
+                  )}
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             )}
           </div>
         </div>
