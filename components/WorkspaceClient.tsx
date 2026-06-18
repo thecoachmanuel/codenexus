@@ -9,8 +9,6 @@ import { GitHubImportModal } from "./GitHubImportModal";
 import { MIN_CREDITS_TO_GENERATE } from "@/lib/constants";
 import { toast } from "sonner";
 import { GitBranch } from "lucide-react";
-import { FullstackPanel } from "./FullstackPanel";
-import type { TaskGraph, FullstackFileData } from "@/types/fullstack";
 import type {
   Message,
   FileData,
@@ -70,17 +68,6 @@ export function WorkspaceClient({
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusLog, setStatusLog] = useState<StatusStep[]>([]);
   const [isImproving, setIsImproving] = useState(false);
-
-  const [buildMode, setBuildMode] = useState<"sandpack" | "fullstack">(
-    (workspace as any)?.fileData?.fullstack ? "fullstack" : "sandpack"
-  );
-  const [taskGraph, setTaskGraph] = useState<TaskGraph | null>(
-    (workspace as any)?.taskGraph ?? null
-  );
-  const [fullstackFileData, setFullstackFileData] = useState<FullstackFileData | null>(
-    (workspace as any)?.fileData?.fullstack ?? null
-  );
-  const [isDebugging, setIsDebugging] = useState(false);
 
   // Resolve image uploaded from the homepage (stored in sessionStorage to avoid huge query params).
   // undefined = not yet resolved, null = no image, string = image data URL
@@ -411,171 +398,6 @@ export function WorkspaceClient({
     setFileData(patches);
   }, []);
 
-
-  const handleFullstackBuild = useCallback(async (prompt: string) => {
-    if (isGenerating || isImproving) return;
-    if (userPlan === "free") {
-      toast.error("Upgrade to Starter or Pro to use Fullstack mode.");
-      return;
-    }
-    
-    setBuildMode("fullstack");
-    setIsGenerating(true);
-    setTaskGraph(null);
-    setFullstackFileData(null);
-    setMessages(prev => [...prev, { role: "user", content: prompt }, { role: "assistant", content: "" }]);
-
-    let currentTaskGraph: TaskGraph | null = null;
-    let accumulatedText = "";
-
-    try {
-      // 1. Plan
-      const resPlan = await fetch("/api/fullstack/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, workspaceId: workspaceIdRef.current, prompt }),
-      });
-      
-      if (!resPlan.ok || !resPlan.body) throw new Error("Plan failed");
-      
-      const reader1 = resPlan.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader1.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === "status") {
-              accumulatedText += "\n" + event.message;
-              setMessages(prev => {
-                const arr = [...prev];
-                arr[arr.length - 1] = { role: "assistant", content: accumulatedText };
-                return arr;
-              });
-            } else if (event.type === "task_graph") {
-              currentTaskGraph = event.taskGraph;
-              setTaskGraph(event.taskGraph);
-            } else if (event.type === "done") {
-              setCredits(event.creditsRemaining);
-            } else if (event.type === "error") {
-              throw new Error(event.message);
-            }
-          } catch {}
-        }
-      }
-
-      if (!currentTaskGraph) throw new Error("No task graph generated");
-
-      // 2. Build
-      const resBuild = await fetch("/api/fullstack/build", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, workspaceId: workspaceIdRef.current, taskGraph: currentTaskGraph }),
-      });
-
-      if (!resBuild.ok || !resBuild.body) throw new Error("Build failed");
-
-      const reader2 = resBuild.body.getReader();
-      buffer = "";
-
-      while (true) {
-        const { done, value } = await reader2.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === "status") {
-              accumulatedText += "\n" + event.message;
-              setMessages(prev => {
-                const arr = [...prev];
-                arr[arr.length - 1] = { role: "assistant", content: accumulatedText };
-                return arr;
-              });
-            } else if (event.type === "task_started" || event.type === "task_done" || event.type === "task_failed") {
-              setTaskGraph(prev => {
-                if (!prev) return prev;
-                return {
-                  ...prev,
-                  tasks: prev.tasks.map(t => t.id === event.taskId ? { ...t, status: event.type === "task_started" ? "running" : event.type === "task_done" ? "done" : "failed", error: event.error } : t)
-                };
-              });
-            } else if (event.type === "done") {
-              setFullstackFileData(event.fileData);
-              setCredits(event.creditsRemaining);
-              setMessages(prev => {
-                const arr = [...prev];
-                arr[arr.length - 1] = { role: "assistant", content: "✅ Fullstack build complete! Booting container..." };
-                return arr;
-              });
-            } else if (event.type === "error") {
-              throw new Error(event.message);
-            }
-          } catch {}
-        }
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Fullstack build failed");
-      setMessages(prev => prev.slice(0, -2));
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [isGenerating, isImproving, userPlan, userId]);
-
-  const handleFullstackDebug = useCallback(async (errorLog: string) => {
-    if (isDebugging || !fullstackFileData) return;
-    setIsDebugging(true);
-    
-    try {
-      const res = await fetch("/api/fullstack/debug", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, workspaceId: workspaceIdRef.current, fileData: fullstackFileData, errorLog }),
-      });
-      
-      if (!res.ok || !res.body) throw new Error("Debug failed");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === "done") {
-              setFullstackFileData(event.fileData);
-              setCredits(event.creditsRemaining);
-              toast.success("Debug complete! Applied fixes to container.");
-            } else if (event.type === "error") {
-              throw new Error(event.message);
-            }
-          } catch {}
-        }
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Debug failed");
-    } finally {
-      setIsDebugging(false);
-    }
-  }, [isDebugging, fullstackFileData, userId]);
-
   // Handle GitHub repo import
 
   const handleGitHubImport = useCallback((imported: FileData, repoName: string) => {
@@ -608,7 +430,6 @@ export function WorkspaceClient({
           initialPrompt={initialPrompt}
           initialImageUrl={resolvedImageUrl}
           onGenerate={handleGenerate}
-          onFullstack={handleFullstackBuild}
           onStop={handleStop}
           userId={userId}
           workspaceId={workspaceId}
@@ -628,32 +449,21 @@ export function WorkspaceClient({
           }
         />
         <div className="w-px shrink-0 bg-white/6" />
-        {buildMode === "fullstack" ? (
-          <FullstackPanel
-            taskGraph={taskGraph}
-            fileData={fullstackFileData}
-            isBuilding={isGenerating}
-            onDebug={handleFullstackDebug}
-            isDebugging={isDebugging}
-            workspaceId={workspaceId!}
-          />
-        ) : (
-          <CodePanel
-            fileData={fileData}
-            isGenerating={isGenerating}
-            statusLog={statusLog}
-            onImprove={handleImprove}
-            onFixError={(error) =>
-              handleGenerate(
-                `There is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`
-              )
-            }
-            onFilePatch={handleFilePatch}
-            appTitle={fileData?.title ?? workspace?.title ?? null}
-            isImproving={isImproving}
-            isProUser={userPlan === "pro"}
-          />
-        )}
+        <CodePanel
+          fileData={fileData}
+          isGenerating={isGenerating}
+          statusLog={statusLog}
+          onImprove={handleImprove}
+          onFixError={(error) =>
+            handleGenerate(
+              `There is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`
+            )
+          }
+          onFilePatch={handleFilePatch}
+          appTitle={fileData?.title ?? workspace?.title ?? null}
+          isImproving={isImproving}
+          isProUser={userPlan === "pro"}
+        />
       </div>
     </>
   );
