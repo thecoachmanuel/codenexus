@@ -102,7 +102,17 @@ BACKEND GENERATION RULES:
      * ALSO generate real Express/Mongoose backend files in "backendFiles".
 3. "backendFiles" should include a complete Express app: \`/server.js\`, \`/models/...\`, \`/routes/...\`, \`/middleware/...\`, and \`.env.example\`.
 4. If generating a backend, your /README.md (inside "files") must explain how to run BOTH the frontend and backend locally, and how to deploy both (e.g. backend to Render/Heroku, frontend to Vercel).
-5. If the user's request is strictly a UI component, a calculator, a static landing page, or something that clearly does not need persistence, omit "backendFiles".`;
+5. If the user's request is strictly a UI component, a calculator, a static landing page, or something that clearly does not need persistence, omit "backendFiles".
+
+COMPLEXITY MANAGEMENT (CRITICAL):
+1. If the user asks for a MASSIVE or highly complex application (e.g. "build a full Facebook clone", "a complete e-commerce store with admin panel"), DO NOT try to generate all 20+ files at once. You will hit output limits.
+2. Instead, generate the CORE ARCHITECTURE ONLY:
+   - The main layout/sidebar, routing structure (/App.js).
+   - 1 or 2 primary functional pages (e.g. Home, Login).
+   - The basic Express backend scaffolding.
+3. For secondary pages or complex sub-components, create placeholder files with simple UI and \`// TODO:\` comments.
+4. Generate an \`/IMPLEMENTATION_PLAN.md\` file detailing what was built in phase 1 and what remains to be built.
+5. In your \`assistantMessage\`, explicitly tell the user: "I have built the core foundation and routing. To build out the remaining pages (like the admin panel or settings), please ask me in the chat or use the Improve button."`;
 
 
 // ─── Gemini contents builder ──────────────────────────────────────────────────

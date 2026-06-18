@@ -278,7 +278,7 @@ function SandpackInner({
       );
 
       for (const [filePath, fileObj] of Object.entries(filesToZip)) {
-        if (filePath === "/README.md") continue;
+        if (filePath === "/README.md" || filePath === "/IMPLEMENTATION_PLAN.md") continue;
         const code =
           typeof fileObj === "object" && fileObj !== null && "code" in fileObj
             ? (fileObj as { code: string }).code
@@ -324,7 +324,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
         zip.file("backend/package.json", JSON.stringify(backendPackageJson, null, 2));
 
         for (const [filePath, fileObj] of Object.entries(fileData.backendFiles!)) {
-          if (filePath === "/README.md") continue;
+          if (filePath === "/README.md" || filePath === "/IMPLEMENTATION_PLAN.md") continue;
           const relativePath = filePath.startsWith("/") ? filePath.slice(1) : filePath;
           zip.file(`backend/${relativePath}`, fileObj.code);
         }
@@ -350,6 +350,17 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
           "README.md",
           `# Crevo App\n\nGenerated with [Crevo](https://crevo.app).\n\n## Getting started\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``
         );
+      }
+
+      // Root IMPLEMENTATION_PLAN.md resolution
+      let implPlanContent = "";
+      if (fileData?.files?.["/IMPLEMENTATION_PLAN.md"]) {
+        implPlanContent = fileData.files["/IMPLEMENTATION_PLAN.md"].code;
+      } else if (fileData?.backendFiles?.["/IMPLEMENTATION_PLAN.md"]) {
+        implPlanContent = fileData.backendFiles["/IMPLEMENTATION_PLAN.md"].code;
+      }
+      if (implPlanContent) {
+        zip.file("IMPLEMENTATION_PLAN.md", implPlanContent);
       }
 
       const blob = await zip.generateAsync({ type: "blob" });
