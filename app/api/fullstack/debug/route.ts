@@ -7,6 +7,7 @@ import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
 import type { FullstackFileData } from "@/types/fullstack";
 import mongoose from "mongoose";
+import { PRO_MODEL, getApiKey } from "@/lib/gemini";
 
 const CREDIT_COST_DEBUG_PRO = 2;
 
@@ -107,6 +108,8 @@ Please analyze the error, read the necessary files using the read_file tool, app
 
       const agent = new Agent({
         providerId: "gemini",
+        modelId: PRO_MODEL,
+        apiKey: getApiKey(),
         systemPrompt: "You are an expert Next.js 14 fullstack developer. Your job is to debug an error that occurred in a generated app and apply fixes.",
         maxIterations: 8,
         tools: [updateFileTool, readFileTool, doneDebuggingTool],
