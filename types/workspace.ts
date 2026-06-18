@@ -12,6 +12,8 @@ export interface FileData {
   files: Record<string, { code: string }>;
   dependencies: Record<string, string>;
   title?: string;
+  /** Real backend files (Express routes, Mongoose models, etc.) bundled into ZIP export */
+  backendFiles?: Record<string, { code: string }>;
 }
 
 export interface StatusStep {

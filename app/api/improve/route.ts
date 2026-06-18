@@ -61,12 +61,15 @@ export async function POST(request: NextRequest) {
       const patchedFiles: Record<string, { code: string }> = {
         ...fileData.files,
       };
+      const patchedBackendFiles: Record<string, { code: string }> = {
+        ...(fileData.backendFiles ?? {}),
+      };
       let finalSummary = "";
 
       const updateFileTool = createTool({
         name: "update_file",
         description:
-          "Update or rewrite a file in the React sandbox. Call once per file you need to change.",
+          "Update or rewrite a FRONTEND file in the React sandbox. Call once per file you need to change.",
         inputSchema: z.object({
           path: z
             .string()
@@ -84,7 +87,28 @@ export async function POST(request: NextRequest) {
           }
           patchedFiles[normalizedPath] = { code };
           enqueue(sseEvent("file_patch", { path: normalizedPath, code, reason }));
-          return `Updated ${normalizedPath}: ${reason}`;
+          return `Updated frontend ${normalizedPath}: ${reason}`;
+        },
+      });
+
+      const updateBackendFileTool = createTool({
+        name: "update_backend_file",
+        description:
+          "Update or rewrite a BACKEND file (Express/MongoDB). Call once per file you need to change.",
+        inputSchema: z.object({
+          path: z
+            .string()
+            .describe("File path exactly as it appears, e.g. /server.js or /models/User.js"),
+          code: z.string().describe("Complete new contents of the file"),
+          reason: z
+            .string()
+            .describe("One sentence explaining what you changed and why"),
+        }),
+        async execute({ path, code, reason }) {
+          let normalizedPath = path;
+          if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+          patchedBackendFiles[normalizedPath] = { code };
+          return `Updated backend ${normalizedPath}: ${reason}`;
         },
       });
 
@@ -106,20 +130,28 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      const fileContext = Object.entries(fileData.files)
+      let fileContext = "FRONTEND FILES (React):\n";
+      fileContext += Object.entries(fileData.files)
         .map(([path, { code }]) => `// ${path}\n${code}`)
         .join("\n\n---\n\n");
+
+      if (fileData.backendFiles && Object.keys(fileData.backendFiles).length > 0) {
+        fileContext += "\n\nBACKEND FILES (Express/MongoDB):\n";
+        fileContext += Object.entries(fileData.backendFiles)
+          .map(([path, { code }]) => `// ${path}\n${code}`)
+          .join("\n\n---\n\n");
+      }
 
       const agent = new Agent({
         providerId: "gemini",
         modelId: PRO_MODEL,
         apiKey: getApiKey(),
         maxIterations: 8,
-        systemPrompt: `You are an expert React developer improving a live browser preview app.
+        systemPrompt: `You are an expert full-stack React/Express developer improving an app.
 
-The app uses React (functional components), Tailwind CSS for styling, and runs in Sandpack.
-You CANNOT use TypeScript, CSS modules, or real npm install — only what's already available.
-Available packages: react, react-dom, tailwindcss (CDN), lucide-react, recharts, react-router-dom, framer-motion, date-fns, zod, react-hook-form.
+The app consists of two layers:
+1. A live browser preview (Frontend) using React + Tailwind CSS.
+2. An exported real backend (Backend) using Express + MongoDB.
 
 Here are the current files:
 
@@ -127,24 +159,26 @@ ${fileContext}
 
 WORKFLOW:
 1. Understand what the user wants improved.
-2. Identify which files need to change.
-3. Call update_file for each file that needs changes (always include the COMPLETE file, not just the diff).
-4. Once all files are updated, call done_improving with a short summary.
+2. Identify which frontend AND backend files need to change.
+3. Call \`update_file\` for frontend files.
+4. Call \`update_backend_file\` for backend files.
+5. Once all files are updated, call \`done_improving\` with a short summary.
 
-RULES:
+CRITICAL RULES:
+- The frontend live preview CANNOT run a real backend. All frontend API/Auth logic MUST be simulated using \`localStorage\` so the preview works seamlessly without a server.
+- The real backend files must be kept in sync with the frontend's data structures for when the user exports the ZIP.
 - Always write complete file contents — never partial snippets.
 - Keep all existing functionality unless asked to remove it.
-- The entry point is always /App.js with a default export.
-- All imports must reference files you've updated or packages in the available list above.
+- The frontend entry point is always /App.js with a default export.
 - NEVER use local image paths (like /assets/img.png).
-- NEVER use source.unsplash.com.
 - For placeholder images, ALWAYS use:
-  - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true (for contextual photos)
-  - https://placehold.co/600x400/png (for generic)
-  - https://ui-avatars.com/api/?name=John+Doe&background=random (for avatars)`,
-        tools: [updateFileTool, doneImprovingTool],
+  - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true
+  - https://placehold.co/600x400/png
+  - https://ui-avatars.com/api/?name=John+Doe&background=random`,
+        tools: [updateFileTool, updateBackendFileTool, doneImprovingTool],
         toolPolicies: {
           update_file: { autoApprove: true },
+          update_backend_file: { autoApprove: true },
           done_improving: { autoApprove: true },
         },
         hooks: {
@@ -154,7 +188,7 @@ RULES:
             }
             if (event.type === "tool-started") {
               const name = event.toolCall?.toolName;
-              if (name === "update_file") {
+              if (name === "update_file" || name === "update_backend_file") {
                 const path =
                   (event.toolCall?.input as { path?: string })?.path ?? "a file";
                 enqueue(
@@ -182,6 +216,7 @@ RULES:
           files: patchedFiles,
           dependencies: fileData.dependencies,
           title: fileData.title,
+          backendFiles: Object.keys(patchedBackendFiles).length > 0 ? patchedBackendFiles : undefined,
         };
 
         const userObjectId = new mongoose.Types.ObjectId(userId);

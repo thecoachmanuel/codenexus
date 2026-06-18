@@ -68,6 +68,10 @@ RULES:
   },
   "dependencies": {
     "some-package": "latest"
+  },
+  "backendFiles": {
+    "/server.js": { "code": "<full file content>" },
+    "/models/User.js": { "code": "<full file content>" }
   }
 }
 3. Use React (functional components + hooks). Do NOT use TypeScript in generated files.
@@ -81,9 +85,17 @@ RULES:
 11. NEVER use local image paths (like /assets/img.png) because they won't exist.
 12. NEVER use source.unsplash.com (it is deprecated and broken).
 13. For placeholder images, ALWAYS use reliable URLs like:
-    - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true (for contextual photos, replace {keyword} with a detailed description)
-    - https://placehold.co/600x400/png (for generic placeholders)
-    - https://ui-avatars.com/api/?name=John+Doe&background=random (for avatars)`;
+    - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true
+    - https://placehold.co/600x400/png
+    - https://ui-avatars.com/api/?name=John+Doe&background=random
+    
+BACKEND GENERATION RULES:
+1. The live preview (Sandpack) CANNOT run a real backend.
+2. If the user asks for backend features (API, Database, CRUD, Auth, MongoDB, etc.):
+   - Frontend files ("files") MUST use \`localStorage\` to simulate the database and auth so the preview still works perfectly.
+   - ALSO generate real Express/Mongoose backend files in "backendFiles".
+3. "backendFiles" should include a complete Express app: \`/server.js\`, \`/models/...\`, \`/routes/...\`, \`/middleware/...\`, and \`.env.example\`.
+4. If the user DOES NOT ask for backend features, omit "backendFiles".`;
 
 
 // ─── Gemini contents builder ──────────────────────────────────────────────────
@@ -221,6 +233,7 @@ export async function POST(request: NextRequest) {
           title?: string;
           files: Record<string, { code: string }>;
           dependencies: Record<string, string>;
+          backendFiles?: Record<string, { code: string }>;
         };
 
         try {
@@ -235,7 +248,7 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        const { assistantMessage, title: aiTitle, files, dependencies } = parsed;
+        const { assistantMessage, title: aiTitle, files, dependencies, backendFiles } = parsed;
 
         if (!files || typeof files !== "object") {
           enqueue(
@@ -267,6 +280,7 @@ export async function POST(request: NextRequest) {
           files: normalizedFiles,
           dependencies: validatedDeps,
           title: aiTitle,
+          backendFiles: backendFiles,
         };
 
         // ── Upsert workspace + deduct credit ──────────────────────────────────

@@ -237,8 +237,11 @@ function SandpackInner({
 
       const zip = new JSZip();
 
+      const hasBackend = !!(fileData?.backendFiles && Object.keys(fileData.backendFiles).length > 0);
+      const frontendDir = hasBackend ? "frontend/" : "";
+
       const packageJson = {
-        name: "crevo-app",
+        name: "crevo-app-frontend",
         version: "1.0.0",
         private: true,
         dependencies: {
@@ -256,10 +259,10 @@ function SandpackInner({
           development: ["last 1 chrome version"],
         },
       };
-      zip.file("package.json", JSON.stringify(packageJson, null, 2));
+      zip.file(`${frontendDir}package.json`, JSON.stringify(packageJson, null, 2));
 
       zip.file(
-        "public/index.html",
+        `${frontendDir}public/index.html`,
         `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -279,14 +282,12 @@ function SandpackInner({
           typeof fileObj === "object" && fileObj !== null && "code" in fileObj
             ? (fileObj as { code: string }).code
             : "";
-        const zipPath = filePath.startsWith("/")
-          ? `src${filePath}`
-          : `src/${filePath}`;
-        zip.file(zipPath, code);
+        const relativePath = filePath.startsWith("/") ? filePath.slice(1) : filePath;
+        zip.file(`${frontendDir}src/${relativePath}`, code);
       }
 
       zip.file(
-        "src/index.js",
+        `${frontendDir}src/index.js`,
         `import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -295,10 +296,47 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<React.StrictMode><App /></React.StrictMode>);`
       );
 
-      zip.file(
-        "README.md",
-        `# Crevo App\n\nGenerated with [Crevo](https://crevo.app).\n\n## Getting started\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``
-      );
+      if (hasBackend) {
+        // Backend folder
+        const backendPackageJson = {
+          name: "crevo-app-backend",
+          version: "1.0.0",
+          private: true,
+          main: "server.js",
+          scripts: {
+            start: "node server.js",
+            dev: "nodemon server.js"
+          },
+          dependencies: {
+            "express": "^4.18.2",
+            "mongoose": "^8.0.0",
+            "cors": "^2.8.5",
+            "dotenv": "^16.3.1",
+            "jsonwebtoken": "^9.0.2",
+            "bcryptjs": "^2.4.3",
+            "multer": "^1.4.5-lts.1"
+          },
+          devDependencies: {
+            "nodemon": "^3.0.1"
+          }
+        };
+        zip.file("backend/package.json", JSON.stringify(backendPackageJson, null, 2));
+
+        for (const [filePath, fileObj] of Object.entries(fileData.backendFiles!)) {
+          const relativePath = filePath.startsWith("/") ? filePath.slice(1) : filePath;
+          zip.file(`backend/${relativePath}`, fileObj.code);
+        }
+
+        zip.file(
+          "README.md",
+          `# Crevo Full-Stack App\n\nGenerated with [Crevo](https://crevo.app).\n\n## Backend Setup\n\n1. \`cd backend\`\n2. \`npm install\`\n3. Create a \`.env\` file based on \`.env.example\` and set your MongoDB URI\n4. \`npm run dev\`\n\n## Frontend Setup\n\n1. \`cd frontend\`\n2. \`npm install\`\n3. \`npm start\`\n\nThe React app runs on port 3000 and the Express server runs on port 5000.`
+        );
+      } else {
+        zip.file(
+          "README.md",
+          `# Crevo App\n\nGenerated with [Crevo](https://crevo.app).\n\n## Getting started\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``
+        );
+      }
 
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
