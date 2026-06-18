@@ -134,7 +134,7 @@ WORKFLOW:
 RULES:
 - Always write complete file contents — never partial snippets.
 - Keep all existing functionality unless asked to remove it.
-- The entry point is always /App.jsx with a default export.
+- The entry point is always /App.js with a default export.
 - All imports must reference files you've updated or packages in the available list above.
 - NEVER use local image paths (like /assets/img.png).
 - NEVER use source.unsplash.com.

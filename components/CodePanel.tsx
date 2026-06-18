@@ -603,10 +603,17 @@ export function CodePanel({
   const files = useMemo(() => {
     if (!fileData) return PLACEHOLDER_FILES;
     const f = { ...fileData.files };
-    // Map /App.js to /App.jsx because vite-react expects .jsx
-    if (f["/App.js"] && !f["/App.jsx"]) {
-      f["/App.jsx"] = f["/App.js"];
-      delete f["/App.js"];
+    // react template uses .js — map /App.jsx → /App.js if needed
+    if (f["/App.jsx"] && !f["/App.js"]) {
+      f["/App.js"] = f["/App.jsx"];
+      delete f["/App.jsx"];
+    }
+    // Also map any /components/*.jsx → .js
+    for (const path of Object.keys(f)) {
+      if (path.endsWith(".jsx") && !f[path.replace(".jsx", ".js")]) {
+        f[path.replace(".jsx", ".js")] = f[path];
+        delete f[path];
+      }
     }
     return f;
   }, [fileData]);
@@ -623,7 +630,7 @@ export function CodePanel({
     <div className="flex flex-1 flex-col overflow-hidden">
       <SandpackProvider
         key={providerKey}
-        template="vite-react"
+        template="react"
         theme={dracula}
         files={files}
         customSetup={{ dependencies }}
