@@ -450,6 +450,7 @@ export function WorkspaceClient({
         />
         <div className="w-px shrink-0 bg-white/6" />
         <CodePanel
+          key={workspaceId || "new"}
           fileData={fileData}
           isGenerating={isGenerating}
           statusLog={statusLog}
