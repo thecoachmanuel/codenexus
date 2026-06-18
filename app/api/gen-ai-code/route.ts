@@ -95,12 +95,14 @@ RULES:
     
 BACKEND GENERATION RULES:
 1. The live preview (Sandpack) CANNOT run a real backend.
-2. If the user asks for backend features (API, Database, CRUD, Auth, MongoDB, etc.):
-   - Frontend files ("files") MUST use \`localStorage\` to simulate the database and auth so the preview still works perfectly.
-   - ALSO generate real Express/Mongoose backend files in "backendFiles".
+2. AUTOMATIC FULL-STACK INFERENCE: You must be wise and infer when a backend is necessary, even if the user doesn't explicitly say "backend" or "fullstack". 
+   - Generate a backend if the request implies: user authentication, saving/persisting data securely, database schemas, CRUD operations, APIs, or admin dashboards.
+   - If a backend is needed:
+     * Frontend files ("files") MUST use \`localStorage\` to simulate the database and auth so the preview still works perfectly.
+     * ALSO generate real Express/Mongoose backend files in "backendFiles".
 3. "backendFiles" should include a complete Express app: \`/server.js\`, \`/models/...\`, \`/routes/...\`, \`/middleware/...\`, and \`.env.example\`.
 4. If generating a backend, your /README.md (inside "files") must explain how to run BOTH the frontend and backend locally, and how to deploy both (e.g. backend to Render/Heroku, frontend to Vercel).
-5. If the user DOES NOT ask for backend features, omit "backendFiles".`;
+5. If the user's request is strictly a UI component, a calculator, a static landing page, or something that clearly does not need persistence, omit "backendFiles".`;
 
 
 // ─── Gemini contents builder ──────────────────────────────────────────────────
