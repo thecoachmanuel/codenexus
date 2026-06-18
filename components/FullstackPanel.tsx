@@ -166,15 +166,19 @@ export function FullstackPanel({
 
             {fileData && containerState.status === "ready" && (
               <GitHubExportModal 
-                workspaceId={workspaceId} 
+                appTitle={fileData.appName ?? null}
                 fileData={{
                   files: Object.fromEntries(
                     Object.entries(fileData.files).map(([k,v]) => [k, { code: v }])
-                  ),
+                  ) as any, // casting to avoid strict type mismatch since original is slightly different
                   dependencies: fileData.dependencies,
                   title: fileData.appName
                 }}
-              />
+              >
+                <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white/10 text-white rounded-md hover:bg-white/20 transition-colors">
+                  Export to GitHub
+                </button>
+              </GitHubExportModal>
             )}
           </div>
         </div>
