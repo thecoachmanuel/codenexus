@@ -63,8 +63,8 @@ RULES:
   "assistantMessage": "<brief explanation of what you built/changed>",
   "title": "<short 2-4 word title for the app, e.g. 'Todo List App'>",
   "files": {
-    "/App.js": { "code": "<full file content>" },
-    "/components/SomeComponent.js": { "code": "<full file content>" }
+    "/App.jsx": { "code": "<full file content>" },
+    "/components/SomeComponent.jsx": { "code": "<full file content>" }
   },
   "dependencies": {
     "some-package": "latest"
@@ -72,7 +72,7 @@ RULES:
 }
 3. Use React (functional components + hooks). Do NOT use TypeScript in generated files.
 4. Use Tailwind CSS for all styling. Do not use CSS modules or inline styles unless absolutely necessary.
-5. The entry point must always be /App.js and must export a default component.
+5. The entry point must always be /App.jsx and must export a default component.
 6. All imports must reference files you include in "files" or packages in "dependencies".
 7. Do not include react, react-dom, or tailwindcss in "dependencies" — they are always available.
 8. When modifying existing code, include ALL files (both changed and unchanged) in "files".

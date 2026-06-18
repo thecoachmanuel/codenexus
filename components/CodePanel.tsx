@@ -165,6 +165,13 @@ function SandpackInner({
         updated = true;
       }
     }
+    // Delete files that were removed
+    for (const path of Object.keys(prev)) {
+      if (!fileData.files[path]) {
+        sandpack.deleteFile(path);
+        updated = true;
+      }
+    }
     if (updated) {
       prevFilesRef.current = fileData.files;
     }
@@ -596,10 +603,10 @@ export function CodePanel({
   const files = useMemo(() => {
     if (!fileData) return PLACEHOLDER_FILES;
     const f = { ...fileData.files };
-    // Map /App.jsx back to /App.js to support code generated during vite-react phase
-    if (f["/App.jsx"] && !f["/App.js"]) {
-      f["/App.js"] = f["/App.jsx"];
-      delete f["/App.jsx"];
+    // Map /App.js to /App.jsx because vite-react expects .jsx
+    if (f["/App.js"] && !f["/App.jsx"]) {
+      f["/App.jsx"] = f["/App.js"];
+      delete f["/App.js"];
     }
     return f;
   }, [fileData]);
@@ -610,14 +617,13 @@ export function CodePanel({
 
   // Key on workspaceId or placeholder state so it remounts when switching projects or first generation
   const workspaceKey = fileData ? "loaded" : "placeholder";
-  const filePathKey = Object.keys(files).sort().join("|");
-  const providerKey = `${workspaceKey}|${filePathKey}`;
+  const providerKey = workspaceKey; // Removed filePathKey to stop remounts crashing Nodebox
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <SandpackProvider
         key={providerKey}
-        template="react"
+        template="vite-react"
         theme={dracula}
         files={files}
         customSetup={{ dependencies }}
