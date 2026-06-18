@@ -147,15 +147,16 @@ RULES:
           update_file: { autoApprove: true },
           done_improving: { autoApprove: true },
         },
-        onEvent: (event) => {
-          if (event.type === "content_start") {
-            if (event.contentType === "text" && event.text) {
+        hooks: {
+          onEvent: (event) => {
+            if (event.type === "assistant-text-delta" && event.text) {
               enqueue(sseEvent("thinking", { text: event.text }));
-            } else if (event.contentType === "tool") {
-              const name = event.toolName;
+            }
+            if (event.type === "tool-started") {
+              const name = event.toolCall?.toolName;
               if (name === "update_file") {
-                const inputObj = event.input as { path?: string } | undefined;
-                const path = inputObj?.path ?? "a file";
+                const path =
+                  (event.toolCall?.input as { path?: string })?.path ?? "a file";
                 enqueue(
                   sseEvent("thinking", { text: `\n\nUpdating \`${path}\`…` })
                 );
@@ -165,7 +166,7 @@ RULES:
                 );
               }
             }
-          }
+          },
         },
       });
 
@@ -173,8 +174,8 @@ RULES:
         enqueue(sseEvent("status", { message: "Agent starting…" }));
         const result = await agent.run(userRequest);
 
-        if (result.finishReason === "error") {
-          throw new Error("Agent run failed due to an error");
+        if (result.status === "failed") {
+          throw new Error(result.error?.message ?? "Agent run failed");
         }
 
         const newFileData: FileData = {
@@ -199,7 +200,7 @@ RULES:
         enqueue(
           sseEvent("done", {
             fileData: newFileData,
-            summary: finalSummary || result.text,
+            summary: finalSummary || result.outputText,
             creditsRemaining:
               updatedUser?.credits ?? user.credits - CREDIT_COST_PER_GENERATION,
           })
