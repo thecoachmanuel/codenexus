@@ -139,9 +139,24 @@ function buildContents(messages: Message[], fileData: FileData | null) {
 
       const isLast = idx === trimmed.length - 1;
       if (isLast && fileData) {
+        // Build a concise context summary to avoid bloating the prompt.
+        // Include the full code for smaller files and a truncated preview for large ones.
+        const fileSummary = Object.entries(fileData.files)
+          .map(([path, { code }]) => {
+            const preview = code.length > 3000 ? code.slice(0, 3000) + "\n  ... (truncated)" : code;
+            return `// ${path}\n${preview}`;
+          })
+          .join("\n\n---\n\n");
+
+        const backendSummary = fileData.backendFiles && Object.keys(fileData.backendFiles).length > 0
+          ? "\n\nExisting Backend Files:\n" + Object.keys(fileData.backendFiles).join(", ")
+          : "";
+
         text +=
           "\n\nCurrent project files for context:\n" +
-          JSON.stringify(fileData, null, 2);
+          fileSummary +
+          backendSummary +
+          `\n\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
       }
 
       parts.push({ text });
@@ -206,6 +221,7 @@ export async function POST(request: NextRequest) {
             thinkingConfig: {
               includeThoughts: true,
             },
+            maxOutputTokens: 32768,
           },
         });
 
@@ -246,13 +262,29 @@ export async function POST(request: NextRequest) {
         try {
           parsed = JSON.parse(accumulated);
         } catch {
-          enqueue(
-            sseEvent("error", {
-              message: "AI returned invalid JSON. Please try again.",
-            })
-          );
-          controller.close();
-          return;
+          // The JSON may have been truncated (e.g. by token limits on a large full-stack response).
+          // Attempt a best-effort recovery before giving up.
+          try {
+            // Strategy 1: try to close truncated JSON by finding the last valid structural boundary
+            // Remove trailing incomplete value and try to close the object
+            let attempt = accumulated.trim();
+            // Strip any trailing incomplete string/escape sequences
+            attempt = attempt.replace(/,?\s*"[^"]*$/, "");
+            // Try closing all open braces/brackets
+            const openBraces = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
+            const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
+            attempt += "}".repeat(Math.max(0, openBraces)) + "]".repeat(Math.max(0, openBrackets));
+            parsed = JSON.parse(attempt);
+          } catch {
+            // Recovery failed
+            enqueue(
+              sseEvent("error", {
+                message: "The app was too large to generate in one pass. Try asking for it in smaller steps, or ask for just the frontend first, then the backend.",
+              })
+            );
+            controller.close();
+            return;
+          }
         }
 
         const { assistantMessage, title: aiTitle, files, dependencies, backendFiles } = parsed;
