@@ -84,10 +84,14 @@ RULES:
 10. If the user attaches an image, use it as a design reference and match the layout/style as closely as possible.
 11. NEVER use local image paths (like /assets/img.png) because they won't exist.
 12. NEVER use source.unsplash.com (it is deprecated and broken).
-13. For placeholder images, ALWAYS use reliable URLs like:
     - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true
     - https://placehold.co/600x400/png
     - https://ui-avatars.com/api/?name=John+Doe&background=random
+14. ALWAYS generate a /README.md file in "files". It must include:
+    - Project description
+    - Step-by-step local installation instructions
+    - Any required environment variables
+    - Step-by-step instructions on how to deploy the app to Vercel via GitHub
     
 BACKEND GENERATION RULES:
 1. The live preview (Sandpack) CANNOT run a real backend.
@@ -95,7 +99,8 @@ BACKEND GENERATION RULES:
    - Frontend files ("files") MUST use \`localStorage\` to simulate the database and auth so the preview still works perfectly.
    - ALSO generate real Express/Mongoose backend files in "backendFiles".
 3. "backendFiles" should include a complete Express app: \`/server.js\`, \`/models/...\`, \`/routes/...\`, \`/middleware/...\`, and \`.env.example\`.
-4. If the user DOES NOT ask for backend features, omit "backendFiles".`;
+4. If generating a backend, your /README.md (inside "files") must explain how to run BOTH the frontend and backend locally, and how to deploy both (e.g. backend to Render/Heroku, frontend to Vercel).
+5. If the user DOES NOT ask for backend features, omit "backendFiles".`;
 
 
 // ─── Gemini contents builder ──────────────────────────────────────────────────

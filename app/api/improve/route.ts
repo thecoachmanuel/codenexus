@@ -170,6 +170,7 @@ CRITICAL RULES:
 - Always write complete file contents — never partial snippets.
 - Keep all existing functionality unless asked to remove it.
 - The frontend entry point is always /App.js with a default export.
+- ALWAYS keep the /README.md file up-to-date with any new environment variables, setup instructions, or deployment steps if your changes require them.
 - NEVER use local image paths (like /assets/img.png).
 - For placeholder images, ALWAYS use:
   - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true

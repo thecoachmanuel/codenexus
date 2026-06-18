@@ -278,6 +278,7 @@ function SandpackInner({
       );
 
       for (const [filePath, fileObj] of Object.entries(filesToZip)) {
+        if (filePath === "/README.md") continue;
         const code =
           typeof fileObj === "object" && fileObj !== null && "code" in fileObj
             ? (fileObj as { code: string }).code
@@ -323,10 +324,23 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
         zip.file("backend/package.json", JSON.stringify(backendPackageJson, null, 2));
 
         for (const [filePath, fileObj] of Object.entries(fileData.backendFiles!)) {
+          if (filePath === "/README.md") continue;
           const relativePath = filePath.startsWith("/") ? filePath.slice(1) : filePath;
           zip.file(`backend/${relativePath}`, fileObj.code);
         }
+      }
 
+      // Root README.md resolution
+      let readmeContent = "";
+      if (fileData?.files?.["/README.md"]) {
+        readmeContent = fileData.files["/README.md"].code;
+      } else if (fileData?.backendFiles?.["/README.md"]) {
+        readmeContent = fileData.backendFiles["/README.md"].code;
+      }
+
+      if (readmeContent) {
+        zip.file("README.md", readmeContent);
+      } else if (hasBackend) {
         zip.file(
           "README.md",
           `# Crevo Full-Stack App\n\nGenerated with [Crevo](https://crevo.app).\n\n## Backend Setup\n\n1. \`cd backend\`\n2. \`npm install\`\n3. Create a \`.env\` file based on \`.env.example\` and set your MongoDB URI\n4. \`npm run dev\`\n\n## Frontend Setup\n\n1. \`cd frontend\`\n2. \`npm install\`\n3. \`npm start\`\n\nThe React app runs on port 3000 and the Express server runs on port 5000.`
