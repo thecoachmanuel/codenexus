@@ -81,16 +81,6 @@ const BASE_DEPENDENCIES: Record<string, string> = {
   "react-router-dom": "^6.16.0",
   // Icons
   "lucide-react": "^0.260.0",
-  // Charts
-  "recharts": "^2.9.0",
-  // Date utilities
-  "date-fns": "^2.30.0",
-  // Animations
-  "framer-motion": "^10.16.4",
-  // Forms
-  "react-hook-form": "^7.47.0",
-  "@hookform/resolvers": "^3.3.2",
-  "zod": "^3.22.4",
   // Utilities
   "clsx": "^2.0.0",
   "tailwind-merge": "^1.14.0",
