@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { DEFAULT_MODEL, getApiKey } from "@/lib/gemini";
+import { DEFAULT_MODEL, getApiKey, getApiKeysCount, rotateApiKey } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
@@ -202,29 +202,6 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        const agent = new Agent({
-          providerId: "gemini",
-          modelId: DEFAULT_MODEL,
-          apiKey: getApiKey(),
-          maxIterations: 15,
-          systemPrompt: SYSTEM_PROMPT,
-          tools: [listFilesTool, readFileTool, updateFileTool, addDependencyTool, finishGenerationTool],
-          toolPolicies: {
-            list_files: { autoApprove: true },
-            read_file: { autoApprove: true },
-            update_file: { autoApprove: true },
-            add_dependency: { autoApprove: true },
-            finish_generation: { autoApprove: true },
-          },
-          hooks: {
-            onEvent: (event) => {
-              if (event.type === "assistant-text-delta" && event.text) {
-                enqueue(sseEvent("status", { message: "Thinking..." }));
-              }
-            },
-          },
-        });
-
         const trimmed = trimHistory(messages);
         let userRequest = trimmed
           .map((m) => {
@@ -247,10 +224,52 @@ export async function POST(request: NextRequest) {
           userRequest += `\n\n--- CURRENT PROJECT FILES ---\n${fileSummary}`;
         }
 
-        const result = await agent.run(userRequest);
+        let result: any;
+        const maxAttempts = getApiKeysCount();
 
-        if (result.status === "failed") {
-          throw new Error(result.error?.message ?? "Agent run failed");
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          try {
+            const agent = new Agent({
+              providerId: "gemini",
+              modelId: DEFAULT_MODEL,
+              apiKey: getApiKey(),
+              maxIterations: 15,
+              systemPrompt: SYSTEM_PROMPT,
+              tools: [listFilesTool, readFileTool, updateFileTool, addDependencyTool, finishGenerationTool],
+              toolPolicies: {
+                list_files: { autoApprove: true },
+                read_file: { autoApprove: true },
+                update_file: { autoApprove: true },
+                add_dependency: { autoApprove: true },
+                finish_generation: { autoApprove: true },
+              },
+              hooks: {
+                onEvent: (event) => {
+                  if (event.type === "assistant-text-delta" && event.text) {
+                    enqueue(sseEvent("status", { message: "Thinking..." }));
+                  }
+                },
+              },
+            });
+
+            result = await agent.run(userRequest);
+
+            if (result.status === "failed") {
+              throw new Error(result.error?.message ?? "Agent run failed");
+            }
+            
+            break; // Success
+          } catch (err) {
+            const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+            const isTransientOrRateLimit = msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded");
+            
+            if (isTransientOrRateLimit && attempt < maxAttempts - 1) {
+              console.warn(`[gen-ai-code] API quota/rate limit hit, rotating key and retrying...`);
+              rotateApiKey();
+              continue;
+            }
+            throw err;
+          }
         }
 
         // ── Validate npm packages ──────────────────────────────────────────────

@@ -114,3 +114,11 @@ export function getApiKey(): string {
   const keyIndex = globalForGemini.geminiKeyIndex % API_KEYS.length;
   return API_KEYS[keyIndex];
 }
+
+export function rotateApiKey(): void {
+  globalForGemini.geminiKeyIndex = (globalForGemini.geminiKeyIndex + 1) % API_KEYS.length;
+}
+
+export function getApiKeysCount(): number {
+  return API_KEYS.length;
+}
