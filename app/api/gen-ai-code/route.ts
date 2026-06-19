@@ -66,7 +66,7 @@ async function runGeminiPass(
       systemInstruction,
       temperature: 0.7,
       responseMimeType: "application/json",
-      thinkingConfig: { includeThoughts: true },
+      // thinkingConfig: { includeThoughts: true }, // Flash does not support thinking
       maxOutputTokens: 32768,
     },
   });
