@@ -269,16 +269,24 @@ export function ChatPanel({
                 
                 {/* Render suggestions below the VERY LAST assistant message when idle */}
                 {isLast && msg.role === "assistant" && !isGenerating && !isImproving && suggestions && suggestions.length > 0 && (
-                  <div className="mt-4 flex flex-col gap-2 pl-8 pr-2">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-white/40 mb-1">Suggestions</p>
+                  <div className="mt-5 flex flex-col gap-3 pl-8 pr-2">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <Sparkles className="h-3 w-3 text-blue-400/80" />
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-blue-400/80">Suggested Improvements</p>
+                    </div>
                     {suggestions.map((suggestion, idx) => (
                       <button
                         key={idx}
                         onClick={() => onGenerate(suggestion)}
-                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-[12px] text-white/80 transition-all hover:border-white/20 hover:bg-white/10"
+                        className="group relative flex w-full flex-col items-start justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 text-left transition-all hover:border-blue-500/30 hover:bg-blue-500/5 hover:shadow-lg hover:shadow-blue-500/5"
                       >
-                        <span className="truncate pr-4">{suggestion}</span>
-                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/20 group-hover:text-white/60" />
+                        <span className="text-[13px] leading-relaxed text-white/90 group-hover:text-white mb-3">{suggestion}</span>
+                        <div className="flex w-full items-center justify-between">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30 group-hover:text-blue-400/70 transition-colors">Apply</span>
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/5 transition-colors group-hover:bg-blue-500/20">
+                            <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-blue-400" />
+                          </div>
+                        </div>
                       </button>
                     ))}
                   </div>
