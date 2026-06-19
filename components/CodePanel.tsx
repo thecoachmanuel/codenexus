@@ -12,6 +12,7 @@ import {
   useSandpack,
 } from "@codesandbox/sandpack-react";
 import { dracula } from "@codesandbox/sandpack-themes";
+import { VisualDiffViewer } from "./VisualDiffViewer";
 import {
   Eye,
   Code2,
@@ -27,6 +28,7 @@ import {
   Trash2,
   Plus,
   Rocket,
+  Save,
 } from "lucide-react";
 import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
@@ -80,6 +82,10 @@ interface CodePanelProps {
   isImproving: boolean;
   isProUser: boolean;
   onEnvVarsChange?: (envVars: Record<string, string>) => void;
+  proposedFileData?: FileData | null;
+  isReviewMode?: boolean;
+  onAcceptDiff?: () => void;
+  onRejectDiff?: () => void;
 }
 
 // ─── SandpackInner ────────────────────────────────────────────────────────────
@@ -99,6 +105,10 @@ function SandpackInner({
   isImproving,
   isProUser,
   onEnvVarsChange,
+  proposedFileData,
+  isReviewMode,
+  onAcceptDiff,
+  onRejectDiff,
 }: {
   isGenerating: boolean;
   statusLog: StatusStep[];
@@ -111,6 +121,10 @@ function SandpackInner({
   isImproving: boolean;
   isProUser: boolean;
   onEnvVarsChange?: (envVars: Record<string, string>) => void;
+  proposedFileData?: FileData | null;
+  isReviewMode?: boolean;
+  onAcceptDiff?: () => void;
+  onRejectDiff?: () => void;
 }) {
   const { sandpack, listen } = useSandpack();
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -223,6 +237,17 @@ function SandpackInner({
   useEffect(() => {
     if (isGenerating) setPreviewError(null);
   }, [isGenerating]);
+
+  // Auto-switch to code tab when a file is clicked in the sidebar
+  const lastActiveFile = useRef(sandpack.activeFile);
+  useEffect(() => {
+    if (sandpack.activeFile !== lastActiveFile.current) {
+      lastActiveFile.current = sandpack.activeFile;
+      if (activeTab !== "code") {
+        setActiveTab("code");
+      }
+    }
+  }, [sandpack.activeFile, activeTab, setActiveTab]);
 
   const handleImproveSubmit = async () => {
     const trimmed = improveInput.trim();
@@ -516,13 +541,33 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             border: "none",
             borderRadius: 0,
             background: "transparent",
+            display: "flex",
+            flexDirection: "row"
           }}
         >
-          <TabsContent
-            value="preview"
-            keepMounted
-            className="mt-0 h-full w-full bg-[#0a0a0a] overflow-auto relative pb-16"
-          >
+          {/* Persistent Sidebar File Explorer */}
+          <div className="hidden md:block shrink-0 w-[180px] h-full border-r border-white/10 bg-[#0a0a0a]">
+            <SandpackFileExplorer style={{ height: "90%" }} />
+          </div>
+
+          <div className="flex-1 min-w-0 h-full relative">
+            {/* Visual Diff Viewer Overlay */}
+            {isReviewMode && proposedFileData ? (
+              <div className="absolute inset-0 z-50 bg-[#0a0a0a]">
+                <VisualDiffViewer
+                  originalData={fileData}
+                  proposedData={proposedFileData}
+                  onAccept={() => onAcceptDiff?.()}
+                  onReject={() => onRejectDiff?.()}
+                />
+              </div>
+            ) : null}
+
+            <TabsContent
+              value="preview"
+              keepMounted
+              className="mt-0 h-full w-full bg-[#0a0a0a] overflow-auto relative pb-16"
+            >
             {/* Viewport Toggles (only visible in preview tab) */}
             {activeTab === "preview" && (
               <div className="absolute top-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1 backdrop-blur-md shadow-lg">
@@ -583,13 +628,6 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             keepMounted
             className="mt-0 flex h-full w-full"
           >
-            <SandpackFileExplorer
-              style={{
-                height: "90%",
-                width: "180px",
-                borderRight: "0.5px solid rgba(255,255,255,0.08)",
-              }}
-            />
             <SandpackCodeEditor
               style={{ height: "90%", flex: 1 }}
               showTabs
@@ -655,11 +693,13 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
                   onClick={handleSaveEnvVars}
                   className="bg-violet-600 text-white hover:bg-violet-700"
                 >
-                  Save & Reload
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Configuration
                 </Button>
               </div>
             </div>
           </TabsContent>
+          </div>
         </SandpackLayout>
       </div>
 
@@ -706,6 +746,10 @@ export function CodePanel({
   isImproving,
   isProUser,
   onEnvVarsChange,
+  proposedFileData,
+  isReviewMode,
+  onAcceptDiff,
+  onRejectDiff,
 }: CodePanelProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
@@ -793,6 +837,10 @@ export function CodePanel({
           isImproving={isImproving}
           isProUser={isProUser}
           onEnvVarsChange={onEnvVarsChange}
+          proposedFileData={proposedFileData}
+          isReviewMode={isReviewMode}
+          onAcceptDiff={onAcceptDiff}
+          onRejectDiff={onRejectDiff}
         />
       </SandpackProvider>
     </div>

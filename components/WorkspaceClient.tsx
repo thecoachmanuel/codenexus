@@ -71,6 +71,10 @@ export function WorkspaceClient({
   // Undo / Revert History Stack
   const [fileHistory, setFileHistory] = useState<FileData[]>([]);
 
+  // Diff Review State
+  const [proposedFileData, setProposedFileData] = useState<FileData | null>(null);
+  const [isReviewMode, setIsReviewMode] = useState(false);
+
   // Resolve image uploaded from the homepage (stored in sessionStorage to avoid huge query params).
   // undefined = not yet resolved, null = no image, string = image data URL
   const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null | undefined>(
@@ -295,7 +299,27 @@ export function WorkspaceClient({
   }, []);
 
   const handleFilePatch = useCallback((patches: FileData) => {
-    setFileData(patches);
+    setProposedFileData(patches);
+    setIsReviewMode(true);
+  }, []);
+
+  const handleAcceptDiff = useCallback(() => {
+    if (proposedFileData) {
+      if (fileDataRef.current) {
+        const currentSnapshot = JSON.parse(JSON.stringify(fileDataRef.current));
+        setFileHistory((prev) => [...prev, currentSnapshot]);
+      }
+      setFileData(proposedFileData);
+    }
+    setIsReviewMode(false);
+    setProposedFileData(null);
+    toast.success("Changes accepted.");
+  }, [proposedFileData]);
+
+  const handleRejectDiff = useCallback(() => {
+    setIsReviewMode(false);
+    setProposedFileData(null);
+    toast.error("Changes rejected.");
   }, []);
 
   const handleEnvVarsChange = useCallback((envVars: Record<string, string>) => {
@@ -364,6 +388,10 @@ export function WorkspaceClient({
         <CodePanel
           key={workspaceId || "new"}
           fileData={fileData}
+          proposedFileData={proposedFileData}
+          isReviewMode={isReviewMode}
+          onAcceptDiff={handleAcceptDiff}
+          onRejectDiff={handleRejectDiff}
           isGenerating={isGenerating}
           statusLog={statusLog}
           onImprove={handleGenerate}
@@ -374,7 +402,7 @@ export function WorkspaceClient({
           }
           onFilePatch={handleFilePatch}
           appTitle={fileData?.title ?? workspace?.title ?? null}
-          isImproving={false}
+          isImproving={isReviewMode}
           isProUser={userPlan === "pro"}
           onEnvVarsChange={handleEnvVarsChange}
         />
