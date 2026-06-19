@@ -719,9 +719,9 @@ export function CodePanel({
         delete f[path];
       }
     }
-    // Inject env variables directly into process.env at runtime
+    // Inject env variables directly into process.env at runtime safely
     if (fileData?.envVars && Object.keys(fileData.envVars).length > 0) {
-      const envInject = `window.process = { env: ${JSON.stringify(fileData.envVars)} };\n`;
+      const envInject = `window.process = window.process || {}; window.process.env = { ...window.process.env, ...${JSON.stringify(fileData.envVars)} };\n`;
       if (f["/index.js"]) {
         f["/index.js"].code = envInject + f["/index.js"].code;
       }
