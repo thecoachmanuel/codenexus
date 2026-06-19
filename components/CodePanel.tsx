@@ -27,6 +27,8 @@ import {
   Trash2,
   Plus,
   Rocket,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
@@ -114,6 +116,9 @@ function SandpackInner({
   isProUser: boolean;
   onEnvVarsChange?: (envVars: Record<string, string>) => void;
   subdomain?: string | null;
+  previewTheme: "light" | "dark";
+  setPreviewTheme: (t: "light" | "dark") => void;
+  processedFiles: Record<string, { code: string }>;
 }) {
   const { sandpack, listen } = useSandpack();
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -166,15 +171,15 @@ function SandpackInner({
   };
 
   // Push file content updates into Sandpack without remounting.
-  // This runs whenever fileData changes (e.g. after improve completes).
+  // This runs whenever processedFiles changes (e.g. after improve completes or theme toggles).
   // SandpackProvider key only changes when the file path set changes,
   // so this is the safe way to update existing file contents.
-  const prevFilesRef = useRef<Record<string, { code: string }>>(fileData?.files ?? {});
+  const prevFilesRef = useRef<Record<string, { code: string }>>(processedFiles);
   useEffect(() => {
-    if (!fileData?.files) return;
+    if (!processedFiles) return;
     const prev = prevFilesRef.current;
     let updated = false;
-    for (const [path, { code }] of Object.entries(fileData.files)) {
+    for (const [path, { code }] of Object.entries(processedFiles)) {
       if (prev[path]?.code !== code) {
         sandpack.updateFile(path, code);
         updated = true;
@@ -182,16 +187,16 @@ function SandpackInner({
     }
     // Delete files that were removed
     for (const path of Object.keys(prev)) {
-      if (!fileData.files[path]) {
+      if (!processedFiles[path]) {
         sandpack.deleteFile(path);
         updated = true;
       }
     }
     if (updated) {
-      prevFilesRef.current = fileData.files;
+      prevFilesRef.current = processedFiles;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fileData?.files]);
+  }, [processedFiles]);
 
   // Listen for Sandpack runtime errors
   useEffect(() => {
@@ -543,6 +548,18 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             {activeTab === "preview" && (
               <div className="absolute top-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1 backdrop-blur-md shadow-lg">
                 <button
+                  onClick={() => setPreviewTheme(previewTheme === "dark" ? "light" : "dark")}
+                  className="rounded-md p-1.5 transition-colors text-white/40 hover:bg-white/10 hover:text-white/80"
+                  title="Toggle Preview Theme"
+                >
+                  {previewTheme === "dark" ? (
+                    <Moon className="h-4 w-4" />
+                  ) : (
+                    <Sun className="h-4 w-4" />
+                  )}
+                </button>
+                <div className="w-px h-4 bg-white/10 mx-1" />
+                <button
                   onClick={() => setPreviewMode("mobile")}
                   className={`rounded-md p-1.5 transition-colors ${
                     previewMode === "mobile"
@@ -725,6 +742,7 @@ export function CodePanel({
   subdomain,
 }: CodePanelProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
+  const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
     if (fileData) setActiveTab("preview");
@@ -764,15 +782,22 @@ export function CodePanel({
       }
     }
     // Inject env variables directly into process.env at runtime safely
+    let indexCode = f["/index.js"]?.code || "";
+    
     if (fileData?.envVars && Object.keys(fileData.envVars).length > 0) {
-      const envInject = `window.process = window.process || {}; window.process.env = { ...window.process.env, ...${JSON.stringify(fileData.envVars)} };\n`;
-      if (f["/index.js"]) {
-        f["/index.js"].code = envInject + f["/index.js"].code;
-      }
+      indexCode = `window.process = window.process || {}; window.process.env = { ...window.process.env, ...${JSON.stringify(fileData.envVars)} };\n` + indexCode;
+    }
+
+    // Inject preview theme toggle logic
+    const themeInject = `document.documentElement.classList.${previewTheme === 'dark' ? 'add' : 'remove'}('dark');\n`;
+    indexCode = themeInject + indexCode;
+    
+    if (f["/index.js"]) {
+      f["/index.js"].code = indexCode;
     }
 
     return f;
-  }, [fileData]);
+  }, [fileData, previewTheme]);
   const dependencies = {
     ...BASE_DEPENDENCIES,
     ...(fileData?.dependencies ?? {}),
@@ -799,18 +824,21 @@ export function CodePanel({
         }}
       >
         <SandpackInner
+          fileData={fileData}
           isGenerating={isGenerating}
           statusLog={statusLog}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           onImprove={onImprove}
           onFixError={onFixError}
-          fileData={fileData}
           appTitle={appTitle}
           isImproving={isImproving}
           isProUser={isProUser}
           onEnvVarsChange={onEnvVarsChange}
           subdomain={subdomain}
+          previewTheme={previewTheme}
+          setPreviewTheme={setPreviewTheme}
+          processedFiles={files}
         />
       </SandpackProvider>
     </div>
