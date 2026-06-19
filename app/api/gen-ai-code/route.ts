@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
   const cost = calculateGenerationCost(messages);
   
   if (user.credits < cost) {
-    return Response.json({ message: \`Insufficient credits. This complex task requires \${cost} credits, but you only have \${user.credits}.\` }, { status: 402 });
+    return Response.json({ message: `Insufficient credits. This complex task requires ${cost} credits, but you only have ${user.credits}.` }, { status: 402 });
   }
 
   const encoder = new TextEncoder();
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
             let normalizedPath = path;
             if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
             const file = patchedFiles[normalizedPath];
-            if (!file) return \`Error: File \${normalizedPath} not found.\`;
+            if (!file) return `Error: File ${normalizedPath} not found.`;
             return file.code;
           },
         });
@@ -165,8 +165,8 @@ export async function POST(request: NextRequest) {
               normalizedPath = "/App.js";
             }
             patchedFiles[normalizedPath] = { code };
-            enqueue(sseEvent("status", { message: \`Updating \${normalizedPath}…\` }));
-            return \`Updated frontend \${normalizedPath}: \${reason}\`;
+            enqueue(sseEvent("status", { message: `Updating ${normalizedPath}…` }));
+            return `Updated frontend ${normalizedPath}: ${reason}`;
           },
         });
 
@@ -179,8 +179,8 @@ export async function POST(request: NextRequest) {
           }),
           async execute({ packageName, version }) {
             newDependencies[packageName] = version;
-            enqueue(sseEvent("status", { message: \`Adding dependency \${packageName}…\` }));
-            return \`Added dependency \${packageName}@\${version}\`;
+            enqueue(sseEvent("status", { message: `Adding dependency ${packageName}…` }));
+            return `Added dependency ${packageName}@${version}`;
           },
         });
 
@@ -231,20 +231,20 @@ export async function POST(request: NextRequest) {
             let text = m.content;
             if (m.imageUrl) {
               if (m.imageUrl.startsWith("data:image/")) {
-                text = \`[Image attached as design reference.]\\n\\n\${text}\`;
+                text = `[Image attached as design reference.]\n\n${text}`;
               } else {
-                text = \`[Image URL for reference: \${m.imageUrl}]\\n\\n\${text}\`;
+                text = `[Image URL for reference: ${m.imageUrl}]\n\n${text}`;
               }
             }
-            return \`\${m.role.toUpperCase()}:\\n\${text}\`;
+            return `${m.role.toUpperCase()}:\n${text}`;
           })
-          .join("\\n\\n---\\n\\n");
+          .join("\n\n---\n\n");
 
         if (Object.keys(patchedFiles).length > 0) {
           const fileSummary = Object.entries(patchedFiles)
-            .map(([path, { code }]) => \`### \${path}\\n\\\`\\\`\\\`\\n\${code}\\n\\\`\\\`\\\`\`)
-            .join("\\n\\n");
-          userRequest += \`\\n\\n--- CURRENT PROJECT FILES ---\\n\${fileSummary}\`;
+            .map(([path, { code }]) => `### ${path}\n\`\`\`\n${code}\n\`\`\``)
+            .join("\n\n");
+          userRequest += `\n\n--- CURRENT PROJECT FILES ---\n${fileSummary}`;
         }
 
         const result = await agent.run(userRequest);
