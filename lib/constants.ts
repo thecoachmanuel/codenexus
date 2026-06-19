@@ -17,7 +17,6 @@ export const PLANS = {
 } as const;
 
 export const CREDIT_COST_PER_GENERATION = 1;
-
 export const MIN_CREDITS_TO_GENERATE = 1;
 
 export const PRICING_PLANS = [
@@ -39,12 +38,7 @@ export const PRICING_PLANS = [
     featured: true,
     planId: "cplan_3DvxGsOeYA5bpJzGWPi8o7wScRD",
     active: false,
-    features: [
-      "50 generations / month",
-      "Image uploads",
-      "Live preview",
-      "Export to zip",
-    ],
+    features: ["50 generations / month", "Image uploads", "Live preview", "Export to zip"],
   },
   {
     key: "pro",
@@ -54,14 +48,89 @@ export const PRICING_PLANS = [
     featured: false,
     planId: "cplan_3DvxTfywwB0NyQ1iqANclgNqlq8",
     active: false,
-    features: [
-      "150 generations / month",
-      "Priority AI (faster response)",
-      "Live preview",
-      "Export to zip",
-      "Image uploads",
-      "GitHub repo import",
-      "Access to Crevo Pro Agent",
-    ],
+    features: ["150 generations / month", "Priority AI", "Live preview", "Export to zip", "Image uploads", "GitHub repo import"],
   },
 ] as const;
+
+export const VITE_REACT_BOILERPLATE = {
+  "/package.json": {
+    code: JSON.stringify(
+      {
+        name: "react-app",
+        main: "index.js",
+        dependencies: {
+          "react": "^18.2.0",
+          "react-dom": "^18.2.0",
+          "lucide-react": "latest",
+          "recharts": "latest",
+          "framer-motion": "latest",
+          "clsx": "latest",
+          "tailwind-merge": "latest"
+        }
+      },
+      null,
+      2
+    )
+  },
+  "/public/index.html": {
+    code: `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`
+  },
+  "/index.js": {
+    code: `import React, { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./styles.css";
+
+import App from "./App";
+
+const root = createRoot(document.getElementById("root"));
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);`
+  },
+  "/styles.css": {
+    code: `body {
+  font-family: sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}`
+  },
+  "/App.js": {
+    code: `export default function App() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-white/30">
+      <div className="text-center">
+        <div className="text-4xl mb-4">⚡</div>
+        <p className="text-sm font-medium">Your React app will appear here</p>
+      </div>
+    </div>
+  );
+}`
+  }
+};
+
+export const BASE_DEPENDENCIES: Record<string, string> = {
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0",
+  "lucide-react": "latest",
+  "recharts": "latest",
+  "framer-motion": "latest",
+  "clsx": "latest",
+  "tailwind-merge": "latest",
+};

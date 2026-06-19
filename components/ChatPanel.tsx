@@ -10,6 +10,8 @@ import {
   Sparkles,
   Wand2,
   Square,
+  Undo2,
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -33,6 +35,9 @@ interface ChatPanelProps {
   workspaceId: string | null;
   appTitle: string | null;
   githubImportButton?: React.ReactNode;
+  suggestions?: string[];
+  onRevert?: () => void;
+  canRevert?: boolean;
 }
 
 export function ChatPanel({
@@ -49,6 +54,9 @@ export function ChatPanel({
   workspaceId,
   appTitle,
   githubImportButton,
+  suggestions,
+  onRevert,
+  canRevert,
 }: ChatPanelProps) {
   const { user } = useAuthContext();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -138,6 +146,15 @@ export function ChatPanel({
       <div className="flex items-center justify-between border-b border-white/6 px-2 py-3">
         <BlueTitle>{appTitle}</BlueTitle>
         <div className="flex items-center gap-1.5">
+          {canRevert && onRevert && (
+            <button
+              onClick={onRevert}
+              title="Revert last change"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/60 hover:border-white/40 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+            </button>
+          )}
           {githubImportButton}
           <PricingModal reason={noCredits ? "credits" : "upgrade"}>
             <span
@@ -247,6 +264,23 @@ export function ChatPanel({
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+                
+                {/* Render suggestions below the VERY LAST assistant message when idle */}
+                {isLast && msg.role === "assistant" && !isGenerating && !isImproving && suggestions && suggestions.length > 0 && (
+                  <div className="mt-4 flex flex-col gap-2 pl-8 pr-2">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-white/40 mb-1">Suggestions</p>
+                    {suggestions.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => onGenerate(suggestion)}
+                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-[12px] text-white/80 transition-all hover:border-white/20 hover:bg-white/10"
+                      >
+                        <span className="truncate pr-4">{suggestion}</span>
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/20 group-hover:text-white/60" />
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>

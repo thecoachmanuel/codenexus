@@ -51,41 +51,13 @@ const GithubIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+import { VITE_REACT_BOILERPLATE, BASE_DEPENDENCIES } from "@/lib/constants";
+
 const PLACEHOLDER_FILES = {
-  "/App.js": {
-    code: `export default function App() {
-  return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#0a0a0a",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: "system-ui, sans-serif",
-    }}>
-      <div style={{ textAlign: "center", color: "rgba(255,255,255,0.3)" }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>⚡</div>
-        <p style={{ fontSize: 14 }}>Your app will appear here</p>
-      </div>
-    </div>
-  );
-}`,
-  },
+  ...VITE_REACT_BOILERPLATE,
 };
 
-// ─── Base dependencies ────────────────────────────────────────────────────────
-
-const BASE_DEPENDENCIES: Record<string, string> = {
-  // React ecosystem
-  "react-is": "^18.2.0",
-  "react-router-dom": "^6.16.0",
-  // Icons
-  "lucide-react": "^0.260.0",
-  // Utilities
-  "clsx": "^2.0.0",
-  "tailwind-merge": "^1.14.0",
-  "uuid": "^9.0.0",
-};
+// Base dependencies are imported from constants.ts
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -654,8 +626,18 @@ export function CodePanel({
   }, [fileData]);
 
   const files = useMemo(() => {
-    if (!fileData) return PLACEHOLDER_FILES;
-    const f = { ...fileData.files };
+    if (!fileData || !fileData.files) return PLACEHOLDER_FILES;
+    
+    // Inject the base React boilerplate
+    const f: Record<string, { code: string }> = { ...VITE_REACT_BOILERPLATE };
+    
+    // Override with AI-generated files
+    for (const [key, val] of Object.entries(fileData.files)) {
+      if (val && typeof val.code === "string") {
+        f[key] = val;
+      }
+    }
+    
     // react template uses .js — map /App.jsx → /App.js if needed
     if (f["/App.jsx"] && !f["/App.js"]) {
       f["/App.js"] = f["/App.jsx"];

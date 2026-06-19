@@ -116,13 +116,17 @@ function safeParseJSON<T>(raw: string): T | null {
 
 // ─── System Prompts ───────────────────────────────────────────────────────────
 
-const FRONTEND_SYSTEM_PROMPT = `You are an expert React developer. Generate a complete, working React frontend application.
+const SYSTEM_PROMPT = `You are an expert React developer. Generate a complete, working React frontend application.
 
 OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra text.
 {
-  "assistantMessage": "<brief explanation of what you built/changed>",
+  "assistantMessage": "<chat response or brief explanation of what you built/changed>",
   "title": "<short 2-4 word title>",
-  "needsBackend": <true if auth/db/APIs needed, false otherwise>,
+  "suggestions": [
+    "Add a dark mode toggle",
+    "Implement the settings page",
+    "Add sample data to the table"
+  ],
   "files": {
     "/App.js": { "code": "<full file content>" },
     "/components/Sidebar.js": { "code": "<full file content>" }
@@ -138,47 +142,16 @@ RULES:
 3. Entry point MUST be /App.js with a default export.
 4. All imports must reference files you include or packages in "dependencies".
 5. Do NOT include react, react-dom, tailwindcss in "dependencies".
-6. When editing existing code, include ALL files (changed and unchanged).
-7. Keep code clean, readable, production-quality.
-8. NEVER use local image paths. For images use:
+6. Keep code clean, readable, production-quality.
+7. NEVER use local image paths. For images use:
    - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true
    - https://placehold.co/600x400/png
    - https://ui-avatars.com/api/?name=Name&background=random
-9. ALWAYS include a /README.md describing the project and how to run it.
-10. Set "needsBackend": true if the request implies auth, databases, saving/persisting data, CRUD operations, APIs, or admin dashboards.
-11. If "needsBackend" is true, the frontend MUST simulate data with localStorage so the preview works without a server.
-
-COMPLEXITY MANAGEMENT:
-- If the app is large (many pages, complex UI), generate the CORE first:
-  * /App.js with routing + layout/sidebar
-  * 1-2 primary pages fully built
-  * Remaining pages as placeholder stubs with a // TODO comment
-- Include /IMPLEMENTATION_PLAN.md listing what was built and what remains.
-- Tell the user in assistantMessage to use the chat/Improve button for remaining pages.`;
-
-const BACKEND_SYSTEM_PROMPT = `You are an expert Node.js/Express/MongoDB backend developer.
-
-A React frontend has already been built. Your job is to generate the corresponding REAL backend that the frontend would connect to in production.
-
-OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra text.
-{
-  "backendFiles": {
-    "/server.js": { "code": "<full file content>" },
-    "/models/User.js": { "code": "<full file content>" },
-    "/routes/auth.js": { "code": "<full file content>" },
-    "/middleware/auth.js": { "code": "<full file content>" },
-    "/.env.example": { "code": "<full file content>" }
-  }
-}
-
-RULES:
-1. Generate a complete, production-ready Express + Mongoose backend.
-2. Include: /server.js, /models/*.js, /routes/*.js, /middleware/*.js, /.env.example
-3. Use JWT for authentication, bcryptjs for password hashing.
-4. Use CORS and dotenv.
-5. The data models and API routes must exactly match what the React frontend (using localStorage) simulates.
-6. Always include /.env.example with all required environment variables.
-7. Code must be clean, commented, and ready to deploy to Render or Railway.`;
+8. ALWAYS include a /README.md describing the project and how to run it.
+9. You must SIMULATE all data using localStorage, in-memory arrays, or mock delays. Do not attempt to connect to a real backend.
+10. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
+11. When modifying existing code, output ONLY the files that changed. Unchanged files will be preserved automatically.
+12. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.`;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
 
@@ -230,28 +203,7 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
   });
 }
 
-function buildBackendContents(userPrompt: string, frontendFiles: Record<string, { code: string }>) {
-  // Only pass App.js and key component files to keep context lean
-  const keyFiles = Object.entries(frontendFiles)
-    .filter(([path]) => !path.endsWith(".md"))
-    .slice(0, 8) // max 8 frontend files as context
-    .map(([path, { code }]) => {
-      const preview = code.length > 2000 ? code.slice(0, 2000) + "\n  ... (truncated)" : code;
-      return `// ${path}\n${preview}`;
-    })
-    .join("\n\n---\n\n");
-
-  return [
-    {
-      role: "user",
-      parts: [
-        {
-          text: `User's original request: "${userPrompt}"\n\nFrontend files already generated:\n${keyFiles}\n\nNow generate the complete Express/MongoDB backend for this app.`,
-        },
-      ],
-    },
-  ];
-}
+// ─── Backend builder removed for pure React ───────────────────────────────────
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
@@ -294,79 +246,60 @@ export async function POST(request: NextRequest) {
         controller.enqueue(encoder.encode(chunk));
 
       try {
-        // ── PASS 1: FRONTEND ──────────────────────────────────────────────────
+        // ── GENERATION PASS ──────────────────────────────────────────────────
 
-        enqueue(sseEvent("status", { message: "Building frontend…" }));
+        enqueue(sseEvent("status", { message: "Thinking…" }));
 
-        const frontendContents = buildFrontendContents(messages, fileData);
+        const contents = buildFrontendContents(messages, fileData);
 
-        const frontendRaw = await runGeminiPass(
-          frontendContents,
-          FRONTEND_SYSTEM_PROMPT,
+        const rawJson = await runGeminiPass(
+          contents,
+          SYSTEM_PROMPT,
           (label) => enqueue(sseEvent("status", { message: label }))
         );
 
-        const frontendParsed = safeParseJSON<{
+        const parsed = safeParseJSON<{
           assistantMessage: string;
           title?: string;
-          needsBackend?: boolean;
-          files: Record<string, { code: string }>;
-          dependencies: Record<string, string>;
-        }>(frontendRaw);
+          suggestions?: string[];
+          files?: Record<string, { code: string }>;
+          dependencies?: Record<string, string>;
+        }>(rawJson);
 
-        if (!frontendParsed || !frontendParsed.files) {
-          enqueue(sseEvent("error", { message: "Frontend generation failed. Please try again." }));
+        if (!parsed) {
+          enqueue(sseEvent("error", { message: "Generation failed. Please try again." }));
           controller.close();
           return;
         }
 
-        const { assistantMessage, title: aiTitle, needsBackend, files, dependencies } = frontendParsed;
+        const { assistantMessage, title: aiTitle, suggestions, files, dependencies } = parsed;
 
-        // ── Normalize File Paths ──────────────────────────────────────────────
+        // ── Merge existing files with new files ────────────────────────────────
 
-        const normalizedFiles: Record<string, { code: string }> = {};
-        for (const [key, value] of Object.entries(files)) {
-          let path = key;
-          if (!path.startsWith("/")) path = "/" + path;
-          if (path.startsWith("/src/") && path.endsWith("App.js")) path = "/App.js";
-          normalizedFiles[path] = value;
-        }
-
-        // ── PASS 2: BACKEND (only if needed) ──────────────────────────────────
-
-        let backendFiles: Record<string, { code: string }> | undefined = undefined;
-
-        if (needsBackend) {
-          enqueue(sseEvent("status", { message: "Building backend…" }));
-
-          const userPrompt = messages[messages.length - 1].content;
-          const backendContents = buildBackendContents(userPrompt, normalizedFiles);
-
-          const backendRaw = await runGeminiPass(
-            backendContents,
-            BACKEND_SYSTEM_PROMPT,
-            (label) => enqueue(sseEvent("status", { message: label }))
-          );
-
-          const backendParsed = safeParseJSON<{
-            backendFiles: Record<string, { code: string }>;
-          }>(backendRaw);
-
-          if (backendParsed?.backendFiles) {
-            backendFiles = backendParsed.backendFiles;
+        const normalizedFiles: Record<string, { code: string }> = { ...(fileData?.files ?? {}) };
+        
+        if (files) {
+          for (const [key, value] of Object.entries(files)) {
+            let path = key;
+            if (!path.startsWith("/")) path = "/" + path;
+            if (path.startsWith("/src/") && path.endsWith("App.js")) path = "/App.js";
+            normalizedFiles[path] = value;
           }
         }
 
         // ── Validate npm packages ──────────────────────────────────────────────
 
         enqueue(sseEvent("status", { message: "Validating packages…" }));
-        const validatedDeps = await validateDependencies(dependencies ?? {});
+        const validatedDeps = await validateDependencies({ 
+          ...(fileData?.dependencies ?? {}), 
+          ...(dependencies ?? {}) 
+        });
 
         const newFileData: FileData = {
           files: normalizedFiles,
           dependencies: validatedDeps,
-          title: aiTitle,
-          backendFiles,
+          title: aiTitle ?? fileData?.title,
+          suggestions,
         };
 
         // ── Upsert workspace + deduct credit ──────────────────────────────────
