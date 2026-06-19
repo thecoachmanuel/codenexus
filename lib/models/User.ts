@@ -10,6 +10,7 @@ export interface IUser extends Document {
   plan: "free" | "starter" | "pro";
   usedDiscountPlans: string[]; // plan keys where one-time discount has been used
   githubToken?: string; // encrypted GitHub PAT for repo export
+  vercelToken?: string; // Vercel API token for deployment
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +25,7 @@ const UserSchema = new Schema<IUser>(
     plan: { type: String, enum: ["free", "starter", "pro"], default: "free" },
     usedDiscountPlans: { type: [String], default: [] },
     githubToken: { type: String, default: "" },
+    vercelToken: { type: String, default: "" },
   },
   { timestamps: true }
 );

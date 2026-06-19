@@ -26,6 +26,7 @@ import {
   Settings2,
   Trash2,
   Plus,
+  Rocket,
 } from "lucide-react";
 import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
@@ -33,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PricingModal } from "@/components/PricingModal";
 import { GitHubExportModal } from "@/components/GitHubExportModal";
+import { VercelDeployModal } from "@/components/VercelDeployModal";
 import type { FileData, StatusStep } from "@/types/workspace";
 
 // ─── Placeholder ──────────────────────────────────────────────────────────────
@@ -447,6 +449,20 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
               </span>
             </PricingModal>
           )}
+
+          <VercelDeployModal
+            fileData={fileData}
+            appTitle={appTitle}
+          >
+            <Button
+              variant="ghost"
+              disabled={isExporting || !fileData}
+              className="text-white/70 hover:text-white"
+            >
+              <Rocket className="h-3.5 w-3.5 mr-1.5" />
+              <span className="hidden sm:inline">Deploy</span>
+            </Button>
+          </VercelDeployModal>
 
           <GitHubExportModal
             fileData={fileData}

@@ -63,6 +63,30 @@ export async function POST(request: NextRequest) {
       };
       let finalSummary = "";
 
+      const listFilesTool = createTool({
+        name: "list_files",
+        description: "List all files currently in the React sandbox.",
+        inputSchema: z.object({}),
+        async execute() {
+          return JSON.stringify(Object.keys(patchedFiles), null, 2);
+        },
+      });
+
+      const readFileTool = createTool({
+        name: "read_file",
+        description: "Read the contents of a specific file.",
+        inputSchema: z.object({
+          path: z.string().describe("File path, e.g. /App.js"),
+        }),
+        async execute({ path }) {
+          let normalizedPath = path;
+          if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+          const file = patchedFiles[normalizedPath];
+          if (!file) return `Error: File ${normalizedPath} not found.`;
+          return file.code;
+        },
+      });
+
       const updateFileTool = createTool({
         name: "update_file",
         description:
@@ -107,27 +131,19 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      let fileContext = "FRONTEND FILES (React):\n";
-      fileContext += Object.entries(fileData.files ?? {})
-        .map(([path, { code }]) => `// ${path}\n${code}`)
-        .join("\n\n---\n\n");
-
       const agent = new Agent({
         providerId: "gemini",
         modelId: PRO_MODEL,
         apiKey: getApiKey(),
-        maxIterations: 8,
+        maxIterations: 15,
         systemPrompt: `You are an expert full-stack React developer improving an app.
-
-Here are the current files:
-
-${fileContext}
 
 WORKFLOW:
 1. Understand what the user wants improved.
-2. Identify which frontend files need to change.
-3. Call \`update_file\` for frontend files.
-4. Once all files are updated, call \`done_improving\` with a short summary.
+2. Use \`list_files\` to see the directory structure.
+3. Use \`read_file\` to read ONLY the specific files you need to understand or modify. Do not guess file contents.
+4. Call \`update_file\` to rewrite the files with your improvements.
+5. Once all files are updated, call \`done_improving\` with a short summary.
 
 CRITICAL RULES:
 1. Use standard clean React architecture: \`/components\`, \`/pages\`, \`/hooks\`, \`/lib\`.
@@ -137,8 +153,10 @@ CRITICAL RULES:
 5. **DEPLOYMENT**: Keep the \`/README.md\` up to date. It should detail exactly how to run the app AND deploy it to Vercel (including where to configure the \`REACT_APP_MONGODB_DATA_API_KEY\` environment variables in the Vercel dashboard).
 6. Always write complete file contents — never partial snippets.
 7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png`,
-        tools: [updateFileTool, doneImprovingTool],
+        tools: [listFilesTool, readFileTool, updateFileTool, doneImprovingTool],
         toolPolicies: {
+          list_files: { autoApprove: true },
+          read_file: { autoApprove: true },
           update_file: { autoApprove: true },
           done_improving: { autoApprove: true },
         },
