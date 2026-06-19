@@ -114,6 +114,7 @@ function SandpackInner({
   isProUser: boolean;
   onEnvVarsChange?: (envVars: Record<string, string>) => void;
   subdomain?: string | null;
+  processedFiles: Record<string, { code: string }>;
 }) {
   const { sandpack, listen } = useSandpack();
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -166,15 +167,15 @@ function SandpackInner({
   };
 
   // Push file content updates into Sandpack without remounting.
-  // This runs whenever fileData changes (e.g. after improve completes).
+  // This runs whenever processedFiles changes (e.g. after improve completes).
   // SandpackProvider key only changes when the file path set changes,
   // so this is the safe way to update existing file contents.
-  const prevFilesRef = useRef<Record<string, { code: string }>>(fileData?.files ?? {});
+  const prevFilesRef = useRef<Record<string, { code: string }>>(processedFiles);
   useEffect(() => {
-    if (!fileData?.files) return;
+    if (!processedFiles) return;
     const prev = prevFilesRef.current;
     let updated = false;
-    for (const [path, { code }] of Object.entries(fileData.files)) {
+    for (const [path, { code }] of Object.entries(processedFiles)) {
       if (prev[path]?.code !== code) {
         sandpack.updateFile(path, code);
         updated = true;
@@ -182,16 +183,16 @@ function SandpackInner({
     }
     // Delete files that were removed
     for (const path of Object.keys(prev)) {
-      if (!fileData.files[path]) {
+      if (!processedFiles[path]) {
         sandpack.deleteFile(path);
         updated = true;
       }
     }
     if (updated) {
-      prevFilesRef.current = fileData.files;
+      prevFilesRef.current = processedFiles;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fileData?.files]);
+  }, [processedFiles]);
 
   // Listen for Sandpack runtime errors
   useEffect(() => {
@@ -811,6 +812,7 @@ export function CodePanel({
           isProUser={isProUser}
           onEnvVarsChange={onEnvVarsChange}
           subdomain={subdomain}
+          processedFiles={files}
         />
       </SandpackProvider>
     </div>
