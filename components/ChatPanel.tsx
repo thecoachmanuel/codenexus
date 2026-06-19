@@ -212,7 +212,7 @@ interface ChatPanelProps {
   userId: string;
   workspaceId: string | null;
   appTitle: string | null;
-  githubImportButton?: React.ReactNode;
+
   suggestions?: string[];
   onRevert?: () => void;
   canRevert?: boolean;
@@ -233,7 +233,7 @@ export function ChatPanel({
   userId,
   workspaceId,
   appTitle,
-  githubImportButton,
+
   suggestions,
   onRevert,
   canRevert,
@@ -339,7 +339,7 @@ export function ChatPanel({
               <Undo2 className="h-3.5 w-3.5" />
             </button>
           )}
-          {githubImportButton}
+
           <PricingModal reason={noCredits ? "credits" : "upgrade"}>
             <span
               className={cn(

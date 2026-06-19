@@ -5,10 +5,9 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { ChatPanel } from "./ChatPanel";
 import { CodePanel } from "./CodePanel";
 import { MobileBlocker } from "./MobileBlocker";
-import { GitHubImportModal } from "./GitHubImportModal";
 import { MIN_CREDITS_TO_GENERATE } from "@/lib/constants";
 import { toast } from "sonner";
-import { GitBranch } from "lucide-react";
+
 import type {
   Message,
   FileData,
@@ -317,19 +316,6 @@ export function WorkspaceClient({
     toast.success("Environment variables updated.");
   }, []);
 
-  // Handle GitHub repo import
-
-  const handleGitHubImport = useCallback((imported: FileData, repoName: string) => {
-    setFileData(imported);
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant" as const,
-        content: `✅ Successfully imported **${repoName}** from GitHub.\n\n${Object.keys(imported.files ?? {}).length} files loaded into your workspace. You can now ask me to modify, refactor, add features, or explain any part of the code.`,
-      },
-    ]);
-    toast.success(`Imported ${repoName} — ${Object.keys(imported.files ?? {}).length} files loaded.`);
-  }, []);
 
   return (
     <>
@@ -356,19 +342,6 @@ export function WorkspaceClient({
           userId={userId}
           workspaceId={workspaceId}
           appTitle={fileData?.title ?? workspace?.title ?? null}
-          githubImportButton={
-            <GitHubImportModal
-              isProUser={userPlan === "pro"}
-              onImport={handleGitHubImport}
-            >
-              <button
-                title="Import from GitHub"
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/60 hover:border-white/40 hover:bg-white/10 hover:text-white transition-all"
-              >
-                <GitBranch className="h-3.5 w-3.5" />
-              </button>
-            </GitHubImportModal>
-          }
         />
         <div className="w-px shrink-0 bg-white/6" />
         <CodePanel
