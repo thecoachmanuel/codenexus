@@ -103,6 +103,9 @@ function SandpackInner({
   isProUser,
   onEnvVarsChange,
   subdomain,
+  previewTheme,
+  setPreviewTheme,
+  processedFiles,
 }: {
   isGenerating: boolean;
   statusLog: StatusStep[];
