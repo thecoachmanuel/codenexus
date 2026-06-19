@@ -80,6 +80,7 @@ interface CodePanelProps {
   isImproving: boolean;
   isProUser: boolean;
   onEnvVarsChange?: (envVars: Record<string, string>) => void;
+  subdomain?: string | null;
 }
 
 // ─── SandpackInner ────────────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ function SandpackInner({
   isImproving,
   isProUser,
   onEnvVarsChange,
+  subdomain,
 }: {
   isGenerating: boolean;
   statusLog: StatusStep[];
@@ -111,6 +113,7 @@ function SandpackInner({
   isImproving: boolean;
   isProUser: boolean;
   onEnvVarsChange?: (envVars: Record<string, string>) => void;
+  subdomain?: string | null;
 }) {
   const { sandpack, listen } = useSandpack();
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -457,12 +460,25 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             <Button
               variant="ghost"
               disabled={isExporting || !fileData}
-              className="text-white/70 hover:text-white"
+              className="text-white/70 hover:text-white px-2"
+              title="Deploy to Vercel"
             >
-              <Rocket className="h-3.5 w-3.5 mr-1.5" />
-              <span className="hidden sm:inline">Deploy</span>
+              <Rocket className="h-4 w-4" />
             </Button>
           </VercelDeployModal>
+
+          {subdomain && (
+            <a
+              href={`http://${subdomain}.localhost:3000`} // In production, this should be https://${subdomain}.yourdomain.com
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+              title="Open Live Site"
+            >
+              <Eye className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Live Site</span>
+            </a>
+          )}
 
           <GitHubExportModal
             fileData={fileData}
@@ -793,6 +809,7 @@ export function CodePanel({
           isImproving={isImproving}
           isProUser={isProUser}
           onEnvVarsChange={onEnvVarsChange}
+          subdomain={subdomain}
         />
       </SandpackProvider>
     </div>

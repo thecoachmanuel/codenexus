@@ -23,6 +23,7 @@ export interface StatusStep {
 
 export interface WorkspaceData {
   id: string;
+  subdomain?: string;
   title: string | null;
   messages: unknown;
   fileData: unknown;

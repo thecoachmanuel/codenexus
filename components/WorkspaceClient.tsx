@@ -58,6 +58,9 @@ export function WorkspaceClient({
   const [workspaceId, setWorkspaceId] = useState<string | null>(
     workspace?.id ?? null
   );
+  const [subdomain, setSubdomain] = useState<string | null>(
+    workspace?.subdomain ?? null
+  );
   const [messages, setMessages] = useState<Message[]>(
     parseMessages(workspace?.messages)
   );
@@ -221,6 +224,7 @@ export function WorkspaceClient({
               } else if (event.type === "done") {
                 completeSteps();
                 setWorkspaceId(event.workspaceId);
+                if (event.subdomain) setSubdomain(event.subdomain);
                 
                 // Snapshot the current file state before applying new one
                 if (fileDataRef.current) {
@@ -374,6 +378,7 @@ export function WorkspaceClient({
           }
           onFilePatch={handleFilePatch}
           appTitle={fileData?.title ?? workspace?.title ?? null}
+          subdomain={subdomain}
           isImproving={false}
           isProUser={userPlan === "pro"}
           onEnvVarsChange={handleEnvVarsChange}

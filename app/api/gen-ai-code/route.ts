@@ -149,7 +149,8 @@ RULES:
 10. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the \`REACT_APP_MONGODB_DATA_API_URL\`, \`REACT_APP_MONGODB_DATA_API_KEY\`, and \`REACT_APP_MONGODB_DATA_API_CLUSTER\` environment variables in the Vercel dashboard.
 11. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
 12. When modifying existing code, output ONLY the files that changed. Unchanged files will be preserved automatically.
-13. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.`;
+13. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
+14. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.`;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
 
@@ -326,9 +327,13 @@ export async function POST(request: NextRequest) {
             { new: true }
           );
         } else {
+          // Generate a unique, readable subdomain (e.g. app-xxxxx)
+          const subdomain = "app-" + Math.random().toString(36).substring(2, 9);
+          
           workspace = await Workspace.create({
             userId: userObjectId,
             title: aiTitle ?? lastUserMessage.content.slice(0, 80),
+            subdomain,
             messages: updatedMessages,
             fileData: newFileData,
           });
@@ -343,6 +348,7 @@ export async function POST(request: NextRequest) {
         enqueue(
           sseEvent("done", {
             workspaceId: workspace!._id.toString(),
+            subdomain: workspace!.subdomain,
             assistantMessage,
             fileData: newFileData,
             creditsRemaining:

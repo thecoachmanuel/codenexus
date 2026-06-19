@@ -43,7 +43,7 @@ export async function getWorkspaceById(
     _id: workspaceId,
     userId: new mongoose.Types.ObjectId(userId),
   })
-    .select("_id title messages fileData")
+    .select("_id title subdomain messages fileData")
     .lean();
 
   if (!workspace) redirect("/");
@@ -51,6 +51,7 @@ export async function getWorkspaceById(
   return {
     id: (workspace._id as mongoose.Types.ObjectId).toString(),
     title: workspace.title ?? null,
+    subdomain: workspace.subdomain,
     messages: workspace.messages,
     fileData: workspace.fileData,
   };
