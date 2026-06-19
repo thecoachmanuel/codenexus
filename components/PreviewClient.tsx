@@ -40,9 +40,10 @@ const TAILWIND_SCRIPT = `
 interface PreviewClientProps {
   fileData: FileData;
   title: string;
+  isProUser?: boolean;
 }
 
-export function PreviewClient({ fileData, title }: PreviewClientProps) {
+export function PreviewClient({ fileData, title, isProUser = false }: PreviewClientProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -84,7 +85,7 @@ export function PreviewClient({ fileData, title }: PreviewClientProps) {
   }
 
   return (
-    <div className="h-full w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-hidden">
       <SandpackProvider
         template="react"
         theme="light"
@@ -117,6 +118,23 @@ export function PreviewClient({ fileData, title }: PreviewClientProps) {
           />
         </SandpackLayout>
       </SandpackProvider>
+
+      {!isProUser && (
+        <a
+          href="https://codenexus.com" // Update to your actual main domain URL if different
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full border border-gray-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-lg backdrop-blur-md transition-transform hover:scale-105 hover:text-gray-900"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/c_logo_short.png"
+            alt="Crevo AI"
+            className="h-4 w-4 rounded-sm"
+          />
+          Made with Crevo AI
+        </a>
+      )}
     </div>
   );
 }
