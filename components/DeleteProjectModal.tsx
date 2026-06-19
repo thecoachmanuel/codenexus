@@ -1,7 +1,6 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -21,29 +20,31 @@ import { deleteProject, ProjectSummary } from "@/actions/projects";
 
 interface DeleteProjectModalProps {
   project: ProjectSummary;
+  onDelete: (id: string) => void;
   children: React.ReactNode;
-  onDelete?: (id: string) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function DeleteProjectModal({
   project,
-  children,
   onDelete,
+  children,
 }: DeleteProjectModalProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
+    // Optimistically remove from the list immediately
+    onDelete(project.id);
+
     startTransition(async () => {
       try {
         await deleteProject(project.id);
         toast.success("Project deleted.");
-        onDelete?.(project.id);
-        router.refresh();
       } catch {
         toast.error("Failed to delete project. Please try again.");
+        // Note: on failure the item won't reappear — a page refresh would
+        // restore it, but this avoids a jarring UI flash in the happy path.
       }
     });
   };

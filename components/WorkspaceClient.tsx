@@ -176,22 +176,6 @@ export function WorkspaceClient({
 
       try {
         const conversationHistory = [...currentMessages, userMessage];
-        // Strip massive fileDataSnapshots before sending to prevent 413 Payload Too Large errors
-        const payloadMessages = conversationHistory.map(({ fileDataSnapshot, ...rest }) => rest);
-
-        // Strip file *code* from fileData — server embeds it into the last message context.
-        // We only send metadata (deps, envVars, title, file paths) to keep payload tiny.
-        const currentFD = fileDataRef.current;
-        const payloadFileData = currentFD
-          ? {
-              dependencies: currentFD.dependencies,
-              envVars: currentFD.envVars,
-              title: currentFD.title,
-              suggestions: currentFD.suggestions,
-              // File paths only, no code
-              filePaths: Object.keys(currentFD.files ?? {}),
-            }
-          : null;
 
         const res = await fetch("/api/gen-ai-code", {
           method: "POST",
@@ -200,14 +184,12 @@ export function WorkspaceClient({
           body: JSON.stringify({
             workspaceId: currentWorkspaceId,
             userId,
-            messages: payloadMessages,
-            fileData: payloadFileData,
+            messages: conversationHistory,
+            fileData: fileDataRef.current,
           }),
         });
 
         if (res.status === 402) {
-          const data = await res.json().catch(() => ({}));
-          toast.error(data.message || "Insufficient credits.");
           setMessages((prev) => prev.slice(0, -1));
           return;
         }
@@ -287,28 +269,6 @@ export function WorkspaceClient({
     // fileData intentionally omitted — read via fileDataRef
   );
 
-  const handleUndoMessage = useCallback(async (index: number) => {
-    if (!workspaceIdRef.current) return;
-    
-    const loadingToast = toast.loading("Undoing changes...");
-    try {
-      const res = await fetch(`/api/workspace/${workspaceIdRef.current}/undo`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ index }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to undo");
-      
-      setMessages(data.messages);
-      setFileData(data.fileData);
-      setFileHistory([]);
-      toast.success("Successfully reverted to previous state.", { id: loadingToast });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to undo", { id: loadingToast });
-    }
-  }, []);
-
   const handleRevert = useCallback(() => {
     setFileHistory((prev) => {
       if (prev.length === 0) return prev;
@@ -383,7 +343,6 @@ export function WorkspaceClient({
           onStop={handleStop}
           onRevert={handleRevert}
           canRevert={fileHistory.length > 0}
-          onUndoMessage={handleUndoMessage}
           userId={userId}
           workspaceId={workspaceId}
           appTitle={fileData?.title ?? workspace?.title ?? null}

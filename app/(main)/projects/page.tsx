@@ -67,6 +67,11 @@ export default function ProjectsPage() {
     router.push("/workspace");
   };
 
+  // Optimistically remove a project from local state
+  const handleDelete = (id: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+  };
+
   return (
     <main className="min-h-screen bg-[#0a0a0a] px-4 py-10">
       <div className="mx-auto max-w-5xl">
@@ -107,10 +112,7 @@ export default function ProjectsPage() {
         ) : projects.length === 0 ? (
           <EmptyState />
         ) : (
-          <ProjectCard 
-            projects={projects} 
-            onDelete={(id) => setProjects(prev => prev.filter(p => p.id !== id))}
-          />
+          <ProjectCard projects={projects} onDelete={handleDelete} />
         )}
       </div>
     </main>

@@ -179,10 +179,8 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
 
       const isLast = idx === trimmed.length - 1;
       if (isLast && fileData) {
-        const filesObj = fileData.files ?? {};
-        const fileSummary = Object.entries(filesObj)
-          .map(([path, fileNode]) => {
-            const code = (fileNode as { code: string }).code;
+        const fileSummary = Object.entries(fileData.files ?? {})
+          .map(([path, { code }]) => {
             const preview = code.length > 3000 ? code.slice(0, 3000) + "\n  ... (truncated)" : code;
             return `// ${path}\n${preview}`;
           })
@@ -214,13 +212,7 @@ export async function POST(request: NextRequest) {
     workspaceId: string | null;
     userId: string;
     messages: Message[];
-    fileData: {
-      dependencies?: Record<string, string>;
-      envVars?: Record<string, string>;
-      title?: string;
-      suggestions?: string[];
-      filePaths?: string[];
-    } | null;
+    fileData: FileData | null;
   };
 
   if (!messages?.length) {
@@ -251,38 +243,11 @@ export async function POST(request: NextRequest) {
         controller.enqueue(encoder.encode(chunk));
 
       try {
-        // ── Fetch full file data from DB (client sends metadata only) ──────────
-        let fullFileData: FileData | null = null;
-        let existingWorkspace: { fileData: unknown; messages: unknown[] } | null = null;
-        if (workspaceId) {
-          existingWorkspace = await Workspace.findById(workspaceId).select("fileData messages") as { fileData: unknown; messages: unknown[] } | null;
-          if (existingWorkspace?.fileData) {
-            const fd = existingWorkspace.fileData as FileData;
-            fullFileData = {
-              files: fd.files ?? {},
-              dependencies: fileData?.dependencies ?? fd.dependencies ?? {},
-              envVars: fileData?.envVars ?? fd.envVars,
-              title: fileData?.title ?? fd.title,
-              suggestions: fileData?.suggestions ?? fd.suggestions,
-            };
-          }
-        }
-        // If no DB file data, reconstruct from client metadata (new workspace)
-        if (!fullFileData && fileData) {
-          fullFileData = {
-            files: {},
-            dependencies: fileData.dependencies ?? {},
-            envVars: fileData.envVars,
-            title: fileData.title,
-            suggestions: fileData.suggestions,
-          };
-        }
-
         // ── GENERATION PASS ──────────────────────────────────────────────────
 
         enqueue(sseEvent("status", { message: "Thinking…" }));
 
-        const contents = buildFrontendContents(messages, fullFileData);
+        const contents = buildFrontendContents(messages, fileData);
 
         const rawJson = await runGeminiPass(
           contents,
@@ -308,7 +273,7 @@ export async function POST(request: NextRequest) {
 
         // ── Merge existing files with new files ────────────────────────────────
 
-        const normalizedFiles: Record<string, { code: string }> = { ...(fullFileData?.files ?? {}) };
+        const normalizedFiles: Record<string, { code: string }> = { ...(fileData?.files ?? {}) };
         
         if (files) {
           for (const [key, value] of Object.entries(files)) {
@@ -325,39 +290,33 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // ── Skip npm validation for speed — trust AI output ──────────────────
-        // (validateDependencies makes live network calls and can cause timeouts)
-        const validatedDeps = { 
-          ...(fullFileData?.dependencies ?? {}), 
+        // ── Validate npm packages ──────────────────────────────────────────────
+
+        enqueue(sseEvent("status", { message: "Validating packages…" }));
+        const validatedDeps = await validateDependencies({ 
+          ...(fileData?.dependencies ?? {}), 
           ...(dependencies ?? {}) 
-        };
+        });
 
         const newFileData: FileData = {
           files: normalizedFiles,
           dependencies: validatedDeps,
-          title: aiTitle ?? fullFileData?.title,
+          title: aiTitle ?? fileData?.title,
           suggestions,
-          envVars: fullFileData?.envVars,
+          envVars: fileData?.envVars,
         };
 
         // ── Upsert workspace + deduct credit ──────────────────────────────────
 
         enqueue(sseEvent("status", { message: "Saving…" }));
 
-        const userObjectId = new mongoose.Types.ObjectId(userId);
-
-        // Restore historical fileDataSnapshots from DB messages (client strips them from payload)
-        let finalMessagesForDb = messages;
-        if (existingWorkspace && Array.isArray(existingWorkspace.messages)) {
-          const historyLength = messages.length - 1;
-          const dbHistory = existingWorkspace.messages.slice(0, historyLength);
-          finalMessagesForDb = [...dbHistory, messages[messages.length - 1]] as Message[];
-        }
-
+        const lastUserMessage = messages[messages.length - 1];
         const updatedMessages: Message[] = [
-          ...finalMessagesForDb,
-          { role: "assistant", content: assistantMessage, fileDataSnapshot: newFileData },
+          ...messages,
+          { role: "assistant", content: assistantMessage },
         ];
+
+        const userObjectId = new mongoose.Types.ObjectId(userId);
 
         let workspace;
         if (workspaceId) {
@@ -369,7 +328,7 @@ export async function POST(request: NextRequest) {
         } else {
           workspace = await Workspace.create({
             userId: userObjectId,
-            title: aiTitle ?? finalMessagesForDb[finalMessagesForDb.length - 1]?.content.slice(0, 80),
+            title: aiTitle ?? lastUserMessage.content.slice(0, 80),
             messages: updatedMessages,
             fileData: newFileData,
           });
