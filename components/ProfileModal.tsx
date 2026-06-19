@@ -389,7 +389,7 @@ export function ProfileModal({ children }: ProfileModalProps) {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger className="cursor-pointer">{children}</DialogTrigger>
       <DialogContent className="border-white/10 bg-[#0d0d0d] p-0 text-white sm:max-w-[460px] overflow-hidden">
         <DialogHeader className="border-b border-white/6 px-5 py-4">
           <DialogTitle className="text-[15px] font-semibold text-white">Account settings</DialogTitle>
