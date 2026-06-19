@@ -179,8 +179,10 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
 
       const isLast = idx === trimmed.length - 1;
       if (isLast && fileData) {
-        const fileSummary = Object.entries(fileData.files ?? {})
-          .map(([path, { code }]) => {
+        const filesObj = fileData.files ?? {};
+        const fileSummary = Object.entries(filesObj)
+          .map(([path, fileNode]) => {
+            const code = (fileNode as { code: string }).code;
             const preview = code.length > 3000 ? code.slice(0, 3000) + "\n  ... (truncated)" : code;
             return `// ${path}\n${preview}`;
           })

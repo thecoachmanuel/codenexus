@@ -192,6 +192,8 @@ export function WorkspaceClient({
         });
 
         if (res.status === 402) {
+          const data = await res.json().catch(() => ({}));
+          toast.error(data.message || "Insufficient credits.");
           setMessages((prev) => prev.slice(0, -1));
           return;
         }
