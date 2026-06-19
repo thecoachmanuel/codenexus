@@ -163,7 +163,7 @@ RULES:
 9. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a purely browser-based React app.
 10. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the \`REACT_APP_MONGODB_DATA_API_URL\`, \`REACT_APP_MONGODB_DATA_API_KEY\`, and \`REACT_APP_MONGODB_DATA_API_CLUSTER\` environment variables in the Vercel dashboard.
 11. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
-12. When modifying existing code, output ONLY the files that changed. Unchanged files will be preserved automatically.
+12. **CRITICAL SPEED OPTIMIZATION**: When modifying existing code, output ONLY the files that you are actually changing or creating. You MUST omit all other files from the "files" object. Unchanged files are preserved automatically. Do not output unchanged files.
 13. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
 14. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.`;
 
@@ -197,10 +197,9 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
       if (isLast && fileData) {
         const fileSummary = Object.entries(fileData.files ?? {})
           .map(([path, { code }]) => {
-            const preview = code.length > 3000 ? code.slice(0, 3000) + "\n  ... (truncated)" : code;
-            return `// ${path}\n${preview}`;
+            return `### ${path}\n\`\`\`\n${code}\n\`\`\``;
           })
-          .join("\n\n---\n\n");
+          .join("\n\n");
 
         text += `\n\nCurrent project files:\n${fileSummary}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
       }
