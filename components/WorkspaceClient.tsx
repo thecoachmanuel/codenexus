@@ -298,6 +298,15 @@ export function WorkspaceClient({
     setFileData(patches);
   }, []);
 
+  const handleEnvVarsChange = useCallback((envVars: Record<string, string>) => {
+    if (fileDataRef.current) {
+      const currentSnapshot = JSON.parse(JSON.stringify(fileDataRef.current));
+      setFileHistory((prev) => [...prev, currentSnapshot]);
+    }
+    setFileData((prev) => prev ? { ...prev, envVars } : { envVars });
+    toast.success("Environment variables updated.");
+  }, []);
+
   // Handle GitHub repo import
 
   const handleGitHubImport = useCallback((imported: FileData, repoName: string) => {
@@ -367,6 +376,7 @@ export function WorkspaceClient({
           appTitle={fileData?.title ?? workspace?.title ?? null}
           isImproving={false}
           isProUser={userPlan === "pro"}
+          onEnvVarsChange={handleEnvVarsChange}
         />
       </div>
     </>

@@ -23,6 +23,9 @@ import {
   Monitor,
   Tablet,
   Smartphone,
+  Settings2,
+  Trash2,
+  Plus,
 } from "lucide-react";
 import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
@@ -61,7 +64,7 @@ const PLACEHOLDER_FILES = {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ActiveTab = "preview" | "code";
+type ActiveTab = "preview" | "code" | "env";
 type PreviewMode = "desktop" | "mobile" | "tablet";
 
 interface CodePanelProps {
@@ -74,6 +77,7 @@ interface CodePanelProps {
   appTitle: string | null;
   isImproving: boolean;
   isProUser: boolean;
+  onEnvVarsChange?: (envVars: Record<string, string>) => void;
 }
 
 // ─── SandpackInner ────────────────────────────────────────────────────────────
@@ -103,6 +107,7 @@ function SandpackInner({
   appTitle: string | null;
   isImproving: boolean;
   isProUser: boolean;
+  onEnvVarsChange?: (envVars: Record<string, string>) => void;
 }) {
   const { sandpack, listen } = useSandpack();
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -111,6 +116,48 @@ function SandpackInner({
   const [improveInput, setImproveInput] = useState("");
   const [showImproveInput, setShowImproveInput] = useState(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  // Environment variables local state
+  const [localEnvVars, setLocalEnvVars] = useState<Record<string, string>>(
+    fileData?.envVars || {}
+  );
+
+  useEffect(() => {
+    if (fileData?.envVars) {
+      setLocalEnvVars(fileData.envVars);
+    }
+  }, [fileData?.envVars]);
+
+  const handleAddEnvVar = () => {
+    setLocalEnvVars({ ...localEnvVars, "": "" });
+  };
+
+  const handleUpdateEnvVarKey = (oldKey: string, newKey: string, value: string) => {
+    const updated = { ...localEnvVars };
+    delete updated[oldKey];
+    updated[newKey] = value;
+    setLocalEnvVars(updated);
+  };
+
+  const handleUpdateEnvVarValue = (key: string, value: string) => {
+    setLocalEnvVars({ ...localEnvVars, [key]: value });
+  };
+
+  const handleDeleteEnvVar = (key: string) => {
+    const updated = { ...localEnvVars };
+    delete updated[key];
+    setLocalEnvVars(updated);
+  };
+
+  const handleSaveEnvVars = () => {
+    if (onEnvVarsChange) {
+      // Remove any empty keys
+      const cleanEnv = Object.fromEntries(
+        Object.entries(localEnvVars).filter(([k]) => k.trim() !== "")
+      );
+      onEnvVarsChange(cleanEnv);
+    }
+  };
 
   // Push file content updates into Sandpack without remounting.
   // This runs whenever fileData changes (e.g. after improve completes).
@@ -368,6 +415,10 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             <Eye className="h-3.5 w-3.5" />
             Preview
           </TabsTrigger>
+          <TabsTrigger className="border-b-2 pt-2" value="env">
+            <Settings2 className="h-3.5 w-3.5" />
+            Environment
+          </TabsTrigger>
         </TabsList>
 
         <div className="flex items-center gap-1.5">
@@ -573,6 +624,67 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
               readOnly
             />
           </TabsContent>
+
+          <TabsContent
+            value="env"
+            keepMounted={false}
+            className="mt-0 h-full w-full overflow-y-auto bg-[#0a0a0a] p-6 text-white"
+          >
+            <div className="mx-auto max-w-2xl space-y-6">
+              <div>
+                <h3 className="text-lg font-medium text-white/90">Environment Variables</h3>
+                <p className="mt-1 text-sm text-white/50">
+                  Configure variables like your MongoDB Atlas Data API keys here. These will be injected into <code>process.env</code> for the generated React app.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {Object.entries(localEnvVars).map(([key, value], idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      placeholder="KEY (e.g. REACT_APP_MONGODB_DATA_API_KEY)"
+                      value={key}
+                      onChange={(e) => handleUpdateEnvVarKey(key, e.target.value, value)}
+                      className="w-1/2 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/20 focus:border-violet-500 focus:outline-none"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Value"
+                      value={value}
+                      onChange={(e) => handleUpdateEnvVarValue(key, e.target.value)}
+                      className="w-1/2 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/20 focus:border-violet-500 focus:outline-none"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteEnvVar(key)}
+                      className="h-9 w-9 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button
+                  onClick={handleAddEnvVar}
+                  variant="outline"
+                  className="border-white/20 bg-transparent text-white hover:bg-white/10"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Variable
+                </Button>
+                <Button
+                  onClick={handleSaveEnvVars}
+                  className="bg-violet-600 text-white hover:bg-violet-700"
+                >
+                  Save & Reload
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
         </SandpackLayout>
       </div>
 
@@ -618,6 +730,7 @@ export function CodePanel({
   appTitle,
   isImproving,
   isProUser,
+  onEnvVarsChange,
 }: CodePanelProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
@@ -668,7 +781,10 @@ export function CodePanel({
         template="react"
         theme={dracula}
         files={files}
-        customSetup={{ dependencies }}
+        customSetup={{ 
+          dependencies,
+          environment: fileData?.envVars || {}
+        }}
         options={{
           externalResources: ["https://cdn.tailwindcss.com"],
           recompileMode: "delayed",
@@ -686,6 +802,7 @@ export function CodePanel({
           appTitle={appTitle}
           isImproving={isImproving}
           isProUser={isProUser}
+          onEnvVarsChange={onEnvVarsChange}
         />
       </SandpackProvider>
     </div>

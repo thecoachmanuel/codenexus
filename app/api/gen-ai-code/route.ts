@@ -138,20 +138,18 @@ OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra t
 
 RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
-2. Use Tailwind CSS for all styling.
-3. Entry point MUST be /App.js with a default export.
-4. All imports must reference files you include or packages in "dependencies".
-5. Do NOT include react, react-dom, tailwindcss in "dependencies".
-6. Keep code clean, readable, production-quality.
-7. NEVER use local image paths. For images use:
-   - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true
-   - https://placehold.co/600x400/png
-   - https://ui-avatars.com/api/?name=Name&background=random
-8. ALWAYS include a /README.md describing the project and how to run it.
-9. You must SIMULATE all data using localStorage, in-memory arrays, or mock delays. Do not attempt to connect to a real backend.
-10. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
-11. When modifying existing code, output ONLY the files that changed. Unchanged files will be preserved automatically.
-12. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.`;
+2. Use standard clean React architecture: put components in \`/src/components\`, pages in \`/src/pages\`, hooks in \`/src/hooks\`, and utils in \`/src/lib\`.
+3. Entry point MUST be \`/App.js\` with a default export.
+4. Use Tailwind CSS for all styling.
+5. All imports must reference files you include or packages in "dependencies".
+6. Do NOT include react, react-dom, tailwindcss in "dependencies".
+7. Keep code clean, readable, production-quality.
+8. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
+9. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. \`/src/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a purely browser-based React app.
+10. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the \`REACT_APP_MONGODB_DATA_API_URL\`, \`REACT_APP_MONGODB_DATA_API_KEY\`, and \`REACT_APP_MONGODB_DATA_API_CLUSTER\` environment variables in the Vercel dashboard.
+11. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
+12. When modifying existing code, output ONLY the files that changed. Unchanged files will be preserved automatically.
+13. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.`;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
 
@@ -300,6 +298,7 @@ export async function POST(request: NextRequest) {
           dependencies: validatedDeps,
           title: aiTitle ?? fileData?.title,
           suggestions,
+          envVars: fileData?.envVars,
         };
 
         // ── Upsert workspace + deduct credit ──────────────────────────────────

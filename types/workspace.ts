@@ -13,6 +13,7 @@ export interface FileData {
   dependencies?: Record<string, string>;
   title?: string;
   suggestions?: string[];
+  envVars?: Record<string, string>;
 }
 
 export interface StatusStep {
