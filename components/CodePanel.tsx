@@ -710,7 +710,11 @@ export function CodePanel({
         if (normalizedKey.startsWith("/src/")) {
           normalizedKey = normalizedKey.replace("/src/", "/");
         }
-        f[normalizedKey] = val;
+        let rawCode = val.code;
+        if (typeof rawCode === "string") {
+          rawCode = rawCode.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
+        }
+        f[normalizedKey] = { ...val, code: rawCode };
       }
     }
     

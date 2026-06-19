@@ -277,7 +277,13 @@ export async function POST(request: NextRequest) {
             let path = key;
             if (!path.startsWith("/")) path = "/" + path;
             if (path.startsWith("/src/") && path.endsWith("App.js")) path = "/App.js";
-            normalizedFiles[path] = value;
+            
+            // Clean markdown fences (e.g. ```jsx ... ```)
+            let rawCode = value.code;
+            if (typeof rawCode === "string") {
+              rawCode = rawCode.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
+            }
+            normalizedFiles[path] = { ...value, code: rawCode };
           }
         }
 
