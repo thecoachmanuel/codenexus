@@ -290,7 +290,10 @@ function SandpackInner({
           typeof fileObj === "object" && fileObj !== null && "code" in fileObj
             ? (fileObj as { code: string }).code
             : "";
-        const relativePath = filePath.startsWith("/") ? filePath.slice(1) : filePath;
+        let relativePath = filePath.startsWith("/") ? filePath.slice(1) : filePath;
+        if (relativePath.startsWith("src/")) {
+          relativePath = relativePath.slice(4);
+        }
         zip.file(`src/${relativePath}`, code);
       }
 
@@ -700,10 +703,14 @@ export function CodePanel({
     // Inject the base React boilerplate
     const f: Record<string, { code: string }> = { ...VITE_REACT_BOILERPLATE };
     
-    // Override with AI-generated files
+    // Override with AI-generated files, normalizing /src paths to root
     for (const [key, val] of Object.entries(fileData.files)) {
       if (val && typeof val.code === "string") {
-        f[key] = val;
+        let normalizedKey = key;
+        if (normalizedKey.startsWith("/src/")) {
+          normalizedKey = normalizedKey.replace("/src/", "/");
+        }
+        f[normalizedKey] = val;
       }
     }
     

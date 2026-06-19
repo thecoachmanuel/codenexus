@@ -130,10 +130,10 @@ WORKFLOW:
 4. Once all files are updated, call \`done_improving\` with a short summary.
 
 CRITICAL RULES:
-1. Use standard clean React architecture: \`/src/components\`, \`/src/pages\`, \`/src/hooks\`, \`/src/lib\`.
+1. Use standard clean React architecture: \`/components\`, \`/pages\`, \`/hooks\`, \`/lib\`.
 2. Entry point MUST be \`/App.js\` with a default export. NO TypeScript in generated code.
 3. Use Tailwind CSS for all styling.
-4. **DUAL-MODE DATABASE**: If modifying data fetching, use the data abstraction layer (e.g. \`/src/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a browser-based React app.
+4. **DUAL-MODE DATABASE**: If modifying data fetching, use the data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a browser-based React app.
 5. **DEPLOYMENT**: Keep the \`/README.md\` up to date. It should detail exactly how to run the app AND deploy it to Vercel (including where to configure the \`REACT_APP_MONGODB_DATA_API_KEY\` environment variables in the Vercel dashboard).
 6. Always write complete file contents — never partial snippets.
 7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png`,
