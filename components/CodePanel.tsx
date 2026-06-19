@@ -722,6 +722,7 @@ export function CodePanel({
   isImproving,
   isProUser,
   onEnvVarsChange,
+  subdomain,
 }: CodePanelProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
