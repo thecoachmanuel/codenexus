@@ -9,6 +9,7 @@ import { getUserProjects } from "@/actions/projects";
 import { BlueTitle } from "@/components/reusables";
 import { Button } from "@/components/ui/button";
 import { GitHubImportModal } from "@/components/GitHubImportModal";
+import { checkIsAdmin } from "@/actions/admin";
 import type { FileData } from "@/types/workspace";
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
@@ -39,6 +40,7 @@ export default function ProjectsPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Awaited<ReturnType<typeof getUserProjects>>>([]);
   const [userPlan, setUserPlan] = useState<string>("free");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,6 +54,9 @@ export default function ProjectsPage() {
           const me = await meRes.json();
           setUserPlan(me.user?.plan ?? "free");
         }
+        
+        const adminStatus = await checkIsAdmin();
+        setIsAdmin(adminStatus);
       } catch {
         router.push("/sign-in");
       } finally {
@@ -85,15 +90,17 @@ export default function ProjectsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {/* GitHub Import Button */}
-            <GitHubImportModal
-              isProUser={userPlan === "pro"}
-              onImport={handleGitHubImport}
-            >
-              <Button variant="ghost" className="cursor-pointer border border-white/20 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white">
-                <GitBranch className="h-3.5 w-3.5" />
-                Import from GitHub
-              </Button>
-            </GitHubImportModal>
+            {isAdmin && (
+              <GitHubImportModal
+                isProUser={userPlan === "pro"}
+                onImport={handleGitHubImport}
+              >
+                <Button variant="ghost" className="cursor-pointer border border-white/20 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white">
+                  <GitBranch className="h-3.5 w-3.5" />
+                  Import from GitHub
+                </Button>
+              </GitHubImportModal>
+            )}
 
             <Link href="/">
               <Button className="cursor-pointer">
