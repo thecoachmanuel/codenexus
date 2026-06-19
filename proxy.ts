@@ -22,6 +22,26 @@ const PUBLIC_PATTERNS = [
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get("host") || "";
+
+  // ─── Subdomain Routing ────────────────────────────────────────────────────────
+  let subdomain: string | null = null;
+  if (hostname.includes("localhost:3000")) {
+    if (hostname !== "localhost:3000") {
+      subdomain = hostname.replace(".localhost:3000", "");
+    }
+  } else {
+    const cleanHost = hostname.split(":")[0];
+    const parts = cleanHost.split(".");
+    if (parts.length >= 3 && parts[0].startsWith("app-")) {
+      subdomain = parts[0];
+    }
+  }
+
+  if (subdomain && subdomain !== "www" && !pathname.startsWith('/api')) {
+    return NextResponse.rewrite(new URL(`/preview/${subdomain}${pathname}`, request.url));
+  }
+  // ──────────────────────────────────────────────────────────────────────────────
 
   // Allow public routes
   if (PUBLIC_PATTERNS.some((p) => p.test(pathname))) {
