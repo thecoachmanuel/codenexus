@@ -8,9 +8,10 @@ import { DeleteProjectModal } from "./DeleteProjectModal";
 
 interface ProjectCardProps {
   projects: ProjectSummary[];
+  onDelete?: (id: string) => void;
 }
 
-export function ProjectCard({ projects }: ProjectCardProps) {
+export function ProjectCard({ projects, onDelete }: ProjectCardProps) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {projects.map((project) => {
@@ -36,7 +37,7 @@ export function ProjectCard({ projects }: ProjectCardProps) {
               <p className="line-clamp-1 text-base font-medium leading-snug text-white">
                 {title}
               </p>
-              <DeleteProjectModal project={project}>
+              <DeleteProjectModal project={project} onDelete={onDelete}>
                 <span className="relative z-10 text-white/40 hover:text-red-400">
                   <Trash2 className="h-3.5 w-3.5" />
                 </span>

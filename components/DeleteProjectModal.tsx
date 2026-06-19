@@ -22,6 +22,7 @@ import { deleteProject, ProjectSummary } from "@/actions/projects";
 interface DeleteProjectModalProps {
   project: ProjectSummary;
   children: React.ReactNode;
+  onDelete?: (id: string) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -29,6 +30,7 @@ interface DeleteProjectModalProps {
 export function DeleteProjectModal({
   project,
   children,
+  onDelete,
 }: DeleteProjectModalProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -38,6 +40,7 @@ export function DeleteProjectModal({
       try {
         await deleteProject(project.id);
         toast.success("Project deleted.");
+        onDelete?.(project.id);
         router.refresh();
       } catch {
         toast.error("Failed to delete project. Please try again.");

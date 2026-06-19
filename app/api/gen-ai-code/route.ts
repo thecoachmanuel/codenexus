@@ -313,7 +313,7 @@ export async function POST(request: NextRequest) {
         const lastUserMessage = messages[messages.length - 1];
         const updatedMessages: Message[] = [
           ...messages,
-          { role: "assistant", content: assistantMessage },
+          { role: "assistant", content: assistantMessage, fileDataSnapshot: newFileData },
         ];
 
         const userObjectId = new mongoose.Types.ObjectId(userId);

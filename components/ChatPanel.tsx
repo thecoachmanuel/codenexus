@@ -11,8 +11,11 @@ import {
   Wand2,
   Square,
   Undo2,
-  ChevronRight
+  ChevronRight,
+  Copy,
+  RotateCcw
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
@@ -38,6 +41,7 @@ interface ChatPanelProps {
   suggestions?: string[];
   onRevert?: () => void;
   canRevert?: boolean;
+  onUndoMessage?: (index: number) => void;
 }
 
 export function ChatPanel({
@@ -57,10 +61,16 @@ export function ChatPanel({
   suggestions,
   onRevert,
   canRevert,
+  onUndoMessage,
 }: ChatPanelProps) {
   const { user } = useAuthContext();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast.success("Message copied to clipboard!");
+  };
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [input, setInput] = useState("");
@@ -193,7 +203,27 @@ export function ChatPanel({
             const isLiveStream = isLast && isStreamingAssistant;
 
             return (
-              <div key={i}>
+              <div key={i} className="group relative">
+                {/* Floating Action Bar */}
+                <div className="absolute right-0 top-0 -translate-y-1/2 opacity-0 flex items-center gap-1 bg-[#111111] border border-white/10 rounded-lg p-1 shadow-xl transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0 z-10">
+                  <button
+                    onClick={() => handleCopy(msg.content)}
+                    className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                    title="Copy message"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </button>
+                  {onUndoMessage && workspaceId && (
+                    <button
+                      onClick={() => onUndoMessage(i)}
+                      className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"
+                      title="Revert project to this point"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+
                 {msg.role === "user" ? (
                   <div className="flex items-start justify-end gap-2">
                     <div className="max-w-[85%] space-y-1.5">

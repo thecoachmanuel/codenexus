@@ -6,6 +6,7 @@ export interface Message {
   role: MessageRole;
   content: string;
   imageUrl?: string;
+  fileDataSnapshot?: FileData;
 }
 
 export interface FileData {

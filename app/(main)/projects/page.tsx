@@ -107,7 +107,10 @@ export default function ProjectsPage() {
         ) : projects.length === 0 ? (
           <EmptyState />
         ) : (
-          <ProjectCard projects={projects} />
+          <ProjectCard 
+            projects={projects} 
+            onDelete={(id) => setProjects(prev => prev.filter(p => p.id !== id))}
+          />
         )}
       </div>
     </main>

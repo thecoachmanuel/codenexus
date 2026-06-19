@@ -269,6 +269,28 @@ export function WorkspaceClient({
     // fileData intentionally omitted — read via fileDataRef
   );
 
+  const handleUndoMessage = useCallback(async (index: number) => {
+    if (!workspaceIdRef.current) return;
+    
+    const loadingToast = toast.loading("Undoing changes...");
+    try {
+      const res = await fetch(`/api/workspace/${workspaceIdRef.current}/undo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ index }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to undo");
+      
+      setMessages(data.messages);
+      setFileData(data.fileData);
+      setFileHistory([]);
+      toast.success("Successfully reverted to previous state.", { id: loadingToast });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to undo", { id: loadingToast });
+    }
+  }, []);
+
   const handleRevert = useCallback(() => {
     setFileHistory((prev) => {
       if (prev.length === 0) return prev;
@@ -343,6 +365,7 @@ export function WorkspaceClient({
           onStop={handleStop}
           onRevert={handleRevert}
           canRevert={fileHistory.length > 0}
+          onUndoMessage={handleUndoMessage}
           userId={userId}
           workspaceId={workspaceId}
           appTitle={fileData?.title ?? workspace?.title ?? null}
