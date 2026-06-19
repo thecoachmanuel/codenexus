@@ -310,13 +310,24 @@ export async function POST(request: NextRequest) {
 
         enqueue(sseEvent("status", { message: "Saving…" }));
 
-        const lastUserMessage = messages[messages.length - 1];
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
+        let finalMessagesForDb = messages;
+        if (workspaceId) {
+          const existingWorkspace = await Workspace.findById(workspaceId).select("messages");
+          if (existingWorkspace && Array.isArray(existingWorkspace.messages)) {
+            // Restore historical fileDataSnapshots from the DB
+            // We use DB messages up to the length of the client payload minus 1 (the new user prompt)
+            const historyLength = messages.length - 1;
+            const dbHistory = existingWorkspace.messages.slice(0, historyLength);
+            finalMessagesForDb = [...dbHistory, messages[messages.length - 1]] as Message[];
+          }
+        }
+
         const updatedMessages: Message[] = [
-          ...messages,
+          ...finalMessagesForDb,
           { role: "assistant", content: assistantMessage, fileDataSnapshot: newFileData },
         ];
-
-        const userObjectId = new mongoose.Types.ObjectId(userId);
 
         let workspace;
         if (workspaceId) {
@@ -328,7 +339,7 @@ export async function POST(request: NextRequest) {
         } else {
           workspace = await Workspace.create({
             userId: userObjectId,
-            title: aiTitle ?? lastUserMessage.content.slice(0, 80),
+            title: aiTitle ?? finalMessagesForDb[finalMessagesForDb.length - 1]?.content.slice(0, 80),
             messages: updatedMessages,
             fileData: newFileData,
           });

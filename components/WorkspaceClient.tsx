@@ -175,7 +175,8 @@ export function WorkspaceClient({
       generateAbortRef.current = abortController;
 
       try {
-        const conversationHistory = [...currentMessages, userMessage];
+        // Strip massive fileDataSnapshots before sending to prevent 413 Payload Too Large errors
+        const payloadMessages = conversationHistory.map(({ fileDataSnapshot, ...rest }) => rest);
 
         const res = await fetch("/api/gen-ai-code", {
           method: "POST",
@@ -184,7 +185,7 @@ export function WorkspaceClient({
           body: JSON.stringify({
             workspaceId: currentWorkspaceId,
             userId,
-            messages: conversationHistory,
+            messages: payloadMessages,
             fileData: fileDataRef.current,
           }),
         });
