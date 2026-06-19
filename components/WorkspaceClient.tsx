@@ -103,7 +103,7 @@ export function WorkspaceClient({
       setMessages([
         {
           role: "assistant",
-          content: `✅ Successfully imported **${repoName}** from GitHub.\n\n${Object.keys(imported.files).length} files loaded into your workspace. You can now ask me to modify, refactor, add features, or explain any part of the code.`,
+          content: `✅ Successfully imported **${repoName}** from GitHub.\n\n${Object.keys(imported.files ?? {}).length} files loaded into your workspace. You can now ask me to modify, refactor, add features, or explain any part of the code.`,
         },
       ]);
     } catch {
@@ -315,10 +315,10 @@ export function WorkspaceClient({
       ...prev,
       {
         role: "assistant" as const,
-        content: `✅ Successfully imported **${repoName}** from GitHub.\n\n${Object.keys(imported.files).length} files loaded into your workspace. You can now ask me to modify, refactor, add features, or explain any part of the code.`,
+        content: `✅ Successfully imported **${repoName}** from GitHub.\n\n${Object.keys(imported.files ?? {}).length} files loaded into your workspace. You can now ask me to modify, refactor, add features, or explain any part of the code.`,
       },
     ]);
-    toast.success(`Imported ${repoName} — ${Object.keys(imported.files).length} files loaded.`);
+    toast.success(`Imported ${repoName} — ${Object.keys(imported.files ?? {}).length} files loaded.`);
   }, []);
 
   return (

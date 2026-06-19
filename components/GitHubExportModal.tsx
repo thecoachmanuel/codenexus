@@ -182,7 +182,7 @@ export function GitHubExportModal({
     }
   };
 
-  const fileCount = fileData ? Object.keys(fileData.files).length : 0;
+  const fileCount = fileData ? Object.keys(fileData.files ?? {}).length : 0;
 
   return (
     <Dialog

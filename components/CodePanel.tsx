@@ -96,6 +96,7 @@ function SandpackInner({
   appTitle,
   isImproving,
   isProUser,
+  onEnvVarsChange,
 }: {
   isGenerating: boolean;
   statusLog: StatusStep[];
@@ -718,6 +719,14 @@ export function CodePanel({
         delete f[path];
       }
     }
+    // Inject env variables directly into process.env at runtime
+    if (fileData?.envVars && Object.keys(fileData.envVars).length > 0) {
+      const envInject = `window.process = { env: ${JSON.stringify(fileData.envVars)} };\n`;
+      if (f["/index.js"]) {
+        f["/index.js"].code = envInject + f["/index.js"].code;
+      }
+    }
+
     return f;
   }, [fileData]);
   const dependencies = {
@@ -737,8 +746,7 @@ export function CodePanel({
         theme={dracula}
         files={files}
         customSetup={{ 
-          dependencies,
-          environment: fileData?.envVars || {}
+          dependencies
         }}
         options={{
           externalResources: ["https://cdn.tailwindcss.com"],

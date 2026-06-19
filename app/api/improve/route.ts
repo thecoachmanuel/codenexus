@@ -59,10 +59,7 @@ export async function POST(request: NextRequest) {
         controller.enqueue(encoder.encode(chunk));
 
       const patchedFiles: Record<string, { code: string }> = {
-        ...fileData.files,
-      };
-      const patchedBackendFiles: Record<string, { code: string }> = {
-        ...(fileData.backendFiles ?? {}),
+        ...(fileData.files ?? {}),
       };
       let finalSummary = "";
 
@@ -91,26 +88,6 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      const updateBackendFileTool = createTool({
-        name: "update_backend_file",
-        description:
-          "Update or rewrite a BACKEND file (Express/MongoDB). Call once per file you need to change.",
-        inputSchema: z.object({
-          path: z
-            .string()
-            .describe("File path exactly as it appears, e.g. /server.js or /models/User.js"),
-          code: z.string().describe("Complete new contents of the file"),
-          reason: z
-            .string()
-            .describe("One sentence explaining what you changed and why"),
-        }),
-        async execute({ path, code, reason }) {
-          let normalizedPath = path;
-          if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-          patchedBackendFiles[normalizedPath] = { code };
-          return `Updated backend ${normalizedPath}: ${reason}`;
-        },
-      });
 
       const doneImprovingTool = createTool({
         name: "done_improving",
@@ -131,27 +108,16 @@ export async function POST(request: NextRequest) {
       });
 
       let fileContext = "FRONTEND FILES (React):\n";
-      fileContext += Object.entries(fileData.files)
+      fileContext += Object.entries(fileData.files ?? {})
         .map(([path, { code }]) => `// ${path}\n${code}`)
         .join("\n\n---\n\n");
-
-      if (fileData.backendFiles && Object.keys(fileData.backendFiles).length > 0) {
-        fileContext += "\n\nBACKEND FILES (Express/MongoDB):\n";
-        fileContext += Object.entries(fileData.backendFiles)
-          .map(([path, { code }]) => `// ${path}\n${code}`)
-          .join("\n\n---\n\n");
-      }
 
       const agent = new Agent({
         providerId: "gemini",
         modelId: PRO_MODEL,
         apiKey: getApiKey(),
         maxIterations: 8,
-        systemPrompt: `You are an expert full-stack React/Express developer improving an app.
-
-The app consists of two layers:
-1. A live browser preview (Frontend) using React + Tailwind CSS.
-2. An exported real backend (Backend) using Express + MongoDB.
+        systemPrompt: `You are an expert full-stack React developer improving an app.
 
 Here are the current files:
 
@@ -159,27 +125,21 @@ ${fileContext}
 
 WORKFLOW:
 1. Understand what the user wants improved.
-2. Identify which frontend AND backend files need to change.
+2. Identify which frontend files need to change.
 3. Call \`update_file\` for frontend files.
-4. Call \`update_backend_file\` for backend files.
-5. Once all files are updated, call \`done_improving\` with a short summary.
+4. Once all files are updated, call \`done_improving\` with a short summary.
 
 CRITICAL RULES:
-- The frontend live preview CANNOT run a real backend. All frontend API/Auth logic MUST be simulated using \`localStorage\` so the preview works seamlessly without a server.
-- The real backend files must be kept in sync with the frontend's data structures for when the user exports the ZIP.
-- Always write complete file contents — never partial snippets.
-- Keep all existing functionality unless asked to remove it.
-- The frontend entry point is always /App.js with a default export.
-- ALWAYS keep the /README.md file up-to-date with any new environment variables, setup instructions, or deployment steps if your changes require them.
-- NEVER use local image paths (like /assets/img.png).
-- For placeholder images, ALWAYS use:
-  - https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true
-  - https://placehold.co/600x400/png
-  - https://ui-avatars.com/api/?name=John+Doe&background=random`,
-        tools: [updateFileTool, updateBackendFileTool, doneImprovingTool],
+1. Use standard clean React architecture: \`/src/components\`, \`/src/pages\`, \`/src/hooks\`, \`/src/lib\`.
+2. Entry point MUST be \`/App.js\` with a default export. NO TypeScript in generated code.
+3. Use Tailwind CSS for all styling.
+4. **DUAL-MODE DATABASE**: If modifying data fetching, use the data abstraction layer (e.g. \`/src/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a browser-based React app.
+5. **DEPLOYMENT**: Keep the \`/README.md\` up to date. It should detail exactly how to run the app AND deploy it to Vercel (including where to configure the \`REACT_APP_MONGODB_DATA_API_KEY\` environment variables in the Vercel dashboard).
+6. Always write complete file contents — never partial snippets.
+7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png`,
+        tools: [updateFileTool, doneImprovingTool],
         toolPolicies: {
           update_file: { autoApprove: true },
-          update_backend_file: { autoApprove: true },
           done_improving: { autoApprove: true },
         },
         hooks: {
@@ -189,7 +149,7 @@ CRITICAL RULES:
             }
             if (event.type === "tool-started") {
               const name = event.toolCall?.toolName;
-              if (name === "update_file" || name === "update_backend_file") {
+              if (name === "update_file") {
                 const path =
                   (event.toolCall?.input as { path?: string })?.path ?? "a file";
                 enqueue(
@@ -217,7 +177,8 @@ CRITICAL RULES:
           files: patchedFiles,
           dependencies: fileData.dependencies,
           title: fileData.title,
-          backendFiles: Object.keys(patchedBackendFiles).length > 0 ? patchedBackendFiles : undefined,
+          envVars: fileData.envVars,
+          suggestions: fileData.suggestions,
         };
 
         const userObjectId = new mongoose.Types.ObjectId(userId);
