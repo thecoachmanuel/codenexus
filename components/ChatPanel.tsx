@@ -97,7 +97,7 @@ export function ChatPanel({
     const el = scrollContainerRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [messages, isGenerating, isImproving]);
+  }, [messages, isGenerating, isImproving, statusLog]);
 
   useEffect(() => {
     // undefined = image not yet resolved from sessionStorage, skip until it's ready
