@@ -22,7 +22,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Crevo - AI App Builder",
+  title: "crevo-app",
   description: "",
   icons: {
     icon: "/logo-short.jpeg",
