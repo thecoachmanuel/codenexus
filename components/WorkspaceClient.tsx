@@ -179,6 +179,20 @@ export function WorkspaceClient({
         // Strip massive fileDataSnapshots before sending to prevent 413 Payload Too Large errors
         const payloadMessages = conversationHistory.map(({ fileDataSnapshot, ...rest }) => rest);
 
+        // Strip file *code* from fileData — server embeds it into the last message context.
+        // We only send metadata (deps, envVars, title, file paths) to keep payload tiny.
+        const currentFD = fileDataRef.current;
+        const payloadFileData = currentFD
+          ? {
+              dependencies: currentFD.dependencies,
+              envVars: currentFD.envVars,
+              title: currentFD.title,
+              suggestions: currentFD.suggestions,
+              // File paths only, no code
+              filePaths: Object.keys(currentFD.files ?? {}),
+            }
+          : null;
+
         const res = await fetch("/api/gen-ai-code", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -187,7 +201,7 @@ export function WorkspaceClient({
             workspaceId: currentWorkspaceId,
             userId,
             messages: payloadMessages,
-            fileData: fileDataRef.current,
+            fileData: payloadFileData,
           }),
         });
 
