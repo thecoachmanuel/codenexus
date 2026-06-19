@@ -101,16 +101,31 @@ function safeParseJSON<T>(raw: string): T | null {
   try {
     return JSON.parse(raw) as T;
   } catch {
-    try {
-      let attempt = raw.trim();
-      attempt = attempt.replace(/,?\s*"[^"]*$/, "");
-      const openBraces = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
-      const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
-      attempt += "}".repeat(Math.max(0, openBraces)) + "]".repeat(Math.max(0, openBrackets));
-      return JSON.parse(attempt) as T;
-    } catch {
-      return null;
+    // If standard parsing fails, try to extract just the JSON object
+    let cleaned = raw;
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+      try {
+        return JSON.parse(cleaned) as T;
+      } catch {
+        // Fallback truncation recovery on the extracted JSON
+        try {
+          let attempt = cleaned.trim();
+          attempt = attempt.replace(/,?\s*"[^"]*$/, "");
+          const openBraces = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
+          const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
+          attempt += "}".repeat(Math.max(0, openBraces)) + "]".repeat(Math.max(0, openBrackets));
+          return JSON.parse(attempt) as T;
+        } catch {
+          return null;
+        }
+      }
     }
+    
+    return null;
   }
 }
 
