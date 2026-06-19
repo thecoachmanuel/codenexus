@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   User,
-  KeyRound,
-  Github,
+  Key,
+  GithubIcon,
   Rocket,
   LogOut,
   Loader2,
@@ -261,7 +261,7 @@ function IntegrationsTab() {
         Connect external services to unlock Export to GitHub and 1-Click Vercel deployment features.
       </p>
       <IntegrationRow
-        icon={Github}
+        icon={GithubIcon}
         label="GitHub"
         description="Export your apps to GitHub repositories"
         tokenKey="github-token"
