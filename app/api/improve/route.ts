@@ -160,7 +160,8 @@ CRITICAL RULES:
 5. **DEPLOYMENT**: Keep the \`/README.md\` up to date. It should detail exactly how to run the app AND deploy it to Vercel (including where to configure the \`REACT_APP_MONGODB_DATA_API_KEY\` environment variables in the Vercel dashboard).
 6. Always write complete file contents — never partial snippets.
 7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-8. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.`,
+8. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
+9. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.`,
             tools: [listFilesTool, readFileTool, updateFileTool, doneImprovingTool],
             toolPolicies: {
               list_files: { autoApprove: true },

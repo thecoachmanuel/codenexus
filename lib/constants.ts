@@ -79,11 +79,6 @@ export const VITE_REACT_BOILERPLATE = {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>React App</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-      }
-    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -118,7 +113,7 @@ root.render(
   "/App.js": {
     code: `export default function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-white/30">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-400">
       <div className="text-center">
         <div className="text-4xl mb-4">⚡</div>
         <p className="text-sm font-medium">Your React app will appear here</p>

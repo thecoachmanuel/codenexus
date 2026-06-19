@@ -165,7 +165,8 @@ RULES:
 11. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
 12. **CRITICAL SPEED OPTIMIZATION**: When modifying existing code, output ONLY the files that you are actually changing or creating. You MUST omit all other files from the "files" object. Unchanged files are preserved automatically. Do not output unchanged files.
 13. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
-14. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.`;
+14. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
+15. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.`;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
 
