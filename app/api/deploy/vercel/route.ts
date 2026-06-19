@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const vercelFiles: { file: string; data: string }[] = [];
 
   // Base boilerplate files
-  const baseFiles = { ...VITE_REACT_BOILERPLATE };
+  const baseFiles: Record<string, { code: string }> = { ...VITE_REACT_BOILERPLATE };
   
   // Merge AI files
   for (const [path, val] of Object.entries(fileData.files)) {

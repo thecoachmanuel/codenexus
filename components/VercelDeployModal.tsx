@@ -150,7 +150,7 @@ export function VercelDeployModal({
         }
       }}
     >
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger className="cursor-pointer">{children}</DialogTrigger>
       <DialogContent className="border-white/15 bg-[#0d0d0d] text-white sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2.5 text-white">
