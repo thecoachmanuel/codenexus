@@ -3,25 +3,17 @@ import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { generateContentStream, DEFAULT_MODEL } from "@/lib/gemini";
+import { DEFAULT_MODEL, getApiKey } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
+import { Agent, createTool } from "@cline/sdk";
+import { z } from "zod";
 
 // ─── SSE helper ───────────────────────────────────────────────────────────────
 
 function sseEvent(type: string, payload: unknown): string {
   return `data: ${JSON.stringify({ type, ...(payload as object) })}\n\n`;
-}
-
-// ─── Extract short label from a Gemini thought chunk ─────────────────────────
-
-function extractThoughtLabel(text: string): string | null {
-  const boldMatch = text.match(/\*\*([^*]{4,60})\*\*/);
-  if (boldMatch) return boldMatch[1].trim();
-  const sentence = text.split(/[.\n]/)[0].trim();
-  if (sentence.length >= 8 && sentence.length <= 80) return sentence;
-  return null;
 }
 
 // ─── npm validation ───────────────────────────────────────────────────────────
@@ -52,167 +44,28 @@ function trimHistory(messages: Message[]): Message[] {
   return [messages[0], ...messages.slice(-8)];
 }
 
-// ─── Helper: run a single Gemini streaming call and collect the full text ─────
-
-async function runGeminiPass(
-  contents: object[],
-  systemInstruction: string,
-  onThought: (label: string) => void
-): Promise<string> {
-  const geminiStream = await generateContentStream({
-    model: DEFAULT_MODEL,
-    contents,
-    config: {
-      systemInstruction,
-      temperature: 0.7,
-      responseMimeType: "application/json",
-      // thinkingConfig: { includeThoughts: true }, // Flash does not support thinking
-      maxOutputTokens: 32768,
-    },
-  });
-
-  let accumulated = "";
-  let lastEmitTime = 0;
-
-  for await (const chunk of geminiStream) {
-    const parts = chunk.candidates?.[0]?.content?.parts ?? [];
-    for (const part of parts) {
-      if (!part.text) continue;
-      if (part.thought) {
-        const now = Date.now();
-        if (now - lastEmitTime > 600) {
-          const label = extractThoughtLabel(part.text);
-          if (label) {
-            onThought(label);
-            lastEmitTime = now;
-          }
-        }
-      } else {
-        accumulated += part.text;
-      }
-    }
-  }
-  return accumulated;
-}
-
-// ─── Helper: safely parse JSON with truncation recovery ──────────────────────
-
-function safeParseJSON<T>(raw: string): T | null {
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    // If standard parsing fails, try to extract just the JSON object
-    let cleaned = raw;
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-      try {
-        return JSON.parse(cleaned) as T;
-      } catch {
-        // Fallback truncation recovery on the extracted JSON
-        try {
-          let attempt = cleaned.trim();
-          attempt = attempt.replace(/,?\s*"[^"]*$/, "");
-          const openBraces = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
-          const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
-          attempt += "}".repeat(Math.max(0, openBraces)) + "]".repeat(Math.max(0, openBrackets));
-          return JSON.parse(attempt) as T;
-        } catch {
-          return null;
-        }
-      }
-    }
-    
-    return null;
-  }
-}
-
 // ─── System Prompts ───────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are an expert React developer. Generate a complete, working React frontend application.
+const SYSTEM_PROMPT = `You are an expert React developer. Generate a complete, working React frontend application using the provided tools.
 
-OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra text.
-{
-  "assistantMessage": "<chat response or brief explanation of what you built/changed>",
-  "title": "<short 2-4 word title>",
-  "suggestions": [
-    "Add a dark mode toggle",
-    "Implement the settings page",
-    "Add sample data to the table"
-  ],
-  "files": {
-    "/App.js": { "code": "<full file content>" },
-    "/components/Sidebar.js": { "code": "<full file content>" }
-  },
-  "dependencies": {
-    "some-package": "latest"
-  }
-}
-
-RULES:
+CRITICAL RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
 2. Use standard clean React architecture: put components in \`/components\`, pages in \`/pages\`, hooks in \`/hooks\`, and utils in \`/lib\`.
 3. Entry point MUST be \`/App.js\` with a default export.
 4. Use Tailwind CSS for all styling.
-5. All imports must reference files you include or packages in "dependencies".
-6. Do NOT include react, react-dom, tailwindcss in "dependencies".
-7. Keep code clean, readable, production-quality.
-8. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-9. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a purely browser-based React app.
-10. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the \`REACT_APP_MONGODB_DATA_API_URL\`, \`REACT_APP_MONGODB_DATA_API_KEY\`, and \`REACT_APP_MONGODB_DATA_API_CLUSTER\` environment variables in the Vercel dashboard.
-11. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
-12. **CRITICAL SPEED OPTIMIZATION**: When modifying existing code, output ONLY the files that you are actually changing or creating. You MUST omit all other files from the "files" object. Unchanged files are preserved automatically. Do not output unchanged files.
-13. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
-14. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.`;
+5. All imports must reference files you create or packages you add via 'add_dependency'.
+6. Do NOT add react, react-dom, or tailwindcss to 'add_dependency'. They are pre-installed.
+7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true
+8. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections.
+9. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app AND deploy it to Vercel, including configuring the \`REACT_APP_MONGODB_DATA_API_KEY\` environment variables in the Vercel dashboard.
+10. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
 
-// ─── Contents builder ─────────────────────────────────────────────────────────
-
-function buildFrontendContents(messages: Message[], fileData: FileData | null) {
-  const trimmed = trimHistory(messages);
-
-  return trimmed.map((msg, idx) => {
-    const role = msg.role === "assistant" ? "model" : "user";
-
-    if (msg.role === "user") {
-      const parts: object[] = [];
-      let text = msg.content;
-
-      if (msg.imageUrl) {
-        if (msg.imageUrl.startsWith("data:image/")) {
-          const commaIndex = msg.imageUrl.indexOf(",");
-          if (commaIndex !== -1) {
-            const mimeType = msg.imageUrl.substring(5, msg.imageUrl.indexOf(";"));
-            const base64Data = msg.imageUrl.substring(commaIndex + 1);
-            parts.push({ inlineData: { data: base64Data, mimeType } });
-            text = `[Image attached as design reference.]\n\n${text}`;
-          }
-        } else {
-          text = `[Image URL for reference: ${msg.imageUrl}]\n\n${text}`;
-        }
-      }
-
-      const isLast = idx === trimmed.length - 1;
-      if (isLast && fileData) {
-        const fileSummary = Object.entries(fileData.files ?? {})
-          .map(([path, { code }]) => {
-            return `### ${path}\n\`\`\`\n${code}\n\`\`\``;
-          })
-          .join("\n\n");
-
-        text += `\n\nCurrent project files:\n${fileSummary}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
-      }
-
-      parts.push({ text });
-      return { role, parts };
-    }
-
-    return { role, parts: [{ text: msg.content }] };
-  });
-}
-
-// ─── Backend builder removed for pure React ───────────────────────────────────
+WORKFLOW:
+1. Review the user's request.
+2. Use 'list_files' and 'read_file' to understand existing code if modifying an app.
+3. Use 'update_file' to create or modify code.
+4. Use 'add_dependency' to install required npm packages.
+5. Use 'finish_generation' exactly once when you are completely done. Provide a user-facing assistant message, a short title for the app, and 3 actionable suggestions for the user.`;
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
@@ -247,7 +100,7 @@ export async function POST(request: NextRequest) {
   const cost = calculateGenerationCost(messages);
   
   if (user.credits < cost) {
-    return Response.json({ message: `Insufficient credits. This complex task requires ${cost} credits, but you only have ${user.credits}.` }, { status: 402 });
+    return Response.json({ message: \`Insufficient credits. This complex task requires \${cost} credits, but you only have \${user.credits}.\` }, { status: 402 });
   }
 
   const encoder = new TextEncoder();
@@ -258,66 +111,158 @@ export async function POST(request: NextRequest) {
         controller.enqueue(encoder.encode(chunk));
 
       try {
-        // ── GENERATION PASS ──────────────────────────────────────────────────
+        enqueue(sseEvent("status", { message: "Starting Cline Agent…" }));
 
-        enqueue(sseEvent("status", { message: "Thinking…" }));
+        const patchedFiles: Record<string, { code: string }> = {
+          ...(fileData?.files ?? {}),
+        };
+        
+        const newDependencies: Record<string, string> = {
+          ...(fileData?.dependencies ?? {}),
+        };
+        
+        const lastUserMessage = messages[messages.length - 1];
+        let finalTitle = fileData?.title ?? lastUserMessage.content.slice(0, 80);
+        let finalAssistantMessage = "I have updated the application.";
+        let finalSuggestions: string[] = fileData?.suggestions ?? [];
 
-        const contents = buildFrontendContents(messages, fileData);
+        const listFilesTool = createTool({
+          name: "list_files",
+          description: "List all files currently in the React sandbox.",
+          inputSchema: z.object({}),
+          async execute() {
+            return JSON.stringify(Object.keys(patchedFiles), null, 2);
+          },
+        });
 
-        const rawJson = await runGeminiPass(
-          contents,
-          SYSTEM_PROMPT,
-          (label) => enqueue(sseEvent("status", { message: label }))
-        );
+        const readFileTool = createTool({
+          name: "read_file",
+          description: "Read the contents of a specific file.",
+          inputSchema: z.object({
+            path: z.string().describe("File path, e.g. /App.js"),
+          }),
+          async execute({ path }) {
+            let normalizedPath = path;
+            if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+            const file = patchedFiles[normalizedPath];
+            if (!file) return \`Error: File \${normalizedPath} not found.\`;
+            return file.code;
+          },
+        });
 
-        const parsed = safeParseJSON<{
-          assistantMessage: string;
-          title?: string;
-          suggestions?: string[];
-          files?: Record<string, { code: string }>;
-          dependencies?: Record<string, string>;
-        }>(rawJson);
+        const updateFileTool = createTool({
+          name: "update_file",
+          description: "Create or rewrite a FRONTEND file in the React sandbox. Call once per file you need to change.",
+          inputSchema: z.object({
+            path: z.string().describe("File path exactly as it appears, e.g. /App.js"),
+            code: z.string().describe("Complete new contents of the file"),
+            reason: z.string().describe("One sentence explaining what you changed and why"),
+          }),
+          async execute({ path, code, reason }) {
+            let normalizedPath = path;
+            if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+            if (normalizedPath.startsWith("/src/") && normalizedPath.endsWith("App.js")) {
+              normalizedPath = "/App.js";
+            }
+            patchedFiles[normalizedPath] = { code };
+            enqueue(sseEvent("status", { message: \`Updating \${normalizedPath}…\` }));
+            return \`Updated frontend \${normalizedPath}: \${reason}\`;
+          },
+        });
 
-        if (!parsed) {
-          enqueue(sseEvent("error", { message: "Generation failed. Please try again." }));
-          controller.close();
-          return;
+        const addDependencyTool = createTool({
+          name: "add_dependency",
+          description: "Add an npm dependency required by your code.",
+          inputSchema: z.object({
+            packageName: z.string().describe("The name of the npm package"),
+            version: z.string().describe("The version (e.g. 'latest')"),
+          }),
+          async execute({ packageName, version }) {
+            newDependencies[packageName] = version;
+            enqueue(sseEvent("status", { message: \`Adding dependency \${packageName}…\` }));
+            return \`Added dependency \${packageName}@\${version}\`;
+          },
+        });
+
+        const finishGenerationTool = createTool({
+          name: "finish_generation",
+          description: "Call this exactly once when you have finished all file updates.",
+          inputSchema: z.object({
+            title: z.string().describe("A short 2-4 word title for the app (e.g. 'Task Manager')"),
+            assistantMessage: z.string().describe("A friendly summary of what you built or changed, directed at the user."),
+            suggestions: z.array(z.string()).length(3).describe("Exactly 3 specific, actionable short phrases the user could ask for next.")
+          }),
+          lifecycle: { completesRun: true },
+          async execute({ title, assistantMessage, suggestions }) {
+            finalTitle = title;
+            finalAssistantMessage = assistantMessage;
+            finalSuggestions = suggestions;
+            enqueue(sseEvent("status", { message: "Finalizing generation…" }));
+            return "Done.";
+          },
+        });
+
+        const agent = new Agent({
+          providerId: "gemini",
+          modelId: DEFAULT_MODEL,
+          apiKey: getApiKey(),
+          maxIterations: 15,
+          systemPrompt: SYSTEM_PROMPT,
+          tools: [listFilesTool, readFileTool, updateFileTool, addDependencyTool, finishGenerationTool],
+          toolPolicies: {
+            list_files: { autoApprove: true },
+            read_file: { autoApprove: true },
+            update_file: { autoApprove: true },
+            add_dependency: { autoApprove: true },
+            finish_generation: { autoApprove: true },
+          },
+          hooks: {
+            onEvent: (event) => {
+              if (event.type === "assistant-text-delta" && event.text) {
+                enqueue(sseEvent("status", { message: "Thinking..." }));
+              }
+            },
+          },
+        });
+
+        const trimmed = trimHistory(messages);
+        let userRequest = trimmed
+          .map((m) => {
+            let text = m.content;
+            if (m.imageUrl) {
+              if (m.imageUrl.startsWith("data:image/")) {
+                text = \`[Image attached as design reference.]\\n\\n\${text}\`;
+              } else {
+                text = \`[Image URL for reference: \${m.imageUrl}]\\n\\n\${text}\`;
+              }
+            }
+            return \`\${m.role.toUpperCase()}:\\n\${text}\`;
+          })
+          .join("\\n\\n---\\n\\n");
+
+        if (Object.keys(patchedFiles).length > 0) {
+          const fileSummary = Object.entries(patchedFiles)
+            .map(([path, { code }]) => \`### \${path}\\n\\\`\\\`\\\`\\n\${code}\\n\\\`\\\`\\\`\`)
+            .join("\\n\\n");
+          userRequest += \`\\n\\n--- CURRENT PROJECT FILES ---\\n\${fileSummary}\`;
         }
 
-        const { assistantMessage, title: aiTitle, suggestions, files, dependencies } = parsed;
+        const result = await agent.run(userRequest);
 
-        // ── Merge existing files with new files ────────────────────────────────
-
-        const normalizedFiles: Record<string, { code: string }> = { ...(fileData?.files ?? {}) };
-        
-        if (files) {
-          for (const [key, value] of Object.entries(files)) {
-            let path = key;
-            if (!path.startsWith("/")) path = "/" + path;
-            if (path.startsWith("/src/") && path.endsWith("App.js")) path = "/App.js";
-            
-            // Clean markdown fences (e.g. ```jsx ... ```)
-            let rawCode = value.code;
-            if (typeof rawCode === "string") {
-              rawCode = rawCode.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
-            }
-            normalizedFiles[path] = { ...value, code: rawCode };
-          }
+        if (result.status === "failed") {
+          throw new Error(result.error?.message ?? "Agent run failed");
         }
 
         // ── Validate npm packages ──────────────────────────────────────────────
 
         enqueue(sseEvent("status", { message: "Validating packages…" }));
-        const validatedDeps = await validateDependencies({ 
-          ...(fileData?.dependencies ?? {}), 
-          ...(dependencies ?? {}) 
-        });
+        const validatedDeps = await validateDependencies(newDependencies);
 
         const newFileData: FileData = {
-          files: normalizedFiles,
+          files: patchedFiles,
           dependencies: validatedDeps,
-          title: aiTitle ?? fileData?.title,
-          suggestions,
+          title: finalTitle,
+          suggestions: finalSuggestions,
           envVars: fileData?.envVars,
         };
 
@@ -325,10 +270,9 @@ export async function POST(request: NextRequest) {
 
         enqueue(sseEvent("status", { message: "Saving…" }));
 
-        const lastUserMessage = messages[messages.length - 1];
         const updatedMessages: Message[] = [
           ...messages,
-          { role: "assistant", content: assistantMessage },
+          { role: "assistant", content: finalAssistantMessage },
         ];
 
         const userObjectId = new mongoose.Types.ObjectId(userId);
@@ -341,12 +285,11 @@ export async function POST(request: NextRequest) {
             { new: true }
           );
         } else {
-          // Generate a unique, readable subdomain (e.g. app-xxxxx)
           const subdomain = "app-" + Math.random().toString(36).substring(2, 9);
           
           workspace = await Workspace.create({
             userId: userObjectId,
-            title: aiTitle ?? lastUserMessage.content.slice(0, 80),
+            title: finalTitle,
             subdomain,
             messages: updatedMessages,
             fileData: newFileData,
@@ -363,7 +306,7 @@ export async function POST(request: NextRequest) {
           sseEvent("done", {
             workspaceId: workspace!._id.toString(),
             subdomain: workspace!.subdomain,
-            assistantMessage,
+            assistantMessage: finalAssistantMessage,
             fileData: newFileData,
             creditsRemaining:
               updatedUser?.credits ?? user.credits - cost,
@@ -373,7 +316,7 @@ export async function POST(request: NextRequest) {
         console.error("[gen-ai-code] stream error:", err);
         enqueue(
           sseEvent("error", {
-            message: "Something went wrong. Please try again.",
+            message: err instanceof Error ? err.message : "Something went wrong. Please try again.",
           })
         );
       } finally {
