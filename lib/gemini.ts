@@ -52,31 +52,55 @@ export async function generateContentStream(options: GenerateOptions) {
   const { model = DEFAULT_MODEL, contents, config } = options;
   const maxAttempts = API_KEYS.length;
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const { client, keyIndex } = getCurrentClient();
-    try {
-      return await client.models.generateContentStream({
-        model,
-        contents: contents as Parameters<typeof client.models.generateContentStream>[0]["contents"],
-        config: config as Parameters<typeof client.models.generateContentStream>[0]["config"],
-      });
-    } catch (err: unknown) {
-      const isRateLimit =
-        err instanceof Error &&
-        (err.message.includes("429") ||
-          err.message.toLowerCase().includes("rate limit") ||
-          err.message.toLowerCase().includes("quota"));
+  let lastError: unknown;
 
-      if (isRateLimit && attempt < maxAttempts - 1) {
-        console.warn(`[gemini] Key ${keyIndex + 1} rate-limited, rotating to next key...`);
-        // Rotate to the next key permanently for this process
-        globalForGemini.geminiKeyIndex = (keyIndex + 1) % API_KEYS.length;
-        continue;
+  const tryModel = async (targetModel: string) => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const { client, keyIndex } = getCurrentClient();
+      try {
+        return await client.models.generateContentStream({
+          model: targetModel,
+          contents: contents as Parameters<typeof client.models.generateContentStream>[0]["contents"],
+          config: config as Parameters<typeof client.models.generateContentStream>[0]["config"],
+        });
+      } catch (err: unknown) {
+        lastError = err;
+        const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+        
+        const isTransientOrRateLimit = 
+          msg.includes("429") || 
+          msg.includes("503") || 
+          msg.includes("rate limit") || 
+          msg.includes("quota") ||
+          msg.includes("overloaded");
+
+        if (isTransientOrRateLimit && attempt < maxAttempts - 1) {
+          console.warn(`[gemini] Key ${keyIndex + 1} rate-limited/overloaded on ${targetModel}, rotating...`);
+          globalForGemini.geminiKeyIndex = (keyIndex + 1) % API_KEYS.length;
+          continue;
+        }
+        
+        // If it's a hard error (e.g. 400 Bad Request) or we exhausted keys, break
+        break;
       }
-      throw err;
     }
+    return null;
+  };
+
+  // Try the requested model first
+  let stream = await tryModel(model);
+
+  // If primary model fails and it was the default flash model, fallback to flash-lite
+  if (!stream && model === DEFAULT_MODEL) {
+    console.warn(`[gemini] ${model} failed, falling back to gemini-2.5-flash-lite...`);
+    // Optionally shift to next key for the fallback run
+    globalForGemini.geminiKeyIndex = (globalForGemini.geminiKeyIndex + 1) % API_KEYS.length;
+    stream = await tryModel("gemini-2.5-flash-lite");
   }
-  throw new Error("All Gemini API keys are rate-limited. Please try again later.");
+
+  if (stream) return stream;
+
+  throw lastError ?? new Error("All Gemini API keys failed or the models are currently unavailable.");
 }
 
 // ─── For non-streaming (agent / cline SDK) ────────────────────────────────────

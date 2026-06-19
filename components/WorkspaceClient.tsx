@@ -246,8 +246,12 @@ export function WorkspaceClient({
               } else if (event.type === "error") {
                 throw new Error(event.message);
               }
-            } catch {
-              // skip malformed SSE lines
+            } catch (err) {
+              // Re-throw if it's the error we just manually threw
+              if (err instanceof Error && err.message !== "Unexpected end of JSON input" && !err.message.includes("JSON")) {
+                throw err;
+              }
+              // otherwise skip malformed SSE lines
             }
           }
         }
@@ -255,6 +259,7 @@ export function WorkspaceClient({
         // User-initiated stop — silently roll back the user message
         if (err instanceof Error && err.name === "AbortError") {
           setMessages((prev) => prev.slice(0, -1));
+          completeSteps();
           return;
         }
         console.error(err);
@@ -262,9 +267,10 @@ export function WorkspaceClient({
           err instanceof Error ? err.message : "Something went wrong."
         );
         setMessages((prev) => prev.slice(0, -1));
+        completeSteps();
       } finally {
-        generateAbortRef.current = null;
         setIsGenerating(false);
+        generateAbortRef.current = null;
         setStatusLog([]);
       }
     },
