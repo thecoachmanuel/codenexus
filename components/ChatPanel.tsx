@@ -72,6 +72,7 @@ export function ChatPanel({
     toast.success("Message copied to clipboard!");
   };
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [input, setInput] = useState("");
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
