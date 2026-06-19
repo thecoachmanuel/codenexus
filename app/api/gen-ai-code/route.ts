@@ -186,11 +186,7 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
           })
           .join("\n\n---\n\n");
 
-        const backendNote = fileData.backendFiles && Object.keys(fileData.backendFiles).length > 0
-          ? "\n\nExisting Backend Files: " + Object.keys(fileData.backendFiles).join(", ")
-          : "";
-
-        text += `\n\nCurrent project files:\n${fileSummary}${backendNote}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
+        text += `\n\nCurrent project files:\n${fileSummary}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
       }
 
       parts.push({ text });
