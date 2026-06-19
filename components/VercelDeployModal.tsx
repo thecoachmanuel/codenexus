@@ -308,8 +308,8 @@ export function VercelDeployModal({
                 </p>
               </div>
 
-              <div className="w-full rounded-xl border border-white/10 bg-black p-4 space-y-3 mt-2">
-                <div className="flex flex-col gap-1">
+              <div className="w-full rounded-xl border border-white/10 bg-black p-4 space-y-3 mt-2 overflow-hidden">
+                <div className="flex flex-col gap-1 min-w-0">
                   <span className="text-[11px] text-white/40 font-medium uppercase tracking-wider">
                     Live URL
                   </span>
@@ -317,7 +317,7 @@ export function VercelDeployModal({
                     href={result.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 truncate"
+                    className="text-sm text-blue-400 hover:text-blue-300 hover:underline break-all"
                   >
                     {result.url}
                   </a>
