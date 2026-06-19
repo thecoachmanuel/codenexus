@@ -6,7 +6,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
 import { calculateImprovementCost } from "@/lib/credit-calculator";
-import { PRO_MODEL, getApiKey, getApiKeysCount, rotateApiKey } from "@/lib/gemini";
+import { getApiKey, rotateApiKey, PRO_MODEL } from "@/lib/gemini";
 import type { FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 
@@ -134,19 +134,16 @@ export async function POST(request: NextRequest) {
       });
 
       try {
-        enqueue(sseEvent("status", { message: "Agent starting…" }));
-
         let result: any;
-        const maxAttempts = getApiKeysCount();
-
+        const maxAttempts = 3;
+        
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
-          try {
-            const agent = new Agent({
-              providerId: "gemini",
-              modelId: PRO_MODEL,
-              apiKey: getApiKey(),
-              maxIterations: 15,
-              systemPrompt: `You are an expert full-stack React developer improving an app.
+          const agent = new Agent({
+            providerId: "gemini",
+            modelId: PRO_MODEL,
+            apiKey: getApiKey(),
+            maxIterations: 15,
+            systemPrompt: `You are an expert full-stack React developer improving an app.
 
 WORKFLOW:
 1. Understand what the user wants improved.
@@ -164,49 +161,58 @@ CRITICAL RULES:
 6. Always write complete file contents — never partial snippets.
 7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
 8. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.`,
-              tools: [listFilesTool, readFileTool, updateFileTool, doneImprovingTool],
-              toolPolicies: {
-                list_files: { autoApprove: true },
-                read_file: { autoApprove: true },
-                update_file: { autoApprove: true },
-                done_improving: { autoApprove: true },
-              },
-              hooks: {
-                onEvent: (event) => {
-                  if (event.type === "assistant-text-delta" && event.text) {
-                    enqueue(sseEvent("thinking", { text: event.text }));
+            tools: [listFilesTool, readFileTool, updateFileTool, doneImprovingTool],
+            toolPolicies: {
+              list_files: { autoApprove: true },
+              read_file: { autoApprove: true },
+              update_file: { autoApprove: true },
+              done_improving: { autoApprove: true },
+            },
+            hooks: {
+              onEvent: (event) => {
+                if (event.type === "assistant-text-delta" && event.text) {
+                  enqueue(sseEvent("thinking", { text: event.text }));
+                }
+                if (event.type === "tool-started") {
+                  const name = event.toolCall?.toolName;
+                  if (name === "update_file") {
+                    const path =
+                      (event.toolCall?.input as { path?: string })?.path ?? "a file";
+                    enqueue(
+                      sseEvent("thinking", { text: `\n\nUpdating \`${path}\`…` })
+                    );
+                  } else if (name === "done_improving") {
+                    enqueue(
+                      sseEvent("thinking", { text: "\n\nFinalizing improvements…" })
+                    );
                   }
-                  if (event.type === "tool-started") {
-                    const name = event.toolCall?.toolName;
-                    if (name === "update_file") {
-                      const path =
-                        (event.toolCall?.input as { path?: string })?.path ?? "a file";
-                      enqueue(
-                        sseEvent("thinking", { text: `\n\nUpdating \`${path}\`…` })
-                      );
-                    } else if (name === "done_improving") {
-                      enqueue(
-                        sseEvent("thinking", { text: "\n\nFinalizing improvements…" })
-                      );
-                    }
-                  }
-                },
+                }
               },
-            });
+            },
+          });
 
+          try {
+            if (attempt === 0) enqueue(sseEvent("status", { message: "Agent starting…" }));
+            else enqueue(sseEvent("status", { message: `Agent retrying (attempt ${attempt + 1})…` }));
+            
             result = await agent.run(userRequest);
-
+            
             if (result.status === "failed") {
+              const msg = (result.error?.message ?? "").toLowerCase();
+              if ((msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded")) && attempt < maxAttempts - 1) {
+                console.warn("[improve] Agent rate limited, rotating key...");
+                rotateApiKey();
+                continue;
+              }
               throw new Error(result.error?.message ?? "Agent run failed");
             }
             
-            break; // Success
-          } catch (err) {
-            const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
-            const isTransientOrRateLimit = msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded");
-            
-            if (isTransientOrRateLimit && attempt < maxAttempts - 1) {
-              console.warn(`[improve] API quota/rate limit hit, rotating key and retrying...`);
+            // Successfully finished run
+            break;
+          } catch (err: any) {
+            const msg = (err.message || String(err)).toLowerCase();
+            if ((msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded")) && attempt < maxAttempts - 1) {
+              console.warn("[improve] Agent exception (rate limit), rotating key...");
               rotateApiKey();
               continue;
             }
