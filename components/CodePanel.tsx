@@ -378,7 +378,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
           </TabsTrigger>
           <TabsTrigger className="border-b-2 pt-2" value="env">
             <Settings2 className="h-3.5 w-3.5" />
-            Environment
+            Env
           </TabsTrigger>
         </TabsList>
 
@@ -471,10 +471,10 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             <Button
               variant="ghost"
               disabled={isExporting || !fileData}
-              className="text-white/70 hover:text-white"
+              className="text-white/70 hover:text-white px-2"
+              title="Export to GitHub"
             >
-              <GithubIcon className="h-3.5 w-3.5 mr-1.5" />
-              <span className="hidden sm:inline">GitHub</span>
+              <GithubIcon className="h-4 w-4" />
             </Button>
           </GitHubExportModal>
 
