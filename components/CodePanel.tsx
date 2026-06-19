@@ -123,7 +123,16 @@ function SandpackInner({
   const [isExporting, setIsExporting] = useState(false);
   const [improveInput, setImproveInput] = useState("");
   const [showImproveInput, setShowImproveInput] = useState(false);
+  const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (subdomain) {
+      setLiveUrl(`${window.location.protocol}//${subdomain}.${window.location.host}`);
+    } else {
+      setLiveUrl(null);
+    }
+  }, [subdomain]);
 
   // Environment variables local state
   const [localEnvVars, setLocalEnvVars] = useState<Record<string, string>>(
@@ -469,9 +478,9 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
             </Button>
           </VercelDeployModal>
 
-          {subdomain && (
+          {liveUrl && (
             <a
-              href={`http://${subdomain}.localhost:3000`} // In production, this should be https://${subdomain}.yourdomain.com
+              href={liveUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
