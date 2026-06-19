@@ -193,7 +193,6 @@ CRITICAL RULES:
 
           try {
             if (attempt === 0) enqueue(sseEvent("status", { message: "Agent starting…" }));
-            else enqueue(sseEvent("status", { message: `Agent retrying (attempt ${attempt + 1})…` }));
             
             result = await agent.run(userRequest);
             
