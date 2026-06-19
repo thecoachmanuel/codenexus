@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
 import { generateContentStream, DEFAULT_MODEL } from "@/lib/gemini";
-import { CREDIT_COST_PER_GENERATION } from "@/lib/constants";
+import { calculateGenerationCost } from "@/lib/credit-calculator";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 
@@ -228,8 +228,11 @@ export async function POST(request: NextRequest) {
   const user = await User.findById(userId).select("_id credits");
   if (!user)
     return Response.json({ message: "User not found" }, { status: 404 });
-  if (user.credits < CREDIT_COST_PER_GENERATION) {
-    return Response.json({ message: "Insufficient credits" }, { status: 402 });
+    
+  const cost = calculateGenerationCost(messages);
+  
+  if (user.credits < cost) {
+    return Response.json({ message: `Insufficient credits. This complex task requires ${cost} credits, but you only have ${user.credits}.` }, { status: 402 });
   }
 
   const encoder = new TextEncoder();
@@ -332,7 +335,7 @@ export async function POST(request: NextRequest) {
         }
 
         await User.findByIdAndUpdate(userId, {
-          $inc: { credits: -CREDIT_COST_PER_GENERATION },
+          $inc: { credits: -cost },
         });
 
         const updatedUser = await User.findById(userId).select("credits");
@@ -343,7 +346,7 @@ export async function POST(request: NextRequest) {
             assistantMessage,
             fileData: newFileData,
             creditsRemaining:
-              updatedUser?.credits ?? user.credits - CREDIT_COST_PER_GENERATION,
+              updatedUser?.credits ?? user.credits - cost,
           })
         );
       } catch (err) {

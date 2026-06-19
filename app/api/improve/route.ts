@@ -5,7 +5,7 @@ import { z } from "zod";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { CREDIT_COST_PER_GENERATION } from "@/lib/constants";
+import { calculateImprovementCost } from "@/lib/credit-calculator";
 import { getApiKey, PRO_MODEL } from "@/lib/gemini";
 import type { FileData } from "@/types/workspace";
 import mongoose from "mongoose";
@@ -46,8 +46,10 @@ export async function POST(request: NextRequest) {
   if (user.plan !== "pro")
     return Response.json({ message: "Upgrade required" }, { status: 403 });
 
-  if (user.credits < CREDIT_COST_PER_GENERATION)
-    return Response.json({ message: "Insufficient credits" }, { status: 402 });
+  const cost = calculateImprovementCost(fileData, userRequest);
+
+  if (user.credits < cost)
+    return Response.json({ message: `Insufficient credits. This complex task requires ${cost} credits, but you only have ${user.credits}.` }, { status: 402 });
 
   // ── Build the agent ────────────────────────────────────────────────────────
 
@@ -207,7 +209,7 @@ CRITICAL RULES:
         );
 
         await User.findByIdAndUpdate(userId, {
-          $inc: { credits: -CREDIT_COST_PER_GENERATION },
+          $inc: { credits: -cost },
         });
 
         const updatedUser = await User.findById(userId).select("credits");
@@ -217,7 +219,7 @@ CRITICAL RULES:
             fileData: newFileData,
             summary: finalSummary || result.outputText,
             creditsRemaining:
-              updatedUser?.credits ?? user.credits - CREDIT_COST_PER_GENERATION,
+              updatedUser?.credits ?? user.credits - cost,
           })
         );
       } catch (err) {
