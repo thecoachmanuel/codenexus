@@ -57,6 +57,11 @@ export const VITE_REACT_BOILERPLATE = {
       {
         name: "react-app",
         type: "module",
+        scripts: {
+          "dev": "vite",
+          "build": "vite build",
+          "preview": "vite preview"
+        },
         dependencies: {
           "react": "^18.2.0",
           "react-dom": "^18.2.0",
@@ -67,6 +72,10 @@ export const VITE_REACT_BOILERPLATE = {
           "clsx": "^2.1.0",
           "tailwind-merge": "^2.2.0",
           "@swc/helpers": "^0.5.11"
+        },
+        devDependencies: {
+          "vite": "^4.4.5",
+          "@vitejs/plugin-react": "^4.0.3"
         }
       },
       null,
@@ -124,6 +133,14 @@ root.render(
     </div>
   );
 }`
+  },
+  "/vite.config.js": {
+    code: `import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+});`
   }
 };
 
