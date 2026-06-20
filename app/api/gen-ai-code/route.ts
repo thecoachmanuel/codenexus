@@ -140,7 +140,6 @@ export default function App() {}
 <verify />
 
 <finish title="Short App Title" message="I have finished building the application. Here is what I did..." suggestions='["Add dark mode", "Deploy to Vercel", "Add user auth"]' />
-`;
 
 RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
