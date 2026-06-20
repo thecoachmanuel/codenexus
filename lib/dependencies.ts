@@ -56,10 +56,13 @@ export function findMissingFiles(files: Record<string, { code: string }>): strin
       // Only check local imports
       if (!importPath.startsWith('.') && !importPath.startsWith('/')) return;
 
-      // Resolve absolute path
-      let resolved = importPath.startsWith('/') 
-        ? importPath 
-        : path.posix.resolve(dir, importPath);
+      if (importPath.startsWith('/')) {
+        missing.push(`'${importPath}' (Absolute imports are forbidden in Sandpack. Use relative imports like './' or '../' in ${filePath})`);
+        return;
+      }
+
+      // Resolve absolute path based on the directory
+      let resolved = path.posix.resolve(dir, importPath);
 
       // Possible extensions Sandpack resolves automatically
       const extensions = ['', '.js', '.jsx', '.ts', '.tsx', '.css', '/index.js', '/index.jsx'];
