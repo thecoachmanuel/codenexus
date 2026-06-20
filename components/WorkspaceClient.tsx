@@ -7,7 +7,6 @@ import { CodePanel } from "./CodePanel";
 import { MobileBlocker } from "./MobileBlocker";
 import { MIN_CREDITS_TO_GENERATE } from "@/lib/constants";
 import { toast } from "sonner";
-import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 
 import type {
   Message,
@@ -326,53 +325,45 @@ export function WorkspaceClient({
       </div>
 
       {/* Workspace — visible only on md+ screens */}
-      <div className="hidden md:flex w-full h-[calc(100vh-3.5rem)] overflow-hidden bg-[#0a0a0a]">
-        <PanelGroup orientation="horizontal" className="w-full h-full">
-          <Panel defaultSize={30} minSize={20} maxSize={50} className="flex h-full">
-            <ChatPanel
-              isImproving={false}
-              messages={messages}
-              isGenerating={isGenerating}
-              statusLog={statusLog}
-              credits={credits}
-              initialPrompt={initialPrompt}
-              initialImageUrl={resolvedImageUrl}
-              suggestions={fileData?.suggestions}
-              onGenerate={handleGenerate}
-              onStop={handleStop}
-              onRevert={handleRevert}
-              canRevert={fileHistory.length > 0}
-              userId={userId}
-              workspaceId={workspaceId}
-              appTitle={fileData?.title ?? workspace?.title ?? null}
-            />
-          </Panel>
-          
-          <PanelResizeHandle className="relative flex w-1 items-center justify-center bg-white/6 hover:bg-blue-500/50 active:bg-blue-500 cursor-col-resize transition-colors duration-200" />
-          
-          <Panel defaultSize={70} minSize={50} className="flex h-full">
-            <CodePanel
-              key={workspaceId || "new"}
-              fileData={fileData}
-              isGenerating={isGenerating}
-              statusLog={statusLog}
-              onImprove={handleGenerate}
-              onFixError={(error) =>
-                handleGenerate(
-                  `There is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`
-                )
-              }
-              onFilePatch={handleFilePatch}
-              appTitle={fileData?.title ?? workspace?.title ?? null}
-              subdomain={subdomain}
-              isImproving={false}
-              isProUser={userPlan === "pro"}
-              onEnvVarsChange={handleEnvVarsChange}
-              vercelInfo={workspace?.vercel}
-              workspaceId={workspaceId}
-            />
-          </Panel>
-        </PanelGroup>
+      <div className="hidden md:flex h-[calc(100vh-3.5rem)] overflow-hidden bg-[#0a0a0a]">
+        <ChatPanel
+          isImproving={false}
+          messages={messages}
+          isGenerating={isGenerating}
+          statusLog={statusLog}
+          credits={credits}
+          initialPrompt={initialPrompt}
+          initialImageUrl={resolvedImageUrl}
+          suggestions={fileData?.suggestions}
+          onGenerate={handleGenerate}
+          onStop={handleStop}
+          onRevert={handleRevert}
+          canRevert={fileHistory.length > 0}
+          userId={userId}
+          workspaceId={workspaceId}
+          appTitle={fileData?.title ?? workspace?.title ?? null}
+        />
+        <div className="w-px shrink-0 bg-white/6" />
+        <CodePanel
+          key={workspaceId || "new"}
+          fileData={fileData}
+          isGenerating={isGenerating}
+          statusLog={statusLog}
+          onImprove={handleGenerate}
+          onFixError={(error) =>
+            handleGenerate(
+              `There is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`
+            )
+          }
+          onFilePatch={handleFilePatch}
+          appTitle={fileData?.title ?? workspace?.title ?? null}
+          subdomain={subdomain}
+          isImproving={false}
+          isProUser={userPlan === "pro"}
+          onEnvVarsChange={handleEnvVarsChange}
+          vercelInfo={workspace?.vercel}
+          workspaceId={workspaceId}
+        />
       </div>
     </>
   );

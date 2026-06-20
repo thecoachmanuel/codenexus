@@ -79,7 +79,7 @@ function MessageBubble({
   onGenerate,
   user,
 }: MessageBubbleProps) {
-  const [isSuggestionsExpanded, setIsSuggestionsExpanded] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   return (
     <div>
@@ -175,37 +175,41 @@ function MessageBubble({
 
       {/* Render suggestions below the VERY LAST assistant message when idle */}
       {isLast && msg.role === "assistant" && !isGenerating && !isImproving && suggestions && suggestions.length > 0 && (
-        <div className="mt-5 flex flex-col gap-3 pl-8 pr-2">
-          <button 
-            onClick={() => setIsSuggestionsExpanded(!isSuggestionsExpanded)}
-            className="flex items-center gap-1.5 mb-0.5 group cursor-pointer"
+        <div className="mt-5 flex flex-col pl-8 pr-2">
+          <button
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            className="flex w-fit items-center gap-1.5 mb-2 hover:opacity-80 transition-opacity"
           >
-            <Sparkles className="h-3 w-3 text-blue-400/80 group-hover:text-blue-400 transition-colors" />
-            <p className="text-[11px] font-medium uppercase tracking-wider text-blue-400/80 group-hover:text-blue-400 transition-colors">
+            <Sparkles className="h-3 w-3 text-blue-400/80" />
+            <p className="text-[11px] font-medium uppercase tracking-wider text-blue-400/80">
               Suggested Improvements
             </p>
-            {isSuggestionsExpanded ? (
-              <ChevronUp className="h-3 w-3 ml-auto text-blue-400/50 group-hover:text-blue-400 transition-colors" />
+            {showSuggestions ? (
+              <ChevronUp className="h-3 w-3 text-blue-400/80 ml-1" />
             ) : (
-              <ChevronDown className="h-3 w-3 ml-auto text-blue-400/50 group-hover:text-blue-400 transition-colors" />
+              <ChevronDown className="h-3 w-3 text-blue-400/80 ml-1" />
             )}
           </button>
           
-          {isSuggestionsExpanded && suggestions.map((suggestion, idx) => (
-            <button
-              key={idx}
-              onClick={() => onGenerate(suggestion)}
-              className="group relative flex w-full flex-col items-start justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 text-left transition-all hover:border-blue-500/30 hover:bg-blue-500/5 hover:shadow-lg hover:shadow-blue-500/5"
-            >
-              <span className="text-[13px] leading-relaxed text-white/90 group-hover:text-white mb-3">{suggestion}</span>
-              <div className="flex w-full items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30 group-hover:text-blue-400/70 transition-colors">Apply</span>
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/5 transition-colors group-hover:bg-blue-500/20">
-                  <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-blue-400" />
-                </div>
-              </div>
-            </button>
-          ))}
+          {showSuggestions && (
+            <div className="flex flex-col gap-3 mt-1 animate-in fade-in slide-in-from-top-2 duration-200">
+              {suggestions.map((suggestion, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => onGenerate(suggestion)}
+                  className="group relative flex w-full flex-col items-start justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 text-left transition-all hover:border-blue-500/30 hover:bg-blue-500/5 hover:shadow-lg hover:shadow-blue-500/5"
+                >
+                  <span className="text-[13px] leading-relaxed text-white/90 group-hover:text-white mb-3">{suggestion}</span>
+                  <div className="flex w-full items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30 group-hover:text-blue-400/70 transition-colors">Apply</span>
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/5 transition-colors group-hover:bg-blue-500/20">
+                      <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-blue-400" />
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -340,7 +344,7 @@ export function ChatPanel({
   void workspaceId;
 
   return (
-    <div className="flex h-full w-full flex-col bg-[#0d0d0d]">
+    <div className="flex w-[320px] shrink-0 flex-col bg-[#0d0d0d]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/6 px-2 py-3">
         <BlueTitle>{appTitle}</BlueTitle>
