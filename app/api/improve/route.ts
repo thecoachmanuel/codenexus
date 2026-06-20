@@ -6,7 +6,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
 import { calculateImprovementCost } from "@/lib/credit-calculator";
-import { getApiKey, rotateApiKey, PRO_MODEL } from "@/lib/gemini";
+import { PRO_MODEL, getApiKey, rotateApiKey, getApiKeysCount } from "@/lib/gemini";
 import type { FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 
@@ -135,12 +135,11 @@ export async function POST(request: NextRequest) {
 
       try {
         let result: any;
-        const maxAttempts = 3;
+        const keysCount = getApiKeysCount();
+        const maxAttempts = keysCount * 2;
         
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
-          let currentModelId = PRO_MODEL;
-          if (attempt === 1) currentModelId = "gemini-2.5-flash";
-          if (attempt === 2) currentModelId = "gemini-2.5-flash-lite";
+          let currentModelId = attempt < keysCount ? PRO_MODEL : "gemini-2.5-flash-lite";
 
           const agent = new Agent({
             providerId: "gemini",

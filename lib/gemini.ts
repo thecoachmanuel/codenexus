@@ -31,7 +31,7 @@ if (typeof globalForGemini.geminiKeyIndex === "undefined") {
 const API_KEYS = collectApiKeys();
 
 export const DEFAULT_MODEL = "gemini-2.5-flash";
-export const PRO_MODEL = "gemini-2.5-pro";
+export const PRO_MODEL = "gemini-2.5-flash";
 
 // ─── Get current client (sticky) ──────────────────────────────────────────────────
 
@@ -117,4 +117,8 @@ export function getApiKey(): string {
 
 export function rotateApiKey(): void {
   globalForGemini.geminiKeyIndex = (globalForGemini.geminiKeyIndex + 1) % API_KEYS.length;
+}
+
+export function getApiKeysCount(): number {
+  return API_KEYS.length;
 }

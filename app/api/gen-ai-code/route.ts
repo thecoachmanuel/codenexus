@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { PRO_MODEL, getApiKey, rotateApiKey } from "@/lib/gemini";
+import { PRO_MODEL, getApiKey, rotateApiKey, getApiKeysCount } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
@@ -193,14 +193,13 @@ export async function POST(request: NextRequest) {
 
         const userRequest = `You must fulfill the latest user request. You are an expert full-stack React developer.\n\nConversation History:${conversationText}${initialFileContext}`;
 
-        const maxAttempts = 3;
+        const keysCount = getApiKeysCount();
+        const maxAttempts = keysCount * 2;
         let result: any;
         
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
-          // If we've retried and failed on pro, fall back to flash, then flash-lite
-          let currentModelId = PRO_MODEL;
-          if (attempt === 1) currentModelId = "gemini-2.5-flash";
-          if (attempt === 2) currentModelId = "gemini-2.5-flash-lite";
+          // If we've exhausted all keys on the primary model, fall back to flash-lite
+          let currentModelId = attempt < keysCount ? PRO_MODEL : "gemini-2.5-flash-lite";
           
           const agent = new Agent({
             providerId: "gemini",
