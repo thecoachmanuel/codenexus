@@ -804,7 +804,7 @@ export function CodePanel({
   const providerKey = workspaceKey; // Removed filePathKey to stop remounts crashing Nodebox
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex h-full w-full flex-col overflow-hidden">
       <SandpackProvider
         key={providerKey}
         template="react"

@@ -326,8 +326,8 @@ export function WorkspaceClient({
       </div>
 
       {/* Workspace — visible only on md+ screens */}
-      <div className="hidden md:flex h-[calc(100vh-3.5rem)] overflow-hidden bg-[#0a0a0a]">
-        <PanelGroup orientation="horizontal">
+      <div className="hidden md:flex w-full h-[calc(100vh-3.5rem)] overflow-hidden bg-[#0a0a0a]">
+        <PanelGroup orientation="horizontal" className="w-full h-full">
           <Panel defaultSize={30} minSize={20} maxSize={50} className="flex h-full">
             <ChatPanel
               isImproving={false}
