@@ -801,9 +801,9 @@ export function CodePanel({
 
     // Inject env variables directly into process.env at runtime safely
     if (fileData?.envVars && Object.keys(fileData.envVars).length > 0) {
-      const envInject = `window.process = window.process || {}; window.process.env = { ...window.process.env, ...${JSON.stringify(fileData.envVars)} };\n`;
-      if (f["/src/index.jsx"]) {
-        f["/src/index.jsx"].code = envInject + f["/src/index.jsx"].code;
+      const envInject = `\n    <script>window.process = window.process || {}; window.process.env = { ...window.process.env, ...${JSON.stringify(fileData.envVars)} };</script>\n  </head>`;
+      if (f["/index.html"]) {
+        f["/index.html"].code = f["/index.html"].code.replace("</head>", envInject);
       }
     }
 
