@@ -47,7 +47,6 @@ async function runGeminiPass(
       systemInstruction,
       temperature: 0.7,
       responseMimeType: "application/json",
-      maxOutputTokens: 32768,
     },
   });
 
