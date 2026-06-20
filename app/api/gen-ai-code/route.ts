@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { generateContentStream, DEFAULT_MODEL } from "@/lib/gemini";
+import { generateContentStream, DEFAULT_MODEL, PRO_MODEL } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
 import type { Message, FileData } from "@/types/workspace";
@@ -40,7 +40,7 @@ async function runGeminiPass(
   onThought: (label: string) => void
 ): Promise<string> {
   const geminiStream = await generateContentStream({
-    model: DEFAULT_MODEL,
+    model: PRO_MODEL,
     contents,
     config: {
       systemInstruction,
@@ -147,6 +147,7 @@ RULES:
 12. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
 13. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
 14. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.
+15. **RICH AESTHETICS & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design best practices (vibrant colors, glassmorphism, soft shadows, rounded corners). The user should be WOWED at first glance. If your app looks basic or simple, you have FAILED. Use \`framer-motion\` to add micro-interactions, page transitions, and hover effects. An interface that feels alive encourages interaction.
 `;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────

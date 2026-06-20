@@ -31,7 +31,7 @@ if (typeof globalForGemini.geminiKeyIndex === "undefined") {
 const API_KEYS = collectApiKeys();
 
 export const DEFAULT_MODEL = "gemini-2.5-flash";
-export const PRO_MODEL = "gemini-2.5-flash";
+export const PRO_MODEL = "gemini-2.5-pro";
 
 // ─── Get current client (sticky) ──────────────────────────────────────────────────
 
@@ -86,17 +86,6 @@ export async function generateContentStream(options: GenerateOptions) {
     }
     return null;
   };
-
-  // Try the requested model first
-  let stream = await tryModel(model);
-
-  // If primary model fails and it was the default flash model, fallback to flash-lite
-  if (!stream && model === DEFAULT_MODEL) {
-    console.warn(`[gemini] ${model} failed, falling back to gemini-2.5-flash-lite...`);
-    // Optionally shift to next key for the fallback run
-    globalForGemini.geminiKeyIndex = (globalForGemini.geminiKeyIndex + 1) % API_KEYS.length;
-    stream = await tryModel("gemini-2.5-flash-lite");
-  }
 
   if (stream) return stream;
 
