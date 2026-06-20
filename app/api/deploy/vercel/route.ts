@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     "lucide-react": "^0.263.1",
     "recharts": "^2.10.3",
     "framer-motion": "^10.16.16",
+    "@emotion/is-prop-valid": "^1.2.2",
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.2.0",
     ...(fileData.dependencies ?? {})
