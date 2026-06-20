@@ -6,7 +6,7 @@ import Workspace from "@/lib/models/Workspace";
 import { generateContentStream, DEFAULT_MODEL } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
-import { BASE_DEPENDENCIES } from "@/lib/constants";
+import { BASE_DEPENDENCIES, VITE_REACT_BOILERPLATE } from "@/lib/constants";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 
