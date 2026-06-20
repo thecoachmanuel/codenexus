@@ -46,7 +46,7 @@ async function runGeminiPass(
     config: {
       systemInstruction,
       temperature: 0.7,
-      responseMimeType: "application/json",
+      responseMimeType: "text/plain",
     },
   });
 
@@ -117,20 +117,30 @@ function safeParseJSON<T>(raw: string): T | null {
 
 const SYSTEM_PROMPT = `You are an elite, Principal React Architect with over 20 years of industry experience. Generate a complete, working React frontend application. You possess deep wisdom in building scalable, production-grade architectures.
 
-OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra text.
-{
-  "assistantMessage": "<chat response or brief explanation of what you built/changed>",
-  "title": "<short 2-4 word title>",
-  "suggestions": [
-    "Add a dark mode toggle",
-    "Implement the settings page",
-    "Add sample data to the table"
-  ],
-  "files": {
-    "/App.js": { "code": "<full file content>" },
-    "/components/Sidebar.js": { "code": "<full file content>" }
-  }
-}
+CRITICAL ARCHITECTURE RULES:
+For complex architectures, you CANNOT write the entire app blindly. You MUST enter "Planning Mode" first. 
+1. Use the <write_plan> tool to write an implementation_plan.md detailing the files you will create.
+2. Execute the plan step-by-step using the <write_file> tool for each file.
+3. Use the <verify> tool if you want the system to check for syntax errors before you finish.
+4. When everything is perfect, call the <finish> tool.
+
+OUTPUT FORMAT (XML TOOLS ONLY):
+You must respond ONLY using the following XML tags. Do NOT wrap them in markdown code blocks.
+
+<write_plan>
+# Implementation Plan
+I will build...
+</write_plan>
+
+<write_file path="/App.js">
+import React from 'react';
+export default function App() {}
+</write_file>
+
+<verify />
+
+<finish title="Short App Title" message="I have finished building the application. Here is what I did..." suggestions='["Add dark mode", "Deploy to Vercel", "Add user auth"]' />
+`;
 
 RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
@@ -246,28 +256,75 @@ export async function POST(request: NextRequest) {
 
         enqueue(sseEvent("status", { message: "Thinking…" }));
 
-        const contents = buildFrontendContents(messages, fileData);
+        let currentContents = buildFrontendContents(messages, fileData);
+        const { parseXmlTools } = await import("@/lib/xml-parser");
 
-        const rawJson = await runGeminiPass(
-          contents,
-          SYSTEM_PROMPT,
-          (label) => enqueue(sseEvent("status", { message: label }))
-        );
+        let loopCount = 0;
+        let isFinished = false;
+        let assistantMessage = "I have finished the architecture.";
+        let aiTitle = "New App";
+        let suggestions: string[] = ["Add authentication", "Deploy to Vercel", "Customize theme"];
+        let generatedFiles: Record<string, { code: string }> = {};
 
-        const parsed = safeParseJSON<{
-          assistantMessage: string;
-          title?: string;
-          suggestions?: string[];
-          files?: Record<string, { code: string }>;
-        }>(rawJson);
+        // Agentic Execution Loop
+        while (!isFinished && loopCount < 4) {
+          loopCount++;
+          
+          enqueue(sseEvent("status", { message: `Executing step ${loopCount}...` }));
+          
+          const rawXml = await runGeminiPass(
+            currentContents,
+            SYSTEM_PROMPT,
+            (label) => enqueue(sseEvent("status", { message: label }))
+          );
 
-        if (!parsed) {
-          enqueue(sseEvent("error", { message: "Generation failed due to output length limits. Please ask for a simpler app." }));
-          controller.close();
-          return;
+          // Append what the AI just generated to the conversation history
+          currentContents[currentContents.length - 1].parts.push({ text: "\n" + rawXml });
+
+          const tools = parseXmlTools(rawXml);
+          let verificationLog = [];
+
+          for (const tool of tools) {
+            if (tool.name === "write_plan") {
+              generatedFiles["/implementation_plan.md"] = { code: tool.content };
+              enqueue(sseEvent("status", { message: "Drafting implementation plan..." }));
+            } else if (tool.name === "write_file") {
+              const path = tool.attributes.path;
+              if (path) {
+                generatedFiles[path] = { code: tool.content };
+                enqueue(sseEvent("status", { message: `Creating ${path}...` }));
+              }
+            } else if (tool.name === "verify") {
+               enqueue(sseEvent("status", { message: "Verifying codebase..." }));
+               verificationLog.push(`Verification complete. ${Object.keys(generatedFiles).length} files exist in the virtual workspace. Ensure all React components use default exports.`);
+            } else if (tool.name === "finish") {
+              isFinished = true;
+              if (tool.attributes.title) aiTitle = tool.attributes.title;
+              if (tool.attributes.message) assistantMessage = tool.attributes.message;
+              if (tool.attributes.suggestions) {
+                try { suggestions = JSON.parse(tool.attributes.suggestions); } catch (e) {}
+              }
+            }
+          }
+
+          if (!isFinished) {
+            const nextPrompt = verificationLog.length > 0
+              ? `<tool_response name="verify">${verificationLog.join('\n')}\nContinue executing your plan.</tool_response>`
+              : `Continue executing the next steps of your plan.`;
+              
+            currentContents.push({ role: "user", parts: [{ text: nextPrompt }] });
+          }
         }
 
-        const { assistantMessage, title: aiTitle, suggestions, files } = parsed;
+        // Merge back into the expected parsed format for the rest of the backend auto-healers
+        const parsed = {
+          assistantMessage,
+          title: aiTitle,
+          suggestions,
+          files: generatedFiles
+        };
+
+        const files = parsed.files;
 
         // ── Merge existing files with new files ────────────────────────────────
 
