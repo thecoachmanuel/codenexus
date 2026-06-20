@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
         }>(rawJson);
 
         if (!parsed) {
-          enqueue(sseEvent("error", { message: "Generation failed. Please try again." }));
+          enqueue(sseEvent("error", { message: "Generation failed due to output length limits. Please ask for a simpler app." }));
           controller.close();
           return;
         }
@@ -362,7 +362,7 @@ export async function POST(request: NextRequest) {
         console.error("[gen-ai-code] stream error:", err);
         enqueue(
           sseEvent("error", {
-            message: "Something went wrong. Please try again.",
+            message: err instanceof Error ? err.message : "Something went wrong. Please try again.",
           })
         );
       } finally {
