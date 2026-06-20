@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
 import type { FileData } from "@/types/workspace";
-import { VITE_REACT_BOILERPLATE } from "@/lib/constants";
+import { REACT_BOILERPLATE } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const vercelFiles: { file: string; data: string }[] = [];
 
   // Base boilerplate files
-  const baseFiles: Record<string, { code: string }> = { ...VITE_REACT_BOILERPLATE };
+  const baseFiles: Record<string, { code: string }> = { ...REACT_BOILERPLATE };
   
   // Merge AI files
   for (const [path, val] of Object.entries(fileData.files)) {

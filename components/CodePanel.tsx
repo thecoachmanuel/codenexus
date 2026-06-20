@@ -785,7 +785,7 @@ export function CodePanel({
     if (!fileData || !fileData.files) return PLACEHOLDER_FILES;
     
     // Inject the base React boilerplate
-    const f: Record<string, { code: string }> = { ...VITE_REACT_BOILERPLATE };
+    const f: Record<string, { code: string }> = { ...REACT_BOILERPLATE };
     
     // Override with AI-generated files, normalizing /src paths to root
     for (const [key, val] of Object.entries(fileData.files)) {
