@@ -219,8 +219,7 @@ export async function POST(request: NextRequest) {
         let result: any;
         
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
-          // If we've exhausted all keys on the primary model, fall back to flash-lite
-          let currentModelId = attempt < keysCount ? PRO_MODEL : "gemini-2.5-flash-lite";
+          let currentModelId = PRO_MODEL;
           
           const agent = new Agent({
             providerId: "gemini",
@@ -239,15 +238,17 @@ WORKFLOW:
 
 CRITICAL RULES:
 1. **ARCHITECTURE**: Use standard clean React architecture: \`/components\`, \`/pages\`, \`/hooks\`, \`/lib\`. Entry point MUST be \`/App.js\` with a default export. NO TypeScript.
-2. **RICH AESTHETICS & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design best practices (vibrant colors, glassmorphism, soft shadows, rounded corners). The user should be WOWED at first glance.
+2. **RICH AESTHETICS & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design best practices (vibrant colors, glassmorphism, soft shadows, rounded corners). The user should be WOWED at first glance. If your app looks basic or simple, you have FAILED.
 3. **DYNAMIC ANIMATIONS**: Use \`framer-motion\` to add micro-interactions, page transitions, and hover effects. An interface that feels alive encourages interaction.
 4. **COMPLETENESS**: DO NOT stub out files or use placeholders like \`// implement later\`. Write fully-featured, production-ready code. Always write complete file contents.
-5. **STYLING**: Use Tailwind CSS for all styling. Rely on utility classes exclusively.
+5. **STYLING**: Use Tailwind CSS for all styling. Rely on utility classes exclusively. Always include generous padding, rounded corners, subtle borders, and harmonious color palettes.
 6. **DATABASE**: If modifying data fetching, use a data abstraction layer (e.g. \`/lib/db.js\`). Check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists to use Atlas, else simulate with \`localStorage\`.
 7. **DEPLOYMENT**: Keep \`/README.md\` updated with instructions for running and deploying to Vercel.
 8. **IMAGES**: NEVER use local image paths. ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
 9. **MOBILE-FIRST**: You MUST design the application to be highly responsive and adapt gracefully to mobile screens.
 10. **LIGHT MODE DEFAULT**: Design in light mode by default unless requested otherwise.
+
+CRITICAL REMINDER: AESTHETICS ARE VERY IMPORTANT. If your web app looks simple and basic then you have FAILED! Do not just output standard HTML elements.
 11. **NO ORPHANED CSS**: Our boilerplate imports \`./styles.css\` globally. DO NOT import \`./index.css\` or \`./App.css\`.`,
             tools: [listFilesTool, readFileTool, updateFileTool, doneGeneratingTool],
             toolPolicies: {
