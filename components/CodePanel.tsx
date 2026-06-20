@@ -58,10 +58,10 @@ const GithubIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-import { VITE_REACT_BOILERPLATE, BASE_DEPENDENCIES } from "@/lib/constants";
+import { REACT_BOILERPLATE, BASE_DEPENDENCIES } from "@/lib/constants";
 
 const PLACEHOLDER_FILES = {
-  ...VITE_REACT_BOILERPLATE,
+  ...REACT_BOILERPLATE,
 };
 
 // Base dependencies are imported from constants.ts
