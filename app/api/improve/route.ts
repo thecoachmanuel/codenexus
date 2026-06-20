@@ -202,9 +202,8 @@ CRITICAL RULES:
             result = await agent.run(userRequest);
             
             if (result.status === "failed") {
-              const msg = (result.error?.message ?? "").toLowerCase();
-              if ((msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded")) && attempt < maxAttempts - 1) {
-                console.warn("[improve] Agent rate limited, rotating key...");
+              if (attempt < maxAttempts - 1) {
+                console.warn("[improve] Agent failed, falling back to next model/key...");
                 rotateApiKey();
                 continue;
               }
@@ -214,9 +213,8 @@ CRITICAL RULES:
             // Successfully finished run
             break;
           } catch (err: any) {
-            const msg = (err.message || String(err)).toLowerCase();
-            if ((msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded")) && attempt < maxAttempts - 1) {
-              console.warn("[improve] Agent exception (rate limit), rotating key...");
+            if (attempt < maxAttempts - 1) {
+              console.warn("[improve] Agent exception, falling back to next model/key...");
               rotateApiKey();
               continue;
             }
