@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { PRO_MODEL, getApiKey } from "@/lib/gemini";
+import { PRO_MODEL, getApiKey, rotateApiKey } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
@@ -261,8 +261,7 @@ CRITICAL RULES:
               const msg = (result.error?.message ?? "").toLowerCase();
               if ((msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded")) && attempt < maxAttempts - 1) {
                 console.warn("[gen-ai-code] Agent rate limited, rotating key...");
-                // Note: In real setup, you'd rotate key here if getApiKey rotates, but we'll just delay
-                await new Promise(r => setTimeout(r, 2000));
+                rotateApiKey();
                 continue;
               }
               throw new Error(result.error?.message ?? "Agent run failed");
@@ -272,7 +271,8 @@ CRITICAL RULES:
           } catch (err: any) {
             const msg = (err.message || String(err)).toLowerCase();
             if ((msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded")) && attempt < maxAttempts - 1) {
-              await new Promise(r => setTimeout(r, 2000));
+              console.warn("[gen-ai-code] Agent exception (rate limit), rotating key...");
+              rotateApiKey();
               continue;
             }
             throw err;
@@ -347,11 +347,11 @@ CRITICAL RULES:
               updatedUser?.credits ?? user.credits - cost,
           })
         );
-      } catch (err) {
+      } catch (err: any) {
         console.error("[gen-ai-code] stream error:", err);
         enqueue(
           sseEvent("error", {
-            message: "Something went wrong. Please try again.",
+            message: err?.message ?? "Something went wrong. Please try again.",
           })
         );
       } finally {
