@@ -300,7 +300,14 @@ export async function POST(request: NextRequest) {
           for (const [key, value] of Object.entries(files)) {
             let path = key;
             if (!path.startsWith("/")) path = "/" + path;
-            if (path.startsWith("/src/") && path.endsWith("App.js")) path = "/src/App.jsx";
+            
+            // Auto-fix: Vite STRICTLY requires .jsx extension for files containing JSX.
+            // If the AI generated a .js file, rename it to .jsx so esbuild doesn't crash.
+            if (path.endsWith(".js") && !path.includes("vite.config")) {
+              path = path.replace(/\.js$/, ".jsx");
+            }
+
+            if (path.startsWith("/src/") && path.endsWith("App.jsx")) path = "/src/App.jsx";
             if (path === "/App.js" || path === "/App.jsx") path = "/src/App.jsx";
             
             // Clean markdown fences (e.g. ```jsx ... ```)
