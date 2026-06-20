@@ -3,19 +3,11 @@ import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { PRO_MODEL, getApiKey, rotateApiKey, getApiKeysCount } from "@/lib/gemini";
+import { generateContentStream, DEFAULT_MODEL } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
+import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
-import { Agent, createTool } from "@cline/sdk";
-import { z } from "zod";
-import {
-  extractDependencies,
-  findMissingFiles,
-  autoFixAbsoluteImports,
-  autoStubMissingFiles
-} from "@/lib/dependencies";
-import { BASE_DEPENDENCIES } from "@/lib/constants";
 
 // ─── SSE helper ───────────────────────────────────────────────────────────────
 
@@ -23,25 +15,179 @@ function sseEvent(type: string, payload: unknown): string {
   return `data: ${JSON.stringify({ type, ...(payload as object) })}\n\n`;
 }
 
-// ─── npm validation ───────────────────────────────────────────────────────────
+// ─── Extract short label from a Gemini thought chunk ─────────────────────────
 
-async function validateDependencies(
-  deps: Record<string, string>
-): Promise<Record<string, string>> {
-  const valid: Record<string, string> = {};
-  await Promise.all(
-    Object.entries(deps).map(async ([pkg, version]) => {
-      try {
-        const res = await fetch(`https://registry.npmjs.org/${pkg}/latest`, {
-          signal: AbortSignal.timeout(1500),
-        });
-        if (res.ok) valid[pkg] = version;
-      } catch {
-        // silently skip hallucinated packages
+function extractThoughtLabel(text: string): string | null {
+  const boldMatch = text.match(/\*\*([^*]{4,60})\*\*/);
+  if (boldMatch) return boldMatch[1].trim();
+  const sentence = text.split(/[.\n]/)[0].trim();
+  if (sentence.length >= 8 && sentence.length <= 80) return sentence;
+  return null;
+}
+
+// ─── History trimming ─────────────────────────────────────────────────────────
+
+function trimHistory(messages: Message[]): Message[] {
+  if (messages.length <= 10) return messages;
+  return [messages[0], ...messages.slice(-8)];
+}
+
+// ─── Helper: run a single Gemini streaming call and collect the full text ─────
+
+async function runGeminiPass(
+  contents: object[],
+  systemInstruction: string,
+  onThought: (label: string) => void
+): Promise<string> {
+  const geminiStream = await generateContentStream({
+    model: DEFAULT_MODEL,
+    contents,
+    config: {
+      systemInstruction,
+      temperature: 0.7,
+      responseMimeType: "application/json",
+      maxOutputTokens: 32768,
+    },
+  });
+
+  let accumulated = "";
+  let lastEmitTime = 0;
+
+  for await (const chunk of geminiStream) {
+    const parts = chunk.candidates?.[0]?.content?.parts ?? [];
+    for (const part of parts) {
+      if (!part.text) continue;
+      if (part.thought) {
+        const now = Date.now();
+        if (now - lastEmitTime > 600) {
+          const label = extractThoughtLabel(part.text);
+          if (label) {
+            onThought(label);
+            lastEmitTime = now;
+          }
+        }
+      } else {
+        accumulated += part.text;
       }
-    })
-  );
-  return valid;
+    }
+  }
+  return accumulated;
+}
+
+// ─── Helper: safely parse JSON with truncation recovery ──────────────────────
+
+function safeParseJSON<T>(raw: string): T | null {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    // If standard parsing fails, try to extract just the JSON object
+    let cleaned = raw;
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+      try {
+        return JSON.parse(cleaned) as T;
+      } catch {
+        // Fallback truncation recovery on the extracted JSON
+        try {
+          let attempt = cleaned.trim();
+          attempt = attempt.replace(/,?\s*"[^"]*$/, "");
+          const openBraces = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
+          const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
+          attempt += "}".repeat(Math.max(0, openBraces)) + "]".repeat(Math.max(0, openBrackets));
+          return JSON.parse(attempt) as T;
+        } catch {
+          return null;
+        }
+      }
+    }
+    
+    return null;
+  }
+}
+
+// ─── System Prompts ───────────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `You are an expert React developer. Generate a complete, working React frontend application.
+
+OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra text.
+{
+  "assistantMessage": "<chat response or brief explanation of what you built/changed>",
+  "title": "<short 2-4 word title>",
+  "suggestions": [
+    "Add a dark mode toggle",
+    "Implement the settings page",
+    "Add sample data to the table"
+  ],
+  "files": {
+    "/App.js": { "code": "<full file content>" },
+    "/components/Sidebar.js": { "code": "<full file content>" }
+  }
+}
+
+RULES:
+1. Use React functional components + hooks. NO TypeScript in generated files.
+2. Use standard clean React architecture: put components in \`/components\`, pages in \`/pages\`, hooks in \`/hooks\`, and utils in \`/lib\`.
+3. Entry point MUST be \`/App.js\` with a default export.
+4. Use Tailwind CSS for all styling.
+5. All imports must reference files you include or valid npm packages.
+6. Keep code clean, readable, production-quality.
+7. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
+8. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a purely browser-based React app.
+9. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the \`REACT_APP_MONGODB_DATA_API_URL\`, \`REACT_APP_MONGODB_DATA_API_KEY\`, and \`REACT_APP_MONGODB_DATA_API_CLUSTER\` environment variables in the Vercel dashboard.
+10. If the user is just chatting or asking a question, you can omit the "files" field entirely and just respond with "assistantMessage" and "suggestions".
+11. **CRITICAL SPEED OPTIMIZATION**: When modifying existing code, output ONLY the files that you are actually changing or creating. You MUST omit all other files from the "files" object. Unchanged files are preserved automatically. Do not output unchanged files.
+12. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
+13. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
+14. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.
+15. **RICH AESTHETICS & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design best practices (vibrant colors, glassmorphism, soft shadows, rounded corners). The user should be WOWED at first glance. If your app looks basic or simple, you have FAILED. Use \`framer-motion\` to add micro-interactions, page transitions, and hover effects. An interface that feels alive encourages interaction.
+`;
+
+// ─── Contents builder ─────────────────────────────────────────────────────────
+
+function buildFrontendContents(messages: Message[], fileData: FileData | null) {
+  const trimmed = trimHistory(messages);
+
+  return trimmed.map((msg, idx) => {
+    const role = msg.role === "assistant" ? "model" : "user";
+
+    if (msg.role === "user") {
+      const parts: object[] = [];
+      let text = msg.content;
+
+      if (msg.imageUrl) {
+        if (msg.imageUrl.startsWith("data:image/")) {
+          const commaIndex = msg.imageUrl.indexOf(",");
+          if (commaIndex !== -1) {
+            const mimeType = msg.imageUrl.substring(5, msg.imageUrl.indexOf(";"));
+            const base64Data = msg.imageUrl.substring(commaIndex + 1);
+            parts.push({ inlineData: { data: base64Data, mimeType } });
+            text = `[Image attached as design reference.]\n\n${text}`;
+          }
+        } else {
+          text = `[Image URL for reference: ${msg.imageUrl}]\n\n${text}`;
+        }
+      }
+
+      const isLast = idx === trimmed.length - 1;
+      if (isLast && fileData) {
+        const fileSummary = Object.entries(fileData.files ?? {})
+          .map(([path, { code }]) => {
+            return `### ${path}\n\`\`\`\n${code}\n\`\`\``;
+          })
+          .join("\n\n");
+
+        text += `\n\nCurrent project files:\n${fileSummary}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
+      }
+
+      parts.push({ text });
+      return { role, parts };
+    }
+
+    return { role, parts: [{ text: msg.content }] };
+  });
 }
 
 // ─── Route ────────────────────────────────────────────────────────────────────
@@ -88,266 +234,67 @@ export async function POST(request: NextRequest) {
         controller.enqueue(encoder.encode(chunk));
 
       try {
-        enqueue(sseEvent("status", { message: "Starting agent…" }));
+        // ── GENERATION PASS ──────────────────────────────────────────────────
 
-        const patchedFiles: Record<string, { code: string }> = {
-          ...(fileData?.files ?? {}),
-        };
+        enqueue(sseEvent("status", { message: "Thinking…" }));
+
+        const contents = buildFrontendContents(messages, fileData);
+
+        const rawJson = await runGeminiPass(
+          contents,
+          SYSTEM_PROMPT,
+          (label) => enqueue(sseEvent("status", { message: label }))
+        );
+
+        const parsed = safeParseJSON<{
+          assistantMessage: string;
+          title?: string;
+          suggestions?: string[];
+          files?: Record<string, { code: string }>;
+        }>(rawJson);
+
+        if (!parsed) {
+          enqueue(sseEvent("error", { message: "Generation failed. Please try again." }));
+          controller.close();
+          return;
+        }
+
+        const { assistantMessage, title: aiTitle, suggestions, files } = parsed;
+
+        // ── Merge existing files with new files ────────────────────────────────
+
+        const normalizedFiles: Record<string, { code: string }> = { ...(fileData?.files ?? {}) };
         
-        let finalAssistantMessage = "";
-        let finalTitle = fileData?.title ?? "Untitled App";
-        let finalSuggestions: string[] = fileData?.suggestions ?? [];
-        let finalDependencies: Record<string, string> = {};
-
-        const listFilesTool = createTool({
-          name: "list_files",
-          description: "List all files currently in the React sandbox.",
-          inputSchema: z.object({}),
-          async execute() {
-            return JSON.stringify(Object.keys(patchedFiles), null, 2);
-          },
-        });
-
-        const readFileTool = createTool({
-          name: "read_file",
-          description: "Read the contents of a specific file.",
-          inputSchema: z.object({
-            path: z.string().describe("File path, e.g. /App.js"),
-          }),
-          async execute({ path }) {
-            let normalizedPath = path;
-            if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-            const file = patchedFiles[normalizedPath];
-            if (!file) return `Error: File ${normalizedPath} not found.`;
-            return file.code;
-          },
-        });
-
-        const updateFileTool = createTool({
-          name: "update_file",
-          description:
-            "Create or Update a FRONTEND file in the React sandbox. Call once per file you need to create or change.",
-          inputSchema: z.object({
-            path: z
-              .string()
-              .describe("File path exactly as it appears, e.g. /App.js or /components/Header.js"),
-            code: z.string().describe("Complete new contents of the file"),
-            reason: z
-              .string()
-              .describe("One sentence explaining what you changed and why"),
-          }),
-          async execute({ path, code, reason }) {
-            let normalizedPath = path;
-            if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-            if (normalizedPath.startsWith("/src/")) {
-              normalizedPath = normalizedPath.replace("/src/", "/");
-            }
-            if (normalizedPath === "/App.jsx" || normalizedPath === "/App.tsx") {
-              normalizedPath = "/App.js";
-            }
+        if (files) {
+          for (const [key, value] of Object.entries(files)) {
+            let path = key;
+            if (!path.startsWith("/")) path = "/" + path;
+            if (path.startsWith("/src/") && path.endsWith("App.js")) path = "/App.js";
             
             // Clean markdown fences (e.g. ```jsx ... ```)
-            let rawCode = code;
+            let rawCode = value.code;
             if (typeof rawCode === "string") {
-              rawCode = rawCode.replace(/^\s*```[a-z]*\n/i, "").replace(/\n```\s*$/i, "");
+              rawCode = rawCode.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
             }
-            
-            patchedFiles[normalizedPath] = { code: rawCode };
-            enqueue(sseEvent("file_patch", { path: normalizedPath, code: rawCode, reason }));
-            return `Updated frontend ${normalizedPath}: ${reason}`;
-          },
-        });
-
-        const doneGeneratingTool = createTool({
-          name: "done_generating",
-          description:
-            "Call this when you have finished making all generations or improvements. You MUST call this tool to complete the task.",
-          inputSchema: z.object({
-            assistantMessage: z
-              .string()
-              .describe("A friendly summary of what you built or improved (1-3 sentences)"),
-            title: z
-              .string()
-              .describe("A short 2-4 word title for this app"),
-            suggestions: z
-              .array(z.string())
-              .describe("Array of exactly 3 specific, actionable short phrases the user could ask for next"),
-            dependencies: z
-              .record(z.string(), z.string())
-              .optional()
-              .describe("Any NEW npm dependencies needed (e.g. { \"lodash\": \"latest\" }). Do NOT include react, react-dom, or tailwindcss."),
-          }),
-          async execute({ assistantMessage, title, suggestions, dependencies }) {
-            // Prevent Agent from skipping generation on brand new projects
-            if (!fileData && !patchedFiles["/App.js"]) {
-              throw new Error("Generation rejected! You forgot to use the `update_file` tool to create the app files. You MUST create at least `/App.js` before calling done_generating.");
-            }
-
-            autoFixAbsoluteImports(patchedFiles);
-            const missing = findMissingFiles(patchedFiles);
-            if (missing.length > 0) {
-              const missingStrs = missing.map(m => `'${m.importPath}' (imported in ${m.importedIn})`);
-              throw new Error(`Generation rejected! You imported the following files but forgot to create them:\n${missingStrs.join('\n')}\n\nYou MUST use update_file to create these missing files before you are allowed to call done_generating.`);
-            }
-
-            finalAssistantMessage = assistantMessage;
-            if (title) finalTitle = title;
-            if (suggestions && suggestions.length > 0) finalSuggestions = suggestions;
-            if (dependencies) finalDependencies = dependencies;
-            return "Done.";
-          },
-        });
-
-        // Format conversation history for the agent prompt
-        let conversationText = "";
-        messages.forEach((msg) => {
-          conversationText += `\n\n---\n**${msg.role === "assistant" ? "Agent" : "User"}**:\n${msg.content}`;
-          if (msg.imageUrl) conversationText += `\n[Attached image]`;
-        });
-        
-        let initialFileContext = "";
-        if (fileData) {
-            initialFileContext = `\n\nCurrent project files:\n${Object.keys(fileData.files ?? {}).join(", ")}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
-        } else {
-            initialFileContext = `\n\nThis is a brand new project. Create the foundational files, ensuring you create an /App.js entry point.`;
-        }
-
-        const userRequest = `You must fulfill the latest user request. You are an expert full-stack React developer.\n\nConversation History:${conversationText}${initialFileContext}`;
-
-        const keysCount = getApiKeysCount();
-        const maxAttempts = keysCount * 2;
-        let result: any;
-        
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-          let currentModelId = PRO_MODEL;
-          
-          const agent = new Agent({
-            providerId: "gemini",
-            modelId: currentModelId,
-            apiKey: getApiKey(),
-            maxIterations: 20,
-            systemPrompt: `You are an expert full-stack React developer generating an app.
-
-WORKFLOW:
-1. Understand the user's request.
-2. If the user is asking a general question, just call \`done_generating\` with the answer in \`assistantMessage\`.
-3. If building or modifying an app:
-   - Use \`list_files\` and \`read_file\` to understand the current state.
-   - Use \`update_file\` to create or modify ALL necessary files. You MUST create/update all files required.
-4. Once all files are updated, call \`done_generating\`.
-
-CRITICAL RULES:
-1. **ARCHITECTURE**: Use standard clean React architecture: \`/components\`, \`/pages\`, \`/hooks\`, \`/lib\`. Entry point MUST be \`/App.js\` with a default export. NO TypeScript.
-2. **RICH AESTHETICS & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design best practices (vibrant colors, glassmorphism, soft shadows, rounded corners). The user should be WOWED at first glance. If your app looks basic or simple, you have FAILED.
-3. **DYNAMIC ANIMATIONS**: Use \`framer-motion\` to add micro-interactions, page transitions, and hover effects. An interface that feels alive encourages interaction.
-4. **COMPLETENESS**: DO NOT stub out files or use placeholders like \`// implement later\`. Write fully-featured, production-ready code. Always write complete file contents.
-5. **STYLING**: Use Tailwind CSS for all styling. Rely on utility classes exclusively. Always include generous padding, rounded corners, subtle borders, and harmonious color palettes.
-6. **DATABASE**: If modifying data fetching, use a data abstraction layer (e.g. \`/lib/db.js\`). Check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists to use Atlas, else simulate with \`localStorage\`.
-7. **DEPLOYMENT**: Keep \`/README.md\` updated with instructions for running and deploying to Vercel.
-8. **IMAGES**: NEVER use local image paths. ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-9. **MOBILE-FIRST**: You MUST design the application to be highly responsive and adapt gracefully to mobile screens.
-10. **LIGHT MODE DEFAULT**: Design in light mode by default unless requested otherwise.
-
-CRITICAL REMINDER: AESTHETICS ARE VERY IMPORTANT. If your web app looks simple and basic then you have FAILED! Do not just output standard HTML elements.
-11. **NO ORPHANED CSS**: Our boilerplate imports \`./styles.css\` globally. DO NOT import \`./index.css\` or \`./App.css\`.`,
-            tools: [listFilesTool, readFileTool, updateFileTool, doneGeneratingTool],
-            toolPolicies: {
-              list_files: { autoApprove: true },
-              read_file: { autoApprove: true },
-              update_file: { autoApprove: true },
-              done_generating: { autoApprove: true },
-            },
-            hooks: {
-              onEvent: (event) => {
-                if (event.type === "assistant-text-delta" && event.text) {
-                  enqueue(sseEvent("thinking", { text: event.text }));
-                }
-                if (event.type === "tool-started") {
-                  const name = event.toolCall?.toolName;
-                  if (name === "update_file") {
-                    const path =
-                      (event.toolCall?.input as { path?: string })?.path ?? "a file";
-                    enqueue(
-                      sseEvent("thinking", { text: `\n\nUpdating \`${path}\`…` })
-                    );
-                  } else if (name === "done_generating") {
-                    enqueue(
-                      sseEvent("thinking", { text: "\n\nFinalizing app generation…" })
-                    );
-                  }
-                }
-              },
-            },
-          });
-
-          try {
-            if (attempt === 0) enqueue(sseEvent("status", { message: "Agent starting…" }));
-            
-            result = await agent.run(userRequest);
-            
-            if (result.status === "failed") {
-              if (attempt < maxAttempts - 1) {
-                console.warn("[gen-ai-code] Agent failed, falling back to next model/key...");
-                rotateApiKey();
-                continue;
-              }
-              throw new Error(result.error?.message ?? "Agent run failed");
-            }
-            
-            break;
-          } catch (err: any) {
-            if (attempt < maxAttempts - 1) {
-              console.warn("[gen-ai-code] Agent exception, falling back to next model/key...");
-              rotateApiKey();
-              continue;
-            }
-            throw err;
+            normalizedFiles[path] = { ...value, code: rawCode };
           }
         }
-
-        if (!finalAssistantMessage) {
-            finalAssistantMessage = result?.outputText || "I have completed the task.";
-        }
-
-        autoFixAbsoluteImports(patchedFiles);
-        const missing = findMissingFiles(patchedFiles);
+        
+        // Ensure robustness with AST extraction and auto stubbing
+        autoFixAbsoluteImports(normalizedFiles);
+        const missing = findMissingFiles(normalizedFiles);
         if (missing.length > 0) {
-          autoStubMissingFiles(patchedFiles, missing);
+          autoStubMissingFiles(normalizedFiles, missing);
         }
-        if (!fileData && !patchedFiles["/App.js"]) {
-          throw new Error("The Agent finished generating without creating the /App.js entry point.");
-        }
-
-        // ── Validate npm packages ──────────────────────────────────────────────
 
         enqueue(sseEvent("status", { message: "Validating packages…" }));
-        
-        // Auto-extract dependencies from code to prevent Agent forgetfulness
-        const extracted = extractDependencies(patchedFiles);
-        extracted.forEach(pkg => {
-          if (!finalDependencies[pkg]) finalDependencies[pkg] = "latest";
-        });
-
-        const mergedDeps = { 
-          ...(fileData?.dependencies ?? {}), 
-          ...(finalDependencies ?? {}),
-          ...BASE_DEPENDENCIES // Force base versions (framer-motion ^10, recharts, etc) to win
-        };
-        
-        // Remove problematic packages that crash Sandpack
-        delete mergedDeps["tailwindcss"];
-        delete mergedDeps["postcss"];
-        delete mergedDeps["autoprefixer"];
-        delete mergedDeps["react"];
-        delete mergedDeps["react-dom"];
-
-        const validatedDeps = await validateDependencies(mergedDeps);
+        const validatedDeps = await extractDependencies(normalizedFiles, fileData?.dependencies ?? {});
 
         const newFileData: FileData = {
-          files: patchedFiles,
+          files: normalizedFiles,
           dependencies: validatedDeps,
-          title: finalTitle,
-          suggestions: finalSuggestions,
+          title: aiTitle ?? fileData?.title,
+          suggestions,
           envVars: fileData?.envVars,
         };
 
@@ -358,7 +305,7 @@ CRITICAL REMINDER: AESTHETICS ARE VERY IMPORTANT. If your web app looks simple a
         const lastUserMessage = messages[messages.length - 1];
         const updatedMessages: Message[] = [
           ...messages,
-          { role: "assistant", content: finalAssistantMessage },
+          { role: "assistant", content: assistantMessage },
         ];
 
         const userObjectId = new mongoose.Types.ObjectId(userId);
@@ -376,7 +323,7 @@ CRITICAL REMINDER: AESTHETICS ARE VERY IMPORTANT. If your web app looks simple a
           
           workspace = await Workspace.create({
             userId: userObjectId,
-            title: finalTitle ?? lastUserMessage.content.slice(0, 80),
+            title: aiTitle ?? lastUserMessage.content.slice(0, 80),
             subdomain,
             messages: updatedMessages,
             fileData: newFileData,
@@ -393,17 +340,17 @@ CRITICAL REMINDER: AESTHETICS ARE VERY IMPORTANT. If your web app looks simple a
           sseEvent("done", {
             workspaceId: workspace!._id.toString(),
             subdomain: workspace!.subdomain,
-            assistantMessage: finalAssistantMessage,
+            assistantMessage,
             fileData: newFileData,
             creditsRemaining:
               updatedUser?.credits ?? user.credits - cost,
           })
         );
-      } catch (err: any) {
+      } catch (err) {
         console.error("[gen-ai-code] stream error:", err);
         enqueue(
           sseEvent("error", {
-            message: err?.message ?? "Something went wrong. Please try again.",
+            message: "Something went wrong. Please try again.",
           })
         );
       } finally {
