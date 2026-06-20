@@ -633,7 +633,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
                   ? "h-[812px] w-[375px] shrink-0 overflow-hidden rounded-[2.5rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
                   : previewMode === "tablet"
                   ? "h-[1024px] w-[768px] shrink-0 overflow-hidden rounded-[2rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
-                  : isFullscreen ? "h-full w-full" : "h-full w-full"
+                  : isFullscreen ? "h-full w-full" : "h-full min-w-[1024px] w-full shadow-2xl"
               }`}
             >
               <SandpackPreview
