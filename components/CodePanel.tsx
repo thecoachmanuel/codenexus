@@ -23,6 +23,8 @@ import {
   Monitor,
   Tablet,
   Smartphone,
+  Maximize2,
+  Minimize2,
   Settings2,
   Trash2,
   Plus,
@@ -129,6 +131,7 @@ function SandpackInner({
   const [isExporting, setIsExporting] = useState(false);
   const [improveInput, setImproveInput] = useState("");
   const [showImproveInput, setShowImproveInput] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
@@ -556,17 +559,19 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
           <TabsContent
             value="preview"
             keepMounted
-            className="mt-0 h-full w-full bg-[#0a0a0a] overflow-auto relative pb-16"
+            className={`mt-0 h-full w-full bg-[#0a0a0a] overflow-auto relative pb-16 ${
+              isFullscreen ? "fixed inset-0 z-50 !pb-0" : ""
+            }`}
           >
             {/* Viewport Toggles (only visible in preview tab) */}
             {activeTab === "preview" && (
-              <div className="absolute top-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1 backdrop-blur-md shadow-lg">
+              <div className="absolute top-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-black/10 bg-white/50 p-1 backdrop-blur-md shadow-lg transition-opacity duration-200 opacity-60 hover:opacity-100">
                 <button
                   onClick={() => setPreviewMode("mobile")}
                   className={`rounded-md p-1.5 transition-colors ${
                     previewMode === "mobile"
-                      ? "bg-white/20 text-white shadow-sm"
-                      : "text-white/40 hover:bg-white/10 hover:text-white/80"
+                      ? "bg-black/10 text-black shadow-sm"
+                      : "text-gray-600 hover:bg-black/5 hover:text-black"
                   }`}
                   title="Mobile Preview"
                 >
@@ -576,8 +581,8 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
                   onClick={() => setPreviewMode("tablet")}
                   className={`rounded-md p-1.5 transition-colors ${
                     previewMode === "tablet"
-                      ? "bg-white/20 text-white shadow-sm"
-                      : "text-white/40 hover:bg-white/10 hover:text-white/80"
+                      ? "bg-black/10 text-black shadow-sm"
+                      : "text-gray-600 hover:bg-black/5 hover:text-black"
                   }`}
                   title="Tablet Preview"
                 >
@@ -587,12 +592,24 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
                   onClick={() => setPreviewMode("desktop")}
                   className={`rounded-md p-1.5 transition-colors ${
                     previewMode === "desktop"
-                      ? "bg-white/20 text-white shadow-sm"
-                      : "text-white/40 hover:bg-white/10 hover:text-white/80"
+                      ? "bg-black/10 text-black shadow-sm"
+                      : "text-gray-600 hover:bg-black/5 hover:text-black"
                   }`}
                   title="Desktop Preview"
                 >
                   <Monitor className="h-4 w-4" />
+                </button>
+                <div className="w-px h-4 bg-black/10 mx-1" />
+                <button
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-black/5 hover:text-black"
+                  title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="h-4 w-4" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             )}
@@ -603,11 +620,11 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
                   ? "h-[812px] w-[375px] shrink-0 overflow-hidden rounded-[2.5rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
                   : previewMode === "tablet"
                   ? "h-[1024px] w-[768px] shrink-0 overflow-hidden rounded-[2rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
-                  : "h-full w-full"
+                  : isFullscreen ? "h-full w-full" : "h-full w-full"
               }`}
             >
               <SandpackPreview
-                style={{ height: previewMode === "desktop" ? "89%" : "100%" }}
+                style={{ height: (previewMode === "desktop" && !isFullscreen) ? "89%" : "100%" }}
                 showOpenInCodeSandbox={false}
               />
             </div>
