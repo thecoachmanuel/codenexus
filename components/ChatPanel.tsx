@@ -325,7 +325,7 @@ export function ChatPanel({
   void workspaceId;
 
   return (
-    <div className="flex w-[320px] shrink-0 flex-col bg-[#0d0d0d]">
+    <div className="flex h-full w-full flex-col bg-[#0d0d0d]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/6 px-2 py-3">
         <BlueTitle>{appTitle}</BlueTitle>
