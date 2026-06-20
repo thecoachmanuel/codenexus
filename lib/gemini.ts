@@ -50,7 +50,8 @@ interface GenerateOptions {
 
 export async function generateContentStream(options: GenerateOptions) {
   const { model = DEFAULT_MODEL, contents, config } = options;
-  const maxAttempts = API_KEYS.length;
+  // Loop through all keys TWICE to allow token buckets to naturally refill
+  const maxAttempts = API_KEYS.length * 2;
 
   let lastError: unknown;
 
@@ -75,12 +76,17 @@ export async function generateContentStream(options: GenerateOptions) {
           msg.includes("overloaded");
 
         if (isTransientOrRateLimit && attempt < maxAttempts - 1) {
-          console.warn(`[gemini] Key ${keyIndex + 1} rate-limited/overloaded on ${targetModel}, rotating...`);
+          const isFullCycle = (attempt + 1) % API_KEYS.length === 0;
+          const delayMs = isFullCycle ? 10000 : 2000; // Wait 10s if we exhausted all keys once, else 2s
+          
+          console.warn(`[gemini] Key ${keyIndex + 1} rate-limited on ${targetModel}. Waiting ${delayMs}ms before rotating...`);
+          await new Promise(r => setTimeout(r, delayMs));
+          
           globalForGemini.geminiKeyIndex = (keyIndex + 1) % API_KEYS.length;
           continue;
         }
         
-        // If it's a hard error (e.g. 400 Bad Request) or we exhausted keys, break
+        // If it's a hard error (e.g. 400 Bad Request) or we exhausted all attempts, break
         break;
       }
     }
@@ -99,7 +105,7 @@ export async function generateContentStream(options: GenerateOptions) {
 
 export async function generateContent(options: GenerateOptions) {
   const { model = DEFAULT_MODEL, contents, config } = options;
-  const maxAttempts = API_KEYS.length;
+  const maxAttempts = API_KEYS.length * 2;
 
   let lastError: unknown;
 
@@ -124,7 +130,12 @@ export async function generateContent(options: GenerateOptions) {
           msg.includes("overloaded");
 
         if (isTransientOrRateLimit && attempt < maxAttempts - 1) {
-          console.warn(`[gemini] Key ${keyIndex + 1} rate-limited on ${targetModel} (non-stream), rotating...`);
+          const isFullCycle = (attempt + 1) % API_KEYS.length === 0;
+          const delayMs = isFullCycle ? 10000 : 2000;
+          
+          console.warn(`[gemini] Key ${keyIndex + 1} rate-limited on ${targetModel} (non-stream). Waiting ${delayMs}ms...`);
+          await new Promise(r => setTimeout(r, delayMs));
+          
           globalForGemini.geminiKeyIndex = (keyIndex + 1) % API_KEYS.length;
           continue;
         }
