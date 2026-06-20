@@ -197,9 +197,14 @@ export async function POST(request: NextRequest) {
         let result: any;
         
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          // If we've retried and failed on pro, fall back to flash, then flash-lite
+          let currentModelId = PRO_MODEL;
+          if (attempt === 1) currentModelId = "gemini-2.5-flash";
+          if (attempt === 2) currentModelId = "gemini-2.5-flash-lite";
+          
           const agent = new Agent({
             providerId: "gemini",
-            modelId: PRO_MODEL,
+            modelId: currentModelId,
             apiKey: getApiKey(),
             maxIterations: 20,
             systemPrompt: `You are an expert full-stack React developer generating an app.
