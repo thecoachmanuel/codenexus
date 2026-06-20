@@ -57,7 +57,7 @@ export function findMissingFiles(files: Record<string, { code: string }>): strin
       if (!importPath.startsWith('.') && !importPath.startsWith('/')) return;
 
       if (importPath.startsWith('/')) {
-        missing.push(`'${importPath}' (Absolute imports are forbidden in Sandpack. Use relative imports like './' or '../' in ${filePath})`);
+        missing.add(`'${importPath}' (Absolute imports are forbidden in Sandpack. Use relative imports like './' or '../' in ${filePath})`);
         return;
       }
 
