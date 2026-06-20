@@ -216,6 +216,12 @@ function SandpackInner({
   // Listen for Sandpack runtime errors
   useEffect(() => {
     unsubscribeRef.current = listen((msg) => {
+      // Successful compile
+      if (msg.type === "success") {
+        setPreviewError(null);
+        return;
+      }
+      // Runtime error shown in the preview
       if (
         msg.type === "action" &&
         "action" in msg &&
@@ -228,7 +234,8 @@ function SandpackInner({
         setPreviewError(errMsg);
         return;
       }
-      if (msg.type === "compile") {
+      // Compile error (not just a compile progress event)
+      if (msg.type === "compile" && "status" in msg && msg.status === "error") {
         const errMsg =
           "message" in msg && typeof msg.message === "string"
             ? msg.message
@@ -236,12 +243,18 @@ function SandpackInner({
         setPreviewError(errMsg);
         return;
       }
-      if (msg.type === "success") {
-        setPreviewError(null);
+      // Build aborted — auto-refresh the sandpack instance
+      if (
+        msg.type === "done" &&
+        "compilatonError" in msg &&
+        msg.compilatonError === true
+      ) {
+        // Trigger a refresh to retry the build
+        sandpack.runSandpack();
       }
     });
     return () => unsubscribeRef.current?.();
-  }, [listen]);
+  }, [listen, sandpack]);
 
   useEffect(() => {
     if (isGenerating) setPreviewError(null);
@@ -834,6 +847,9 @@ export function CodePanel({
           externalResources: ["https://cdn.tailwindcss.com"],
           recompileMode: "delayed",
           recompileDelay: 500,
+          bundlerURL: "https://sandpack-bundler.codesandbox.io",
+          bundlerTimeOut: 60000,
+          autoReload: true,
         }}
       >
         <SandpackInner
