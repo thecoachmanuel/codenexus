@@ -837,7 +837,7 @@ export function CodePanel({
     <div className="flex flex-1 flex-col overflow-hidden">
       <SandpackProvider
         key={providerKey}
-        template="react"
+        template="vite-react"
         theme={dracula}
         files={files}
         customSetup={{ 

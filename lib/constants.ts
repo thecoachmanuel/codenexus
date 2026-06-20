@@ -56,7 +56,7 @@ export const VITE_REACT_BOILERPLATE = {
     code: JSON.stringify(
       {
         name: "react-app",
-        main: "index.js",
+        type: "module",
         dependencies: {
           "react": "^18.2.0",
           "react-dom": "^18.2.0",
@@ -73,7 +73,7 @@ export const VITE_REACT_BOILERPLATE = {
       2
     )
   },
-  "/public/index.html": {
+  "/index.html": {
     code: `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -84,10 +84,11 @@ export const VITE_REACT_BOILERPLATE = {
   </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/src/index.jsx"></script>
   </body>
 </html>`
   },
-  "/index.js": {
+  "/src/index.jsx": {
     code: `import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
@@ -101,7 +102,7 @@ root.render(
   </StrictMode>
 );`
   },
-  "/styles.css": {
+  "/src/styles.css": {
     code: `body {
   font-family: sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -112,7 +113,7 @@ root.render(
   box-sizing: border-box;
 }`
   },
-  "/App.js": {
+  "/src/App.jsx": {
     code: `export default function App() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-400">

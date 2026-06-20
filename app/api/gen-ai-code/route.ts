@@ -134,8 +134,8 @@ OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra t
 
 RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
-2. Use standard clean React architecture: put components in \`/components\`, pages in \`/pages\`, hooks in \`/hooks\`, and utils in \`/lib\`.
-3. Entry point MUST be \`/App.js\` with a default export.
+2. Use standard clean React architecture: put components in \`/src/components\`, pages in \`/src/pages\`, hooks in \`/src/hooks\`, and utils in \`/src/lib\`.
+3. Entry point MUST be \`/src/App.jsx\` with a default export.
 4. Use Tailwind CSS for all styling. Do NOT import "tailwindcss" or any CSS files directly. Tailwind is already loaded via CDN.
 5. All imports must reference files you include or valid npm packages.
 6. Keep code clean, readable, production-quality.
