@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
 import { extractDependencies } from "@/lib/dependencies";
+import { BASE_DEPENDENCIES } from "@/lib/constants";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
@@ -228,16 +229,26 @@ CRITICAL RULES:
         const extracted = extractDependencies(patchedFiles);
         const finalDependencies = { ...(fileData.dependencies ?? {}) };
         
-        // We need to validate new dependencies, similar to gen-ai-code
-        // However, improve route didn't have validateDependencies imported.
-        // For simplicity, let's just append them. The bundler will try to fetch them.
         extracted.forEach(pkg => {
           if (!finalDependencies[pkg]) finalDependencies[pkg] = "latest";
         });
+        
+        // Merge with BASE_DEPENDENCIES to ensure stable versions win
+        const mergedDeps = {
+          ...finalDependencies,
+          ...BASE_DEPENDENCIES
+        };
+
+        // Remove problematic packages that crash Sandpack
+        delete mergedDeps["tailwindcss"];
+        delete mergedDeps["postcss"];
+        delete mergedDeps["autoprefixer"];
+        delete mergedDeps["react"];
+        delete mergedDeps["react-dom"];
 
         const newFileData: FileData = {
           files: patchedFiles,
-          dependencies: finalDependencies,
+          dependencies: mergedDeps,
           title: fileData.title,
           envVars: fileData.envVars,
           suggestions: fileData.suggestions,

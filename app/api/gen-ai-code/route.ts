@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
 import { extractDependencies } from "@/lib/dependencies";
+import { BASE_DEPENDENCIES } from "@/lib/constants";
 
 // ─── SSE helper ───────────────────────────────────────────────────────────────
 
@@ -298,10 +299,20 @@ CRITICAL RULES:
           if (!finalDependencies[pkg]) finalDependencies[pkg] = "latest";
         });
 
-        const validatedDeps = await validateDependencies({ 
+        const mergedDeps = { 
           ...(fileData?.dependencies ?? {}), 
-          ...(finalDependencies ?? {}) 
-        });
+          ...(finalDependencies ?? {}),
+          ...BASE_DEPENDENCIES // Force base versions (framer-motion ^10, recharts, etc) to win
+        };
+        
+        // Remove problematic packages that crash Sandpack
+        delete mergedDeps["tailwindcss"];
+        delete mergedDeps["postcss"];
+        delete mergedDeps["autoprefixer"];
+        delete mergedDeps["react"];
+        delete mergedDeps["react-dom"];
+
+        const validatedDeps = await validateDependencies(mergedDeps);
 
         const newFileData: FileData = {
           files: patchedFiles,
