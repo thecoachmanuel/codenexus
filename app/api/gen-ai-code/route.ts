@@ -374,6 +374,11 @@ export async function POST(request: NextRequest) {
             let path = key;
             if (!path.startsWith("/")) path = "/" + path;
             
+            // Force files out of /src/ so they align with Sandpack CRA root structure
+            if (path.startsWith("/src/")) {
+              path = path.replace("/src", "");
+            }
+            
             if (path === "/App.jsx") path = "/App.js";
             
             // Clean markdown fences (e.g. ```jsx ... ```)
