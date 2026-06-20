@@ -65,7 +65,8 @@ export const VITE_REACT_BOILERPLATE = {
           "framer-motion": "^10.16.16",
           "@emotion/is-prop-valid": "^1.2.2",
           "clsx": "^2.1.0",
-          "tailwind-merge": "^2.2.0"
+          "tailwind-merge": "^2.2.0",
+          "@swc/helpers": "^0.5.11"
         }
       },
       null,
@@ -134,4 +135,5 @@ export const BASE_DEPENDENCIES: Record<string, string> = {
   "@emotion/is-prop-valid": "^1.2.2",
   "clsx": "^2.1.0",
   "tailwind-merge": "^2.2.0",
+  "@swc/helpers": "^0.5.11",
 };

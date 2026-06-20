@@ -136,7 +136,7 @@ RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
 2. Use standard clean React architecture: put components in \`/components\`, pages in \`/pages\`, hooks in \`/hooks\`, and utils in \`/lib\`.
 3. Entry point MUST be \`/App.js\` with a default export.
-4. Use Tailwind CSS for all styling.
+4. Use Tailwind CSS for all styling. Do NOT import "tailwindcss" or any CSS files directly. Tailwind is already loaded via CDN.
 5. All imports must reference files you include or valid npm packages.
 6. Keep code clean, readable, production-quality.
 7. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
