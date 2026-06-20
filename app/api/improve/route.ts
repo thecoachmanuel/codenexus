@@ -157,16 +157,17 @@ WORKFLOW:
 5. Once all files are updated, call \`done_improving\` with a short summary.
 
 CRITICAL RULES:
-1. Use standard clean React architecture: \`/components\`, \`/pages\`, \`/hooks\`, \`/lib\`.
-2. Entry point MUST be \`/App.js\` with a default export. NO TypeScript in generated code.
-3. Use Tailwind CSS for all styling.
-4. **DUAL-MODE DATABASE**: If modifying data fetching, use the data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a browser-based React app.
-5. **DEPLOYMENT**: Keep the \`/README.md\` up to date. It should detail exactly how to run the app AND deploy it to Vercel (including where to configure the \`REACT_APP_MONGODB_DATA_API_KEY\` environment variables in the Vercel dashboard).
-6. Always write complete file contents — never partial snippets.
-7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-8. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
-9. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.
-10. **NO ORPHANED CSS IMPORTS**: Our boilerplate already imports \`./styles.css\` globally. DO NOT import \`./index.css\`, \`./App.css\`, or other generic CSS files in your components. Rely entirely on Tailwind classes for styling.`,
+1. **ARCHITECTURE**: Use standard clean React architecture: \`/components\`, \`/pages\`, \`/hooks\`, \`/lib\`. Entry point MUST be \`/App.js\` with a default export. NO TypeScript.
+2. **RICH AESTHETICS & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design best practices (vibrant colors, glassmorphism, soft shadows, rounded corners). The user should be WOWED at first glance.
+3. **DYNAMIC ANIMATIONS**: Use \`framer-motion\` to add micro-interactions, page transitions, and hover effects. An interface that feels alive encourages interaction.
+4. **COMPLETENESS**: DO NOT stub out files or use placeholders like \`// implement later\`. Write fully-featured, production-ready code. Always write complete file contents.
+5. **STYLING**: Use Tailwind CSS for all styling. Rely on utility classes exclusively.
+6. **DATABASE**: If modifying data fetching, use a data abstraction layer (e.g. \`/lib/db.js\`). Check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists to use Atlas, else simulate with \`localStorage\`.
+7. **DEPLOYMENT**: Keep \`/README.md\` updated with instructions for running and deploying to Vercel.
+8. **IMAGES**: NEVER use local image paths. ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
+9. **MOBILE-FIRST**: You MUST design the application to be highly responsive and adapt gracefully to mobile screens.
+10. **LIGHT MODE DEFAULT**: Design in light mode by default unless requested otherwise.
+11. **NO ORPHANED CSS**: Our boilerplate imports \`./styles.css\` globally. DO NOT import \`./index.css\` or \`./App.css\`.`,
             tools: [listFilesTool, readFileTool, updateFileTool, doneImprovingTool],
             toolPolicies: {
               list_files: { autoApprove: true },
