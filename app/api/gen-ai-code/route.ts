@@ -289,6 +289,23 @@ export async function POST(request: NextRequest) {
           }
           delete baseWorkspace["/index.js"];
         }
+        if (VITE_REACT_BOILERPLATE["/src/styles.css"]) {
+          if (!baseWorkspace["/src/styles.css"]) {
+            baseWorkspace["/src/styles.css"] = VITE_REACT_BOILERPLATE["/src/styles.css"];
+          }
+          delete baseWorkspace["/styles.css"];
+        }
+
+        // Clean up legacy CRA root directories and files
+        const legacyRootDirs = ["/components/", "/pages/", "/lib/", "/hooks/", "/utils/"];
+        for (const key of Object.keys(baseWorkspace)) {
+          if (legacyRootDirs.some(dir => key.startsWith(dir))) {
+            baseWorkspace["/src" + key] = baseWorkspace[key];
+            delete baseWorkspace[key];
+          } else if (key === "/App.js" || key === "/App.jsx") {
+            delete baseWorkspace[key];
+          }
+        }
         
         // CRITICAL: Sandpack's vite-react template crashes if we override /package.json
         // Delete any legacy package.json so Sandpack relies on customSetup.dependencies safely
@@ -307,8 +324,14 @@ export async function POST(request: NextRequest) {
               path = path.replace(/\.js$/, ".jsx");
             }
 
-            if (path.startsWith("/src/") && path.endsWith("App.jsx")) path = "/src/App.jsx";
-            if (path === "/App.js" || path === "/App.jsx") path = "/src/App.jsx";
+            // Auto-map any root-level files hallucinated by AI into /src/
+            const rootConfigWhitelist = ["/index.html", "/vite.config.js", "/package.json", "/tailwind.config.js", "/postcss.config.js"];
+            if (!path.startsWith("/src/") && !rootConfigWhitelist.includes(path)) {
+              path = "/src" + path;
+            }
+
+            // Ensure App.jsx explicitly overrides any existing ones
+            if (path === "/src/App.js") path = "/src/App.jsx";
             
             // Clean markdown fences (e.g. ```jsx ... ```)
             let rawCode = value.code;
