@@ -413,6 +413,11 @@ export async function POST(request: NextRequest) {
               const funcMatch = rawCode.match(/function\s+([A-Z][a-zA-Z0-9_]*)\s*\(/);
               if (funcMatch) {
                 rawCode += `\nexport default ${funcMatch[1]};\n`;
+              } else {
+                const arrowMatch = rawCode.match(/const\s+([A-Z][a-zA-Z0-9_]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9_]+)\s*=>/);
+                if (arrowMatch) {
+                  rawCode += `\nexport default ${arrowMatch[1]};\n`;
+                }
               }
             }
 
