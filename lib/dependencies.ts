@@ -1,3 +1,5 @@
+import path from "path";
+
 export function extractDependencies(files: Record<string, { code: string }>): string[] {
   const deps = new Set<string>();
   const importRegex = /(?:import|from)\s+['"]([^'"]+)['"]/g;
@@ -39,4 +41,50 @@ export function extractDependencies(files: Record<string, { code: string }>): st
   }
 
   return Array.from(deps);
+}
+
+export function findMissingFiles(files: Record<string, { code: string }>): string[] {
+  const missing = new Set<string>();
+  const importRegex = /(?:import|from)\s+['"]([^'"]+)['"]/g;
+  const dynamicImportRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+
+  for (const [filePath, fileData] of Object.entries(files)) {
+    const code = fileData.code;
+    const dir = path.posix.dirname(filePath);
+
+    const checkImport = (importPath: string) => {
+      // Only check local imports
+      if (!importPath.startsWith('.') && !importPath.startsWith('/')) return;
+
+      // Resolve absolute path
+      let resolved = importPath.startsWith('/') 
+        ? importPath 
+        : path.posix.resolve(dir, importPath);
+
+      // Possible extensions Sandpack resolves automatically
+      const extensions = ['', '.js', '.jsx', '.ts', '.tsx', '.css', '/index.js', '/index.jsx'];
+      
+      let found = false;
+      for (const ext of extensions) {
+        if (files[resolved + ext]) {
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        missing.add(`'${importPath}' (imported in ${filePath})`);
+      }
+    };
+
+    let match;
+    while ((match = importRegex.exec(code)) !== null) {
+      checkImport(match[1]);
+    }
+    while ((match = dynamicImportRegex.exec(code)) !== null) {
+      checkImport(match[1]);
+    }
+  }
+
+  return Array.from(missing);
 }

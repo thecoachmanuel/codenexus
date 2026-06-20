@@ -9,7 +9,7 @@ import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
-import { extractDependencies } from "@/lib/dependencies";
+import { extractDependencies, findMissingFiles } from "@/lib/dependencies";
 import { BASE_DEPENDENCIES } from "@/lib/constants";
 
 // ─── SSE helper ───────────────────────────────────────────────────────────────
@@ -171,6 +171,11 @@ export async function POST(request: NextRequest) {
           }),
           lifecycle: { completesRun: true },
           async execute({ assistantMessage, title, suggestions, dependencies }) {
+            const missing = findMissingFiles(patchedFiles);
+            if (missing.length > 0) {
+              throw new Error(`Generation rejected! You imported the following files but forgot to create them:\n${missing.join('\n')}\n\nYou MUST use update_file to create these missing files before you are allowed to call done_generating.`);
+            }
+
             finalAssistantMessage = assistantMessage;
             if (title) finalTitle = title;
             if (suggestions && suggestions.length > 0) finalSuggestions = suggestions;

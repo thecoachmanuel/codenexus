@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
-import { extractDependencies } from "@/lib/dependencies";
+import { extractDependencies, findMissingFiles } from "@/lib/dependencies";
 import { BASE_DEPENDENCIES } from "@/lib/constants";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
         ...(fileData.files ?? {}),
       };
       let finalSummary = "";
+      let finalSuggestions = fileData.suggestions ?? [];
 
       const listFilesTool = createTool({
         name: "list_files",
@@ -127,10 +128,19 @@ export async function POST(request: NextRequest) {
             .describe(
               "A short friendly summary of all the improvements you made (1-3 sentences)"
             ),
+          newSuggestions: z.array(z.string()).optional(),
         }),
         lifecycle: { completesRun: true },
-        async execute({ summary }) {
+        async execute({ summary, newSuggestions }) {
+          const missing = findMissingFiles(patchedFiles);
+          if (missing.length > 0) {
+            throw new Error(`Improvement rejected! You imported the following files but forgot to create them:\n${missing.join('\n')}\n\nYou MUST use update_file to create these missing files before you are allowed to call done_improving.`);
+          }
+
           finalSummary = summary;
+          if (newSuggestions && newSuggestions.length > 0) {
+            finalSuggestions = newSuggestions;
+          }
           return "Done.";
         },
       });
