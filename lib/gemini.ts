@@ -87,6 +87,7 @@ export async function generateContentStream(options: GenerateOptions) {
     return null;
   };
 
+  const stream = await tryModel(model);
   if (stream) return stream;
 
   throw lastError ?? new Error("All Gemini API keys failed or the models are currently unavailable.");
