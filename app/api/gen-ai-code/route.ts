@@ -9,7 +9,11 @@ import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
-import { extractDependencies, findMissingFiles } from "@/lib/dependencies";
+import {
+  extractDependencies,
+  findMissingFiles,
+  autoFixAbsoluteImports
+} from "@/lib/dependencies";
 import { BASE_DEPENDENCIES } from "@/lib/constants";
 
 // ─── SSE helper ───────────────────────────────────────────────────────────────
@@ -178,6 +182,7 @@ export async function POST(request: NextRequest) {
               throw new Error("Generation rejected! You forgot to use the `update_file` tool to create the app files. You MUST create at least `/App.js` before calling done_generating.");
             }
 
+            autoFixAbsoluteImports(patchedFiles);
             const missing = findMissingFiles(patchedFiles);
             if (missing.length > 0) {
               throw new Error(`Generation rejected! You imported the following files but forgot to create them:\n${missing.join('\n')}\n\nYou MUST use update_file to create these missing files before you are allowed to call done_generating.`);
@@ -299,6 +304,15 @@ CRITICAL RULES:
 
         if (!finalAssistantMessage) {
             finalAssistantMessage = result?.outputText || "I have completed the task.";
+        }
+
+        autoFixAbsoluteImports(patchedFiles);
+        const missing = findMissingFiles(patchedFiles);
+        if (missing.length > 0) {
+          throw new Error(`The Agent finished generating but left missing file imports: ${missing.join(', ')}`);
+        }
+        if (!fileData && !patchedFiles["/App.js"]) {
+          throw new Error("The Agent finished generating without creating the /App.js entry point.");
         }
 
         // ── Validate npm packages ──────────────────────────────────────────────

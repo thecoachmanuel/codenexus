@@ -43,6 +43,32 @@ export function extractDependencies(files: Record<string, { code: string }>): st
   return Array.from(deps);
 }
 
+/**
+ * Automatically rewrites absolute imports (e.g. from '/pages/Dashboard')
+ * into valid relative imports based on the current file path.
+ */
+export function autoFixAbsoluteImports(files: Record<string, { code: string }>) {
+  const importRegex = /((?:import|from)\s+['"])\/([^'"]+)(['"])/g;
+  const dynamicImportRegex = /(import\s*\(\s*['"])\/([^'"]+)(['"]\s*\))/g;
+  
+  for (const [filePath, fileData] of Object.entries(files)) {
+    const dir = path.posix.dirname(filePath);
+    
+    const replacer = (match: string, prefix: string, importPath: string, suffix: string) => {
+      let relativePath = path.posix.relative(dir, '/' + importPath);
+      if (!relativePath.startsWith('.')) {
+        relativePath = './' + relativePath;
+      }
+      return `${prefix}${relativePath}${suffix}`;
+    };
+
+    if (typeof fileData.code === 'string') {
+      fileData.code = fileData.code.replace(importRegex, replacer);
+      fileData.code = fileData.code.replace(dynamicImportRegex, replacer);
+    }
+  }
+}
+
 export function findMissingFiles(files: Record<string, { code: string }>): string[] {
   const missing = new Set<string>();
   const importRegex = /(?:import|from)\s+['"]([^'"]+)['"]/g;
