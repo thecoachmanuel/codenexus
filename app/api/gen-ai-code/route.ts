@@ -6,6 +6,7 @@ import Workspace from "@/lib/models/Workspace";
 import { generateContentStream, DEFAULT_MODEL, PRO_MODEL } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
+import { BASE_DEPENDENCIES } from "@/lib/constants";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 
@@ -296,7 +297,9 @@ export async function POST(request: NextRequest) {
         const extracted = extractDependencies(normalizedFiles);
         const finalDependencies: Record<string, string> = { ...(fileData?.dependencies ?? {}) };
         extracted.forEach(pkg => {
-          if (!finalDependencies[pkg]) finalDependencies[pkg] = "latest";
+          if (!finalDependencies[pkg] && !BASE_DEPENDENCIES[pkg]) {
+            finalDependencies[pkg] = "latest";
+          }
         });
 
         const newFileData: FileData = {

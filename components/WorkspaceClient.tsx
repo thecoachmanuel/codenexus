@@ -242,6 +242,10 @@ export function WorkspaceClient({
                   "",
                   `/workspace?id=${event.workspaceId}`
                 );
+              } else if (event.type === "error") {
+                toast.error(event.message || "Generation failed");
+                pushStep(event.message || "Generation failed");
+                setIsGenerating(false);
               } else if (event.type === "thinking") {
                 pushStep(event.text);
               } else if (event.type === "file_patch") {
