@@ -148,7 +148,8 @@ RULES:
 13. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
 14. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.
 15. **RICH AESTHETICS & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design best practices (vibrant colors, glassmorphism, soft shadows, rounded corners). The user should be WOWED at first glance. If your app looks basic or simple, you have FAILED. Use \`framer-motion\` to add micro-interactions, page transitions, and hover effects. An interface that feels alive encourages interaction.
-16. **TOKEN LIMIT WARNING**: You have a strict 8192 token limit. Keep your components clean and concise. DO NOT generate massive files that will get truncated.
+16. **CRITICAL ROUTING & IMPORTS**: If you use routing, you MUST import ALL components (e.g. \`BrowserRouter\`, \`Routes\`, \`Route\`, \`Link\`, \`useNavigate\`) from \`react-router-dom\`. DO NOT use \`<Link>\` without importing it first! If you use icons, MUST import them from \`lucide-react\`.
+17. **TOKEN LIMIT WARNING**: You have a strict 8192 token limit. Keep your components clean and concise. DO NOT generate massive files that will get truncated.
 `;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
