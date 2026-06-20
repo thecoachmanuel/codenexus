@@ -3,10 +3,12 @@ import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { generateContentStream, DEFAULT_MODEL } from "@/lib/gemini";
+import { PRO_MODEL, getApiKey } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
+import { Agent, createTool } from "@cline/sdk";
+import { z } from "zod";
 
 // ─── SSE helper ───────────────────────────────────────────────────────────────
 
@@ -14,40 +16,7 @@ function sseEvent(type: string, payload: unknown): string {
   return `data: ${JSON.stringify({ type, ...(payload as object) })}\n\n`;
 }
 
-// ─── Extract short label from a Gemini thought chunk ─────────────────────────
-
-function extractThoughtLabel(text: string): string | null {
-  const boldMatch = text.match(/\*\*([^*]{4,60})\*\*/);
-  if (boldMatch) return boldMatch[1].trim();
-  const sentence = text.split(/[.\n]/)[0].trim();
-  if (sentence.length >= 8 && sentence.length <= 80) return sentence;
-  return null;
-}
-
 // ─── npm validation ───────────────────────────────────────────────────────────
-
-// Known Node.js-only packages with browser-safe alternatives
-const BROWSER_UNSAFE_ALTERNATIVES: Record<string, string | null> = {
-  "fs": null,
-  "path": null,
-  "os": null,
-  "net": null,
-  "tls": null,
-  "crypto": "crypto-browserify",
-  "stream": "stream-browserify",
-  "buffer": "buffer",
-  "url": null, // built-in
-  "http": null,
-  "https": null,
-  "mongoose": null, // server-only ORM
-  "express": null,
-  "socket.io": "socket.io-client",
-  "bcrypt": "bcryptjs",
-  "nodemailer": null,
-  "next": null,
-  "child_process": null,
-  "worker_threads": null,
-};
 
 async function validateDependencies(
   deps: Record<string, string>
@@ -55,210 +24,18 @@ async function validateDependencies(
   const valid: Record<string, string> = {};
   await Promise.all(
     Object.entries(deps).map(async ([pkg, version]) => {
-      // Skip packages we know are Node.js-only without a browser alternative
-      const unsafe = BROWSER_UNSAFE_ALTERNATIVES[pkg];
-      if (unsafe === null) {
-        console.warn(`[deps] Dropping Node.js-only package: ${pkg}`);
-        return;
-      }
-      // Swap to browser-safe alternative if one exists
-      const resolvedPkg = typeof unsafe === "string" ? unsafe : pkg;
-      const resolvedVersion = typeof unsafe === "string" ? "latest" : version;
       try {
-        const res = await fetch(`https://registry.npmjs.org/${resolvedPkg}/latest`, {
-          signal: AbortSignal.timeout(3000),
+        const res = await fetch(`https://registry.npmjs.org/${pkg}/latest`, {
+          signal: AbortSignal.timeout(1500),
         });
-        if (res.ok) {
-          // Get the latest version if "latest" is specified
-          const data = await res.json();
-          const latestVersion = data?.version;
-          valid[resolvedPkg] = latestVersion ? `^${latestVersion}` : resolvedVersion;
-        } else {
-          console.warn(`[deps] Package not found on npm: ${resolvedPkg}`);
-        }
+        if (res.ok) valid[pkg] = version;
       } catch {
-        // On timeout or network issue, still include the package
-        // Sandpack will handle resolution errors gracefully
-        valid[resolvedPkg] = resolvedVersion;
+        // silently skip hallucinated packages
       }
     })
   );
   return valid;
 }
-
-// ─── History trimming ─────────────────────────────────────────────────────────
-
-function trimHistory(messages: Message[]): Message[] {
-  if (messages.length <= 10) return messages;
-  return [messages[0], ...messages.slice(-8)];
-}
-
-// ─── Helper: run a single Gemini streaming call and collect the full text ─────
-
-async function runGeminiPass(
-  contents: object[],
-  systemInstruction: string,
-  onThought: (label: string) => void
-): Promise<string> {
-  const geminiStream = await generateContentStream({
-    model: DEFAULT_MODEL,
-    contents,
-    config: {
-      systemInstruction,
-      temperature: 0.7,
-      responseMimeType: "application/json",
-      // thinkingConfig: { includeThoughts: true }, // Flash does not support thinking
-      maxOutputTokens: 32768,
-    },
-  });
-
-  let accumulated = "";
-  let lastEmitTime = 0;
-
-  for await (const chunk of geminiStream) {
-    const parts = chunk.candidates?.[0]?.content?.parts ?? [];
-    for (const part of parts) {
-      if (!part.text) continue;
-      if (part.thought) {
-        const now = Date.now();
-        if (now - lastEmitTime > 600) {
-          const label = extractThoughtLabel(part.text);
-          if (label) {
-            onThought(label);
-            lastEmitTime = now;
-          }
-        }
-      } else {
-        accumulated += part.text;
-      }
-    }
-  }
-  return accumulated;
-}
-
-// ─── Helper: safely parse JSON with truncation recovery ──────────────────────
-
-function safeParseJSON<T>(raw: string): T | null {
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    // If standard parsing fails, try to extract just the JSON object
-    let cleaned = raw;
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-      try {
-        return JSON.parse(cleaned) as T;
-      } catch {
-        // Fallback truncation recovery on the extracted JSON
-        try {
-          let attempt = cleaned.trim();
-          attempt = attempt.replace(/,?\s*"[^"]*$/, "");
-          const openBraces = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
-          const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
-          attempt += "}".repeat(Math.max(0, openBraces)) + "]".repeat(Math.max(0, openBrackets));
-          return JSON.parse(attempt) as T;
-        } catch {
-          return null;
-        }
-      }
-    }
-    
-    return null;
-  }
-}
-
-// ─── System Prompts ───────────────────────────────────────────────────────────
-
-const SYSTEM_PROMPT = `You are an expert React developer. Generate a complete, working React frontend application.
-
-OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra text.
-{
-  "assistantMessage": "<chat response or brief explanation of what you built/changed>",
-  "title": "<short 2-4 word title>",
-  "suggestions": [
-    "Add a dark mode toggle",
-    "Implement the settings page",
-    "Add sample data to the table"
-  ],
-  "files": {
-    "/App.js": { "code": "<full file content>" },
-    "/components/Sidebar.js": { "code": "<full file content>" }
-  },
-  "dependencies": {
-    "some-package": "latest",
-    "another-package": "^2.0.0"
-  }
-}
-
-RULES:
-1. Use React functional components + hooks. NO TypeScript in generated files.
-2. Use standard clean React architecture: put components in \`/components\`, pages in \`/pages\`, hooks in \`/hooks\`, and utils in \`/lib\`.
-3. Entry point MUST be \`/App.js\` with a default export.
-4. Use Tailwind CSS for all styling.
-5. All imports must reference files you include or packages in "dependencies".
-6. Do NOT include react, react-dom, tailwindcss in "dependencies" (they are pre-installed).
-7. Keep code clean, readable, production-quality.
-8. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-9. **UNLIMITED DEPENDENCIES**: You are free to use ANY npm package you need. Declare ALL packages you import in the "dependencies" object. Do not hold back — use the best library for the job (e.g. react-router-dom, @tanstack/react-query, zustand, react-hook-form, zod, date-fns, react-beautiful-dnd, @dnd-kit/core, react-hot-toast, react-toastify, @radix-ui/react-*, react-player, react-map-gl, react-dropzone, react-pdf, react-chartjs-2, chart.js, etc.).
-10. **BROWSER-ONLY RULE**: This is a purely browser-based React app. NEVER use Node.js-only packages (mongoose, express, fs, net, http, nodemailer, child_process, etc.). For databases: fall back to localStorage simulation or the MongoDB Atlas Data API via fetch. For auth: use jwt-decode on the client side.
-11. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections.
-12. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel.
-13. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
-14. **CRITICAL SPEED OPTIMIZATION**: When modifying existing code, output ONLY the files that you are actually changing or creating. You MUST omit all other files from the "files" object. Unchanged files are preserved automatically. Do not output unchanged files.
-15. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
-16. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
-17. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.
-18. **DEPENDENCY VERSIONS**: Always prefer exact version ranges (e.g. "^2.1.0") over "latest" to ensure reproducible builds. Check compatibility with React 18.`;
-
-// ─── Contents builder ─────────────────────────────────────────────────────────
-
-function buildFrontendContents(messages: Message[], fileData: FileData | null) {
-  const trimmed = trimHistory(messages);
-
-  return trimmed.map((msg, idx) => {
-    const role = msg.role === "assistant" ? "model" : "user";
-
-    if (msg.role === "user") {
-      const parts: object[] = [];
-      let text = msg.content;
-
-      if (msg.imageUrl) {
-        if (msg.imageUrl.startsWith("data:image/")) {
-          const commaIndex = msg.imageUrl.indexOf(",");
-          if (commaIndex !== -1) {
-            const mimeType = msg.imageUrl.substring(5, msg.imageUrl.indexOf(";"));
-            const base64Data = msg.imageUrl.substring(commaIndex + 1);
-            parts.push({ inlineData: { data: base64Data, mimeType } });
-            text = `[Image attached as design reference.]\n\n${text}`;
-          }
-        } else {
-          text = `[Image URL for reference: ${msg.imageUrl}]\n\n${text}`;
-        }
-      }
-
-      const isLast = idx === trimmed.length - 1;
-      if (isLast && fileData) {
-        const fileSummary = Object.entries(fileData.files ?? {})
-          .map(([path, { code }]) => {
-            return `### ${path}\n\`\`\`\n${code}\n\`\`\``;
-          })
-          .join("\n\n");
-
-        text += `\n\nCurrent project files:\n${fileSummary}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
-      }
-
-      parts.push({ text });
-      return { role, parts };
-    }
-
-    return { role, parts: [{ text: msg.content }] };
-  });
-}
-
-// ─── Backend builder removed for pure React ───────────────────────────────────
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
@@ -304,51 +81,206 @@ export async function POST(request: NextRequest) {
         controller.enqueue(encoder.encode(chunk));
 
       try {
-        // ── GENERATION PASS ──────────────────────────────────────────────────
+        enqueue(sseEvent("status", { message: "Starting agent…" }));
 
-        enqueue(sseEvent("status", { message: "Thinking…" }));
-
-        const contents = buildFrontendContents(messages, fileData);
-
-        const rawJson = await runGeminiPass(
-          contents,
-          SYSTEM_PROMPT,
-          (label) => enqueue(sseEvent("status", { message: label }))
-        );
-
-        const parsed = safeParseJSON<{
-          assistantMessage: string;
-          title?: string;
-          suggestions?: string[];
-          files?: Record<string, { code: string }>;
-          dependencies?: Record<string, string>;
-        }>(rawJson);
-
-        if (!parsed) {
-          enqueue(sseEvent("error", { message: "Generation failed. Please try again." }));
-          controller.close();
-          return;
-        }
-
-        const { assistantMessage, title: aiTitle, suggestions, files, dependencies } = parsed;
-
-        // ── Merge existing files with new files ────────────────────────────────
-
-        const normalizedFiles: Record<string, { code: string }> = { ...(fileData?.files ?? {}) };
+        const patchedFiles: Record<string, { code: string }> = {
+          ...(fileData?.files ?? {}),
+        };
         
-        if (files) {
-          for (const [key, value] of Object.entries(files)) {
-            let path = key;
-            if (!path.startsWith("/")) path = "/" + path;
-            if (path.startsWith("/src/") && path.endsWith("App.js")) path = "/App.js";
+        let finalAssistantMessage = "";
+        let finalTitle = fileData?.title ?? "Untitled App";
+        let finalSuggestions: string[] = fileData?.suggestions ?? [];
+        let finalDependencies: Record<string, string> = {};
+
+        const listFilesTool = createTool({
+          name: "list_files",
+          description: "List all files currently in the React sandbox.",
+          inputSchema: z.object({}),
+          async execute() {
+            return JSON.stringify(Object.keys(patchedFiles), null, 2);
+          },
+        });
+
+        const readFileTool = createTool({
+          name: "read_file",
+          description: "Read the contents of a specific file.",
+          inputSchema: z.object({
+            path: z.string().describe("File path, e.g. /App.js"),
+          }),
+          async execute({ path }) {
+            let normalizedPath = path;
+            if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+            const file = patchedFiles[normalizedPath];
+            if (!file) return `Error: File ${normalizedPath} not found.`;
+            return file.code;
+          },
+        });
+
+        const updateFileTool = createTool({
+          name: "update_file",
+          description:
+            "Create or Update a FRONTEND file in the React sandbox. Call once per file you need to create or change.",
+          inputSchema: z.object({
+            path: z
+              .string()
+              .describe("File path exactly as it appears, e.g. /App.js or /components/Header.js"),
+            code: z.string().describe("Complete new contents of the file"),
+            reason: z
+              .string()
+              .describe("One sentence explaining what you changed and why"),
+          }),
+          async execute({ path, code, reason }) {
+            let normalizedPath = path;
+            if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+            if (normalizedPath.startsWith("/src/") && normalizedPath.endsWith("App.js")) {
+              normalizedPath = "/App.js";
+            }
             
             // Clean markdown fences (e.g. ```jsx ... ```)
-            let rawCode = value.code;
+            let rawCode = code;
             if (typeof rawCode === "string") {
-              rawCode = rawCode.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
+              rawCode = rawCode.replace(/^\s*```[a-z]*\n/i, "").replace(/\n```\s*$/i, "");
             }
-            normalizedFiles[path] = { ...value, code: rawCode };
+            
+            patchedFiles[normalizedPath] = { code: rawCode };
+            enqueue(sseEvent("file_patch", { path: normalizedPath, code: rawCode, reason }));
+            return `Updated frontend ${normalizedPath}: ${reason}`;
+          },
+        });
+
+        const doneGeneratingTool = createTool({
+          name: "done_generating",
+          description:
+            "Call this when you have finished making all generations or improvements. You MUST call this tool to complete the task.",
+          inputSchema: z.object({
+            assistantMessage: z
+              .string()
+              .describe("A friendly summary of what you built or improved (1-3 sentences)"),
+            title: z
+              .string()
+              .describe("A short 2-4 word title for this app"),
+            suggestions: z
+              .array(z.string())
+              .describe("Array of exactly 3 specific, actionable short phrases the user could ask for next"),
+            dependencies: z
+              .record(z.string(), z.string())
+              .optional()
+              .describe("Any NEW npm dependencies needed (e.g. { \"lodash\": \"latest\" }). Do NOT include react, react-dom, or tailwindcss."),
+          }),
+          lifecycle: { completesRun: true },
+          async execute({ assistantMessage, title, suggestions, dependencies }) {
+            finalAssistantMessage = assistantMessage;
+            if (title) finalTitle = title;
+            if (suggestions && suggestions.length > 0) finalSuggestions = suggestions;
+            if (dependencies) finalDependencies = dependencies;
+            return "Done.";
+          },
+        });
+
+        // Format conversation history for the agent prompt
+        let conversationText = "";
+        messages.forEach((msg) => {
+          conversationText += `\n\n---\n**${msg.role === "assistant" ? "Agent" : "User"}**:\n${msg.content}`;
+          if (msg.imageUrl) conversationText += `\n[Attached image]`;
+        });
+        
+        let initialFileContext = "";
+        if (fileData) {
+            initialFileContext = `\n\nCurrent project files:\n${Object.keys(fileData.files ?? {}).join(", ")}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
+        } else {
+            initialFileContext = `\n\nThis is a brand new project. Create the foundational files, ensuring you create an /App.js entry point.`;
+        }
+
+        const userRequest = `You must fulfill the latest user request. You are an expert full-stack React developer.\n\nConversation History:${conversationText}${initialFileContext}`;
+
+        const maxAttempts = 3;
+        let result: any;
+        
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          const agent = new Agent({
+            providerId: "gemini",
+            modelId: PRO_MODEL,
+            apiKey: getApiKey(),
+            maxIterations: 20,
+            systemPrompt: `You are an expert full-stack React developer generating an app.
+
+WORKFLOW:
+1. Understand the user's request.
+2. If the user is asking a general question, just call `done_generating` with the answer in `assistantMessage`.
+3. If building or modifying an app:
+   - Use `list_files` and `read_file` to understand the current state.
+   - Use `update_file` to create or modify ALL necessary files. You MUST create/update all files required.
+4. Once all files are updated, call `done_generating`.
+
+CRITICAL RULES:
+1. Use standard clean React architecture: `/components`, `/pages`, `/hooks`, `/lib`.
+2. Entry point MUST be `/App.js` with a default export. NO TypeScript in generated code.
+3. Use Tailwind CSS for all styling.
+4. **DUAL-MODE DATABASE**: If modifying data fetching, use a data abstraction layer (e.g. `/lib/db.js`). Check if `process.env.REACT_APP_MONGODB_DATA_API_KEY` exists. If yes, use MongoDB Atlas Data API. If no, simulate with `localStorage`.
+5. **DEPLOYMENT**: Keep the `/README.md` up to date with instructions for running and deploying to Vercel.
+6. Always write complete file contents — never partial snippets.
+7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
+8. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first.
+9. **LIGHT MODE DEFAULT**: Design the application in light mode by default unless explicitly requested otherwise.`,
+            tools: [listFilesTool, readFileTool, updateFileTool, doneGeneratingTool],
+            toolPolicies: {
+              list_files: { autoApprove: true },
+              read_file: { autoApprove: true },
+              update_file: { autoApprove: true },
+              done_generating: { autoApprove: true },
+            },
+            hooks: {
+              onEvent: (event) => {
+                if (event.type === "assistant-text-delta" && event.text) {
+                  enqueue(sseEvent("thinking", { text: event.text }));
+                }
+                if (event.type === "tool-started") {
+                  const name = event.toolCall?.toolName;
+                  if (name === "update_file") {
+                    const path =
+                      (event.toolCall?.input as { path?: string })?.path ?? "a file";
+                    enqueue(
+                      sseEvent("thinking", { text: `\n\nUpdating \`${path}\`…` })
+                    );
+                  } else if (name === "done_generating") {
+                    enqueue(
+                      sseEvent("thinking", { text: "\n\nFinalizing app generation…" })
+                    );
+                  }
+                }
+              },
+            },
+          });
+
+          try {
+            if (attempt === 0) enqueue(sseEvent("status", { message: "Agent starting…" }));
+            
+            result = await agent.run(userRequest);
+            
+            if (result.status === "failed") {
+              const msg = (result.error?.message ?? "").toLowerCase();
+              if ((msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded")) && attempt < maxAttempts - 1) {
+                console.warn("[gen-ai-code] Agent rate limited, rotating key...");
+                // Note: In real setup, you'd rotate key here if getApiKey rotates, but we'll just delay
+                await new Promise(r => setTimeout(r, 2000));
+                continue;
+              }
+              throw new Error(result.error?.message ?? "Agent run failed");
+            }
+            
+            break;
+          } catch (err: any) {
+            const msg = (err.message || String(err)).toLowerCase();
+            if ((msg.includes("429") || msg.includes("503") || msg.includes("rate limit") || msg.includes("quota") || msg.includes("overloaded")) && attempt < maxAttempts - 1) {
+              await new Promise(r => setTimeout(r, 2000));
+              continue;
+            }
+            throw err;
           }
+        }
+
+        if (!finalAssistantMessage) {
+            finalAssistantMessage = result?.outputText || "I have completed the task.";
         }
 
         // ── Validate npm packages ──────────────────────────────────────────────
@@ -356,14 +288,14 @@ export async function POST(request: NextRequest) {
         enqueue(sseEvent("status", { message: "Validating packages…" }));
         const validatedDeps = await validateDependencies({ 
           ...(fileData?.dependencies ?? {}), 
-          ...(dependencies ?? {}) 
+          ...(finalDependencies ?? {}) 
         });
 
         const newFileData: FileData = {
-          files: normalizedFiles,
+          files: patchedFiles,
           dependencies: validatedDeps,
-          title: aiTitle ?? fileData?.title,
-          suggestions,
+          title: finalTitle,
+          suggestions: finalSuggestions,
           envVars: fileData?.envVars,
         };
 
@@ -374,7 +306,7 @@ export async function POST(request: NextRequest) {
         const lastUserMessage = messages[messages.length - 1];
         const updatedMessages: Message[] = [
           ...messages,
-          { role: "assistant", content: assistantMessage },
+          { role: "assistant", content: finalAssistantMessage },
         ];
 
         const userObjectId = new mongoose.Types.ObjectId(userId);
@@ -392,7 +324,7 @@ export async function POST(request: NextRequest) {
           
           workspace = await Workspace.create({
             userId: userObjectId,
-            title: aiTitle ?? lastUserMessage.content.slice(0, 80),
+            title: finalTitle ?? lastUserMessage.content.slice(0, 80),
             subdomain,
             messages: updatedMessages,
             fileData: newFileData,
@@ -409,7 +341,7 @@ export async function POST(request: NextRequest) {
           sseEvent("done", {
             workspaceId: workspace!._id.toString(),
             subdomain: workspace!.subdomain,
-            assistantMessage,
+            assistantMessage: finalAssistantMessage,
             fileData: newFileData,
             creditsRemaining:
               updatedUser?.credits ?? user.credits - cost,

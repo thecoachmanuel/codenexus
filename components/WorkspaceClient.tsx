@@ -242,6 +242,23 @@ export function WorkspaceClient({
                   "",
                   `/workspace?id=${event.workspaceId}`
                 );
+              } else if (event.type === "thinking") {
+                pushStep(event.text);
+              } else if (event.type === "file_patch") {
+                setFileData((prev) => {
+                  const existing = prev ?? {
+                    title: "Untitled App",
+                    files: {},
+                    dependencies: {},
+                  };
+                  return {
+                    ...existing,
+                    files: {
+                      ...existing.files,
+                      [event.path]: { code: event.code },
+                    },
+                  };
+                });
               } else if (event.type === "error") {
                 throw new Error(event.message);
               }

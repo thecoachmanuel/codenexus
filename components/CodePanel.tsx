@@ -232,15 +232,6 @@ function SandpackInner({
             ? msg.message
             : "An error occurred in the preview.";
         setPreviewError(errMsg);
-        // Auto-fix dependency/module errors using AI
-        if (
-          errMsg.toLowerCase().includes("cannot find module") ||
-          errMsg.toLowerCase().includes("module not found") ||
-          errMsg.toLowerCase().includes("failed to fetch") ||
-          errMsg.toLowerCase().includes("could not resolve")
-        ) {
-          onFixError(`Dependency error: ${errMsg}. Please identify the missing or incompatible package and either fix the import or replace it with the best browser-compatible alternative. Update the dependencies accordingly.`);
-        }
         return;
       }
       // Compile error (not just a compile progress event)
@@ -263,7 +254,7 @@ function SandpackInner({
       }
     });
     return () => unsubscribeRef.current?.();
-  }, [listen, sandpack, onFixError]);
+  }, [listen, sandpack]);
 
   useEffect(() => {
     if (isGenerating) setPreviewError(null);
