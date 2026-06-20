@@ -134,14 +134,14 @@ OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra t
 
 RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
-2. Use standard clean React architecture: put components in \`/src/components\`, pages in \`/src/pages\`, hooks in \`/src/hooks\`, and utils in \`/src/lib\`.
-3. Entry point MUST be \`/src/App.jsx\` with a default export.
+2. Use standard clean React architecture: put components in /components, pages in /pages, hooks in /hooks, and utils in /lib.
+3. Entry point MUST be /App.js with a default export.
 4. Use Tailwind CSS for all styling. Do NOT import "tailwindcss" or any CSS files directly. Tailwind is already loaded via CDN.
 5. All imports must reference files you include or valid npm packages.
-6. Keep code clean, readable, production-quality.
+6. For placeholders and images, dynamically fetch descriptive images using the pollinations.ai API (e.g. https://image.pollinations.ai/prompt/a%20beautiful%20landscape).
 7. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-8. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a purely browser-based React app.
-9. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the \`REACT_APP_MONGODB_DATA_API_URL\`, \`REACT_APP_MONGODB_DATA_API_KEY\`, and \`REACT_APP_MONGODB_DATA_API_CLUSTER\` environment variables in the Vercel dashboard.
+8. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. /lib/db.js). This layer MUST check if process.env.REACT_APP_MONGODB_DATA_API_KEY exists. If it does, use the MongoDB Atlas Data API (via fetch) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with localStorage. Do NOT attempt to use mongoose or direct TCP MongoDB connections, as this is a purely browser-based React app.
+9. **DEPLOYMENT**: ALWAYS include a /README.md detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the REACT_APP_MONGODB_DATA_API_URL, REACT_APP_MONGODB_DATA_API_KEY, and REACT_APP_MONGODB_DATA_API_CLUSTER environment variables in the Vercel dashboard.
 10. If the user is just chatting or asking a question, you can omit the "files" field entirely and just respond with "assistantMessage" and "suggestions".
 11. **CRITICAL SPEED OPTIMIZATION**: When modifying existing code, output ONLY the files that you are actually changing or creating. You MUST omit all other files from the "files" object. Unchanged files are preserved automatically. Do not output unchanged files.
 12. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
@@ -274,35 +274,14 @@ export async function POST(request: NextRequest) {
           ...(fileData?.files ?? {}) 
         };
         
-        // Force Vite configs
-        if (VITE_REACT_BOILERPLATE["/vite.config.js"]) {
-          baseWorkspace["/vite.config.js"] = VITE_REACT_BOILERPLATE["/vite.config.js"];
-        }
-        if (VITE_REACT_BOILERPLATE["/index.html"]) {
-          baseWorkspace["/index.html"] = VITE_REACT_BOILERPLATE["/index.html"];
-          // Remove old CRA public/index.html if it exists
-          delete baseWorkspace["/public/index.html"];
-        }
-        if (VITE_REACT_BOILERPLATE["/src/index.jsx"]) {
-          if (!baseWorkspace["/src/index.jsx"]) {
-            baseWorkspace["/src/index.jsx"] = VITE_REACT_BOILERPLATE["/src/index.jsx"];
-          }
-          delete baseWorkspace["/index.js"];
-        }
-        if (VITE_REACT_BOILERPLATE["/src/styles.css"]) {
-          if (!baseWorkspace["/src/styles.css"]) {
-            baseWorkspace["/src/styles.css"] = VITE_REACT_BOILERPLATE["/src/styles.css"];
-          }
-          delete baseWorkspace["/styles.css"];
-        }
-
-        // Clean up legacy CRA root directories and files
-        const legacyRootDirs = ["/components/", "/pages/", "/lib/", "/hooks/", "/utils/"];
+        // Clean up Vite /src/ directories and force them back to root for CRA
         for (const key of Object.keys(baseWorkspace)) {
-          if (legacyRootDirs.some(dir => key.startsWith(dir))) {
-            baseWorkspace["/src" + key] = baseWorkspace[key];
-            delete baseWorkspace[key];
-          } else if (key === "/App.js" || key === "/App.jsx") {
+          if (key.startsWith("/src/")) {
+            const rootKey = key.replace("/src", "");
+            // Prioritize existing root files, otherwise move the src file to root
+            if (!baseWorkspace[rootKey]) {
+              baseWorkspace[rootKey] = baseWorkspace[key];
+            }
             delete baseWorkspace[key];
           }
         }
@@ -310,6 +289,25 @@ export async function POST(request: NextRequest) {
         // CRITICAL: Sandpack's vite-react template crashes if we override /package.json
         // Delete any legacy package.json so Sandpack relies on customSetup.dependencies safely
         delete baseWorkspace["/package.json"];
+        
+        // Force Vite configs
+        // Force CRA configs
+        if (REACT_BOILERPLATE["/index.js"]) {
+          if (!baseWorkspace["/index.js"]) {
+            baseWorkspace["/index.js"] = REACT_BOILERPLATE["/index.js"];
+          }
+          delete baseWorkspace["/src/index.jsx"];
+        }
+        if (REACT_BOILERPLATE["/styles.css"]) {
+          if (!baseWorkspace["/styles.css"]) {
+            baseWorkspace["/styles.css"] = REACT_BOILERPLATE["/styles.css"];
+          }
+          delete baseWorkspace["/src/styles.css"];
+        }
+        if (REACT_BOILERPLATE["/public/index.html"]) {
+          baseWorkspace["/public/index.html"] = REACT_BOILERPLATE["/public/index.html"];
+          delete baseWorkspace["/index.html"];
+        }
 
         const normalizedFiles: Record<string, { code: string }> = { ...baseWorkspace };
         
@@ -318,20 +316,7 @@ export async function POST(request: NextRequest) {
             let path = key;
             if (!path.startsWith("/")) path = "/" + path;
             
-            // Auto-fix: Vite STRICTLY requires .jsx extension for files containing JSX.
-            // If the AI generated a .js file, rename it to .jsx so esbuild doesn't crash.
-            if (path.endsWith(".js") && !path.includes("vite.config")) {
-              path = path.replace(/\.js$/, ".jsx");
-            }
-
-            // Auto-map any root-level files hallucinated by AI into /src/
-            const rootConfigWhitelist = ["/index.html", "/vite.config.js", "/package.json", "/tailwind.config.js", "/postcss.config.js"];
-            if (!path.startsWith("/src/") && !rootConfigWhitelist.includes(path)) {
-              path = "/src" + path;
-            }
-
-            // Ensure App.jsx explicitly overrides any existing ones
-            if (path === "/src/App.js") path = "/src/App.jsx";
+            if (path === "/App.jsx") path = "/App.js";
             
             // Clean markdown fences (e.g. ```jsx ... ```)
             let rawCode = value.code;

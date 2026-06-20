@@ -51,8 +51,8 @@ export const PRICING_PLANS = [
   },
 ] as const;
 
-export const VITE_REACT_BOILERPLATE = {
-  "/index.html": {
+export const REACT_BOILERPLATE = {
+  "/public/index.html": {
     code: `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -63,11 +63,10 @@ export const VITE_REACT_BOILERPLATE = {
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/index.jsx"></script>
   </body>
 </html>`
   },
-  "/src/index.jsx": {
+  "/index.js": {
     code: `import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
@@ -81,7 +80,7 @@ root.render(
   </StrictMode>
 );`
   },
-  "/src/styles.css": {
+  "/styles.css": {
     code: `body {
   font-family: sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -92,7 +91,7 @@ root.render(
   box-sizing: border-box;
 }`
   },
-  "/src/App.jsx": {
+  "/App.js": {
     code: `export default function App() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-400">
@@ -103,14 +102,6 @@ root.render(
     </div>
   );
 }`
-  },
-  "/vite.config.js": {
-    code: `import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-
-export default defineConfig({
-  plugins: [react()],
-});`
   }
 };
 

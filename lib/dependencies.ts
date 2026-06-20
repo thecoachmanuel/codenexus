@@ -26,9 +26,6 @@ export function extractDependencies(files: Record<string, { code: string }>): st
     // Ignore react/react-dom since they are in base dependencies
     if (pkgName === "react" || pkgName === "react-dom") return;
 
-    // Ignore Vite build tools to shield the Sandpack Nodebox environment
-    if (pkgName === "vite" || pkgName === "@vitejs/plugin-react") return;
-
     deps.add(pkgName);
   };
 

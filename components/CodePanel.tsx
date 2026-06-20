@@ -801,9 +801,9 @@ export function CodePanel({
 
     // Inject env variables directly into process.env at runtime safely
     if (fileData?.envVars && Object.keys(fileData.envVars).length > 0) {
-      const envInject = `\n    <script>window.process = window.process || {}; window.process.env = { ...window.process.env, ...${JSON.stringify(fileData.envVars)} };</script>\n  </head>`;
-      if (f["/index.html"]) {
-        f["/index.html"].code = f["/index.html"].code.replace("</head>", envInject);
+      const envInject = `window.process = window.process || {}; window.process.env = { ...window.process.env, ...${JSON.stringify(fileData.envVars)} };\n`;
+      if (f["/index.js"]) {
+        f["/index.js"].code = envInject + f["/index.js"].code;
       }
     }
 
@@ -822,7 +822,7 @@ export function CodePanel({
     <div className="flex flex-1 flex-col overflow-hidden">
       <SandpackProvider
         key={providerKey}
-        template="vite-react"
+        template="react"
         theme={dracula}
         files={files}
         customSetup={{ 
