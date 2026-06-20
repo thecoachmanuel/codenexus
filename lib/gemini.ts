@@ -90,14 +90,7 @@ export async function generateContentStream(options: GenerateOptions) {
   let stream = await tryModel(model);
   if (stream) return stream;
 
-  // If the primary model failed on all keys due to quota/rate-limits, forcefully fall back to flash-lite
-  if (model === DEFAULT_MODEL) {
-    console.warn(`[gemini] All keys exhausted or unavailable for ${DEFAULT_MODEL}. Falling back to gemini-2.5-flash-lite...`);
-    // Rotate the key index one more time just to be safe before trying the fallback model
-    globalForGemini.geminiKeyIndex = (globalForGemini.geminiKeyIndex + 1) % API_KEYS.length;
-    stream = await tryModel("gemini-2.5-flash-lite");
-    if (stream) return stream;
-  }
+
 
   throw lastError ?? new Error("All Gemini API keys failed or the models are currently unavailable.");
 }
@@ -144,12 +137,7 @@ export async function generateContent(options: GenerateOptions) {
   let response = await tryModel(model);
   if (response) return response;
 
-  if (model === DEFAULT_MODEL) {
-    console.warn(`[gemini] All keys exhausted for ${DEFAULT_MODEL} (non-stream). Falling back to gemini-2.5-flash-lite...`);
-    globalForGemini.geminiKeyIndex = (globalForGemini.geminiKeyIndex + 1) % API_KEYS.length;
-    response = await tryModel("gemini-2.5-flash-lite");
-    if (response) return response;
-  }
+
 
   throw lastError ?? new Error("All Gemini API keys failed or the models are currently unavailable.");
 }
