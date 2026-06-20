@@ -111,6 +111,9 @@ export async function POST(request: NextRequest) {
           if (normalizedPath.startsWith("/src/")) {
             normalizedPath = normalizedPath.replace("/src/", "/");
           }
+          if (normalizedPath === "/App.jsx" || normalizedPath === "/App.tsx") {
+            normalizedPath = "/App.js";
+          }
           patchedFiles[normalizedPath] = { code };
           enqueue(sseEvent("file_patch", { path: normalizedPath, code, reason }));
           return `Updated frontend ${normalizedPath}: ${reason}`;

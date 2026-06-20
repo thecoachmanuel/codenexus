@@ -802,8 +802,8 @@ export function CodePanel({
       }
     }
     
-    // react template uses .js — map /App.jsx → /App.js if needed
-    if (f["/App.jsx"] && !f["/App.js"]) {
+    // react template uses .js — map /App.jsx → /App.js
+    if (f["/App.jsx"]) {
       f["/App.js"] = f["/App.jsx"];
       delete f["/App.jsx"];
     }

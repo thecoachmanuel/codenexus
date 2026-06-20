@@ -137,6 +137,9 @@ export async function POST(request: NextRequest) {
             if (normalizedPath.startsWith("/src/")) {
               normalizedPath = normalizedPath.replace("/src/", "/");
             }
+            if (normalizedPath === "/App.jsx" || normalizedPath === "/App.tsx") {
+              normalizedPath = "/App.js";
+            }
             
             // Clean markdown fences (e.g. ```jsx ... ```)
             let rawCode = code;
