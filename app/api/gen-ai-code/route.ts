@@ -171,6 +171,11 @@ export async function POST(request: NextRequest) {
           }),
           lifecycle: { completesRun: true },
           async execute({ assistantMessage, title, suggestions, dependencies }) {
+            // Prevent Agent from skipping generation on brand new projects
+            if (!fileData && !patchedFiles["/App.js"]) {
+              throw new Error("Generation rejected! You forgot to use the `update_file` tool to create the app files. You MUST create at least `/App.js` before calling done_generating.");
+            }
+
             const missing = findMissingFiles(patchedFiles);
             if (missing.length > 0) {
               throw new Error(`Generation rejected! You imported the following files but forgot to create them:\n${missing.join('\n')}\n\nYou MUST use update_file to create these missing files before you are allowed to call done_generating.`);
