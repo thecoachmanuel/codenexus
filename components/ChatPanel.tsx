@@ -12,6 +12,8 @@ import {
   Square,
   Undo2,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Copy,
   Check,
 } from "lucide-react";
@@ -77,6 +79,8 @@ function MessageBubble({
   onGenerate,
   user,
 }: MessageBubbleProps) {
+  const [isSuggestionsExpanded, setIsSuggestionsExpanded] = useState(false);
+
   return (
     <div>
       {msg.role === "user" ? (
@@ -172,11 +176,22 @@ function MessageBubble({
       {/* Render suggestions below the VERY LAST assistant message when idle */}
       {isLast && msg.role === "assistant" && !isGenerating && !isImproving && suggestions && suggestions.length > 0 && (
         <div className="mt-5 flex flex-col gap-3 pl-8 pr-2">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <Sparkles className="h-3 w-3 text-blue-400/80" />
-            <p className="text-[11px] font-medium uppercase tracking-wider text-blue-400/80">Suggested Improvements</p>
-          </div>
-          {suggestions.map((suggestion, idx) => (
+          <button 
+            onClick={() => setIsSuggestionsExpanded(!isSuggestionsExpanded)}
+            className="flex items-center gap-1.5 mb-0.5 group cursor-pointer"
+          >
+            <Sparkles className="h-3 w-3 text-blue-400/80 group-hover:text-blue-400 transition-colors" />
+            <p className="text-[11px] font-medium uppercase tracking-wider text-blue-400/80 group-hover:text-blue-400 transition-colors">
+              Suggested Improvements
+            </p>
+            {isSuggestionsExpanded ? (
+              <ChevronUp className="h-3 w-3 ml-auto text-blue-400/50 group-hover:text-blue-400 transition-colors" />
+            ) : (
+              <ChevronDown className="h-3 w-3 ml-auto text-blue-400/50 group-hover:text-blue-400 transition-colors" />
+            )}
+          </button>
+          
+          {isSuggestionsExpanded && suggestions.map((suggestion, idx) => (
             <button
               key={idx}
               onClick={() => onGenerate(suggestion)}
