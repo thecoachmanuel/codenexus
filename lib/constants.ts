@@ -60,11 +60,11 @@ export const VITE_REACT_BOILERPLATE = {
         dependencies: {
           "react": "^18.2.0",
           "react-dom": "^18.2.0",
-          "lucide-react": "latest",
-          "recharts": "latest",
-          "framer-motion": "latest",
-          "clsx": "latest",
-          "tailwind-merge": "latest"
+          "lucide-react": "^0.263.1",
+          "recharts": "^2.10.3",
+          "framer-motion": "^10.16.16",
+          "clsx": "^2.1.0",
+          "tailwind-merge": "^2.2.0"
         }
       },
       null,
@@ -127,9 +127,9 @@ root.render(
 export const BASE_DEPENDENCIES: Record<string, string> = {
   "react": "^18.2.0",
   "react-dom": "^18.2.0",
-  "lucide-react": "latest",
-  "recharts": "latest",
-  "framer-motion": "latest",
-  "clsx": "latest",
-  "tailwind-merge": "latest",
+  "lucide-react": "^0.263.1",
+  "recharts": "^2.10.3",
+  "framer-motion": "^10.16.16",
+  "clsx": "^2.1.0",
+  "tailwind-merge": "^2.2.0",
 };
