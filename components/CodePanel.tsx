@@ -832,8 +832,7 @@ export function CodePanel({
           externalResources: ["https://cdn.tailwindcss.com"],
           recompileMode: "delayed",
           recompileDelay: 500,
-          bundlerURL: "https://sandpack-bundler.codesandbox.io",
-          bundlerTimeOut: 60000,
+          bundlerTimeOut: 300000,
           autoReload: true,
         }}
       >
