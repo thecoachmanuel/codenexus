@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
+import { extractDependencies } from "@/lib/dependencies";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
@@ -221,9 +222,20 @@ CRITICAL RULES:
           }
         }
 
+        // Auto-extract new dependencies from code to prevent Agent forgetfulness
+        const extracted = extractDependencies(patchedFiles);
+        const finalDependencies = { ...(fileData.dependencies ?? {}) };
+        
+        // We need to validate new dependencies, similar to gen-ai-code
+        // However, improve route didn't have validateDependencies imported.
+        // For simplicity, let's just append them. The bundler will try to fetch them.
+        extracted.forEach(pkg => {
+          if (!finalDependencies[pkg]) finalDependencies[pkg] = "latest";
+        });
+
         const newFileData: FileData = {
           files: patchedFiles,
-          dependencies: fileData.dependencies,
+          dependencies: finalDependencies,
           title: fileData.title,
           envVars: fileData.envVars,
           suggestions: fileData.suggestions,

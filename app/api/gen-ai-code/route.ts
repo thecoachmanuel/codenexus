@@ -9,6 +9,7 @@ import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
+import { extractDependencies } from "@/lib/dependencies";
 
 // ─── SSE helper ───────────────────────────────────────────────────────────────
 
@@ -288,6 +289,13 @@ CRITICAL RULES:
         // ── Validate npm packages ──────────────────────────────────────────────
 
         enqueue(sseEvent("status", { message: "Validating packages…" }));
+        
+        // Auto-extract dependencies from code to prevent Agent forgetfulness
+        const extracted = extractDependencies(patchedFiles);
+        extracted.forEach(pkg => {
+          if (!finalDependencies[pkg]) finalDependencies[pkg] = "latest";
+        });
+
         const validatedDeps = await validateDependencies({ 
           ...(fileData?.dependencies ?? {}), 
           ...(finalDependencies ?? {}) 
