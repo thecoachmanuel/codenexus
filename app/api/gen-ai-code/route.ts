@@ -12,7 +12,8 @@ import { z } from "zod";
 import {
   extractDependencies,
   findMissingFiles,
-  autoFixAbsoluteImports
+  autoFixAbsoluteImports,
+  autoStubMissingFiles
 } from "@/lib/dependencies";
 import { BASE_DEPENDENCIES } from "@/lib/constants";
 
@@ -185,7 +186,8 @@ export async function POST(request: NextRequest) {
             autoFixAbsoluteImports(patchedFiles);
             const missing = findMissingFiles(patchedFiles);
             if (missing.length > 0) {
-              throw new Error(`Generation rejected! You imported the following files but forgot to create them:\n${missing.join('\n')}\n\nYou MUST use update_file to create these missing files before you are allowed to call done_generating.`);
+              const missingStrs = missing.map(m => `'${m.importPath}' (imported in ${m.importedIn})`);
+              throw new Error(`Generation rejected! You imported the following files but forgot to create them:\n${missingStrs.join('\n')}\n\nYou MUST use update_file to create these missing files before you are allowed to call done_generating.`);
             }
 
             finalAssistantMessage = assistantMessage;
@@ -309,7 +311,7 @@ CRITICAL RULES:
         autoFixAbsoluteImports(patchedFiles);
         const missing = findMissingFiles(patchedFiles);
         if (missing.length > 0) {
-          throw new Error(`The Agent finished generating but left missing file imports: ${missing.join(', ')}`);
+          autoStubMissingFiles(patchedFiles, missing);
         }
         if (!fileData && !patchedFiles["/App.js"]) {
           throw new Error("The Agent finished generating without creating the /App.js entry point.");

@@ -69,8 +69,15 @@ export function autoFixAbsoluteImports(files: Record<string, { code: string }>) 
   }
 }
 
-export function findMissingFiles(files: Record<string, { code: string }>): string[] {
-  const missing = new Set<string>();
+export interface MissingFile {
+  importPath: string;
+  resolvedPath: string;
+  importedIn: string;
+  reason: string;
+}
+
+export function findMissingFiles(files: Record<string, { code: string }>): MissingFile[] {
+  const missing: MissingFile[] = [];
   const importRegex = /(?:import|from)\s+['"]([^'"]+)['"]/g;
   const dynamicImportRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 
@@ -83,7 +90,12 @@ export function findMissingFiles(files: Record<string, { code: string }>): strin
       if (!importPath.startsWith('.') && !importPath.startsWith('/')) return;
 
       if (importPath.startsWith('/')) {
-        missing.add(`'${importPath}' (Absolute imports are forbidden in Sandpack. Use relative imports like './' or '../' in ${filePath})`);
+        missing.push({
+          importPath,
+          resolvedPath: importPath,
+          importedIn: filePath,
+          reason: 'Absolute imports are forbidden'
+        });
         return;
       }
 
@@ -102,7 +114,12 @@ export function findMissingFiles(files: Record<string, { code: string }>): strin
       }
 
       if (!found) {
-        missing.add(`'${importPath}' (imported in ${filePath})`);
+        missing.push({
+          importPath,
+          resolvedPath: resolved,
+          importedIn: filePath,
+          reason: 'File not found'
+        });
       }
     };
 
@@ -115,5 +132,35 @@ export function findMissingFiles(files: Record<string, { code: string }>): strin
     }
   }
 
-  return Array.from(missing);
+  // Deduplicate by resolvedPath
+  const unique: MissingFile[] = [];
+  const seen = new Set<string>();
+  for (const m of missing) {
+    if (!seen.has(m.resolvedPath)) {
+      seen.add(m.resolvedPath);
+      unique.push(m);
+    }
+  }
+
+  return unique;
+}
+
+/**
+ * Automatically creates dummy components/files for any missing imports
+ * so that the Sandpack preview doesn't crash fatally.
+ */
+export function autoStubMissingFiles(files: Record<string, { code: string }>, missingFiles: MissingFile[]) {
+  for (const m of missingFiles) {
+    if (m.resolvedPath.endsWith('.css')) {
+      files[m.resolvedPath] = { code: '/* Auto-generated missing CSS stub */' };
+    } else {
+      const ext = m.resolvedPath.match(/\.[a-zA-Z0-9]+$/) ? '' : '.js';
+      const targetPath = m.resolvedPath + ext;
+      if (!files[targetPath]) {
+        files[targetPath] = {
+          code: `export default function MissingComponent() { return <div style={{padding: 20, color: 'red', border: '1px solid red', borderRadius: 8, margin: 10}}><b>Missing File:</b> ${m.importPath}</div>; }`
+        };
+      }
+    }
+  }
 }

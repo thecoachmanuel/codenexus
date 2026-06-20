@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth";
 import { NextRequest } from "next/server";
 import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
-import { extractDependencies, findMissingFiles, autoFixAbsoluteImports } from "@/lib/dependencies";
+import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
 import { BASE_DEPENDENCIES } from "@/lib/constants";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
@@ -137,7 +137,8 @@ export async function POST(request: NextRequest) {
           autoFixAbsoluteImports(patchedFiles);
           const missing = findMissingFiles(patchedFiles);
           if (missing.length > 0) {
-            throw new Error(`Improvement rejected! You imported the following files but forgot to create them:\n${missing.join('\n')}\n\nYou MUST use update_file to create these missing files before you are allowed to call done_improving.`);
+            const missingStrs = missing.map(m => `'${m.importPath}' (imported in ${m.importedIn})`);
+            throw new Error(`Improvement rejected! You imported the following files but forgot to create them:\n${missingStrs.join('\n')}\n\nYou MUST use update_file to create these missing files before you are allowed to call done_improving.`);
           }
 
           finalSummary = summary;
