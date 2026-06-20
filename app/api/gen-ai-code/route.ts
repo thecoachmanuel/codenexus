@@ -134,8 +134,8 @@ export async function POST(request: NextRequest) {
           async execute({ path, code, reason }) {
             let normalizedPath = path;
             if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-            if (normalizedPath.startsWith("/src/") && normalizedPath.endsWith("App.js")) {
-              normalizedPath = "/App.js";
+            if (normalizedPath.startsWith("/src/")) {
+              normalizedPath = normalizedPath.replace("/src/", "/");
             }
             
             // Clean markdown fences (e.g. ```jsx ... ```)
@@ -169,7 +169,6 @@ export async function POST(request: NextRequest) {
               .optional()
               .describe("Any NEW npm dependencies needed (e.g. { \"lodash\": \"latest\" }). Do NOT include react, react-dom, or tailwindcss."),
           }),
-          lifecycle: { completesRun: true },
           async execute({ assistantMessage, title, suggestions, dependencies }) {
             // Prevent Agent from skipping generation on brand new projects
             if (!fileData && !patchedFiles["/App.js"]) {

@@ -108,8 +108,8 @@ export async function POST(request: NextRequest) {
         async execute({ path, code, reason }) {
           let normalizedPath = path;
           if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-          if (normalizedPath.startsWith("/src/") && normalizedPath.endsWith("App.js")) {
-            normalizedPath = "/App.js";
+          if (normalizedPath.startsWith("/src/")) {
+            normalizedPath = normalizedPath.replace("/src/", "/");
           }
           patchedFiles[normalizedPath] = { code };
           enqueue(sseEvent("file_patch", { path: normalizedPath, code, reason }));
@@ -130,7 +130,6 @@ export async function POST(request: NextRequest) {
             ),
           newSuggestions: z.array(z.string()).optional(),
         }),
-        lifecycle: { completesRun: true },
         async execute({ summary, newSuggestions }) {
           const missing = findMissingFiles(patchedFiles);
           if (missing.length > 0) {
