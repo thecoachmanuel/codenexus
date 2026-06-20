@@ -43,7 +43,7 @@ export async function getWorkspaceById(
     _id: workspaceId,
     userId: new mongoose.Types.ObjectId(userId),
   })
-    .select("_id title subdomain messages fileData")
+    .select("_id title subdomain messages fileData vercel")
     .lean();
 
   if (!workspace) redirect("/");
@@ -54,5 +54,6 @@ export async function getWorkspaceById(
     subdomain: workspace.subdomain,
     messages: workspace.messages,
     fileData: workspace.fileData,
+    vercel: workspace.vercel as any,
   };
 }

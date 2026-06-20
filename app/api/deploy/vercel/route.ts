@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
+import Workspace from "@/lib/models/Workspace";
 import type { FileData } from "@/types/workspace";
 import { VITE_REACT_BOILERPLATE } from "@/lib/constants";
 
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-  const { fileData, appTitle } = (await req.json()) as { fileData: FileData; appTitle: string };
+  const { fileData, appTitle, workspaceId } = (await req.json()) as { fileData: FileData; appTitle: string; workspaceId?: string };
   if (!fileData || !fileData.files) {
     return NextResponse.json({ message: "No files to deploy" }, { status: 400 });
   }
@@ -19,6 +20,12 @@ export async function POST(req: NextRequest) {
   
   if (!user?.vercelToken) {
     return NextResponse.json({ message: "Vercel token not configured" }, { status: 400 });
+  }
+
+  // Fetch workspace to check for existing deployment
+  let workspace = null;
+  if (workspaceId) {
+    workspace = await Workspace.findOne({ _id: workspaceId, userId: user._id });
   }
 
   // 1. Prepare files for Vercel (Create React App structure)
@@ -83,7 +90,9 @@ export async function POST(req: NextRequest) {
   // Actually, CRA requires tailwind config if we use local classes, but CDN is fine.
   
   // Create deployment payload
-  const projectName = (appTitle || "ai-app-deployment").toLowerCase().replace(/[^a-z0-9-]/g, "-").substring(0, 50);
+  // If we already have a deployed Vercel project for this workspace, use its name to push an update
+  const projectName = workspace?.vercel?.projectName || 
+    (appTitle || "ai-app-deployment").toLowerCase().replace(/[^a-z0-9-]/g, "-").substring(0, 50);
 
   // Vercel deployment payload
   const deployPayload = {
@@ -113,8 +122,21 @@ export async function POST(req: NextRequest) {
       }, { status: response.status });
     }
 
+    const url = `https://${data.url}`;
+    
+    // Save to workspace if it exists
+    if (workspace) {
+      workspace.vercel = {
+        projectId: data.id, // Using deployment ID or we can just save it
+        projectName: projectName,
+        url: url,
+        deployedAt: new Date()
+      };
+      await workspace.save();
+    }
+
     return NextResponse.json({
-      url: `https://${data.url}`,
+      url,
       deploymentId: data.id,
       name: projectName
     });

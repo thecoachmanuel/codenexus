@@ -7,6 +7,12 @@ export interface IWorkspace extends Document {
   userId: mongoose.Types.ObjectId;
   messages: unknown[];
   fileData: unknown | null;
+  vercel?: {
+    projectId?: string;
+    projectName?: string;
+    url?: string;
+    deployedAt?: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,6 +24,12 @@ const WorkspaceSchema = new Schema<IWorkspace>(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     messages: { type: Schema.Types.Mixed, default: [] },
     fileData: { type: Schema.Types.Mixed, default: null },
+    vercel: {
+      projectId: { type: String },
+      projectName: { type: String },
+      url: { type: String },
+      deployedAt: { type: Date }
+    },
   },
   { timestamps: true }
 );

@@ -361,6 +361,8 @@ export function WorkspaceClient({
           isImproving={false}
           isProUser={userPlan === "pro"}
           onEnvVarsChange={handleEnvVarsChange}
+          vercelInfo={workspace?.vercel}
+          workspaceId={workspaceId}
         />
       </div>
     </>

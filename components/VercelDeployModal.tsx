@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowRight, CheckCircle2, TriangleAlert, Rocket } from "lucide-react";
-import type { FileData } from "@/types/workspace";
+import type { FileData, VercelInfo } from "@/types/workspace";
 
 type Step = "connect" | "form" | "deploying" | "success";
 
@@ -22,12 +22,16 @@ interface VercelDeployModalProps {
   children: React.ReactNode;
   fileData: FileData | null | undefined;
   appTitle?: string | null;
+  vercelInfo?: VercelInfo;
+  workspaceId?: string | null;
 }
 
 export function VercelDeployModal({
   children,
   fileData,
   appTitle,
+  vercelInfo,
+  workspaceId,
 }: VercelDeployModalProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("connect");
@@ -119,6 +123,7 @@ export function VercelDeployModal({
         body: JSON.stringify({
           fileData,
           appTitle: appTitle ?? "ai-app",
+          workspaceId,
         }),
       });
       const data = await res.json() as { url?: string; deploymentId?: string; name?: string; message?: string };
@@ -155,10 +160,12 @@ export function VercelDeployModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2.5 text-white">
             <Rocket className="h-5 w-5" />
-            1-Click Deploy to Vercel
+            {vercelInfo?.url ? "Push Update to Live Site" : "1-Click Deploy to Vercel"}
           </DialogTitle>
           <DialogDescription className="text-white/50">
-            Instantly host your app on Vercel without leaving the editor.
+            {vercelInfo?.url 
+              ? "Push the latest code changes to your existing Vercel deployment." 
+              : "Instantly host your app on Vercel without leaving the editor."}
           </DialogDescription>
         </DialogHeader>
 
@@ -259,7 +266,11 @@ export function VercelDeployModal({
               </div>
 
               <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-1 text-sm text-white/70">
-                You are about to instantly deploy <strong>{fileCount} files</strong> to Vercel. This app will be live on the internet immediately.
+                {vercelInfo?.url ? (
+                  <>You are about to push an update to <a href={vercelInfo.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{vercelInfo.url}</a>.</>
+                ) : (
+                  <>You are about to instantly deploy <strong>{fileCount} files</strong> to Vercel. This app will be live on the internet immediately.</>
+                )}
               </div>
 
               {deployError && (
@@ -273,7 +284,7 @@ export function VercelDeployModal({
                 onClick={handleDeploy}
                 className="w-full bg-white text-black hover:bg-white/90"
               >
-                Deploy Now <ArrowRight className="ml-1.5 h-4 w-4" />
+                {vercelInfo?.url ? "Push Update" : "Deploy Now"} <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </div>
           )}

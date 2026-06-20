@@ -35,7 +35,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PricingModal } from "@/components/PricingModal";
 import { GitHubExportModal } from "@/components/GitHubExportModal";
 import { VercelDeployModal } from "@/components/VercelDeployModal";
-import type { FileData, StatusStep } from "@/types/workspace";
+import type { FileData, StatusStep, VercelInfo } from "@/types/workspace";
 
 // ─── Placeholder ──────────────────────────────────────────────────────────────
 
@@ -81,6 +81,8 @@ interface CodePanelProps {
   isProUser: boolean;
   onEnvVarsChange?: (envVars: Record<string, string>) => void;
   subdomain?: string | null;
+  vercelInfo?: VercelInfo;
+  workspaceId?: string | null;
 }
 
 // ─── SandpackInner ────────────────────────────────────────────────────────────
@@ -102,6 +104,8 @@ function SandpackInner({
   onEnvVarsChange,
   subdomain,
   processedFiles,
+  vercelInfo,
+  workspaceId,
 }: {
   isGenerating: boolean;
   statusLog: StatusStep[];
@@ -116,6 +120,8 @@ function SandpackInner({
   onEnvVarsChange?: (envVars: Record<string, string>) => void;
   subdomain?: string | null;
   processedFiles: Record<string, { code: string }>;
+  vercelInfo?: VercelInfo;
+  workspaceId?: string | null;
 }) {
   const { sandpack, listen } = useSandpack();
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -467,6 +473,8 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
           <VercelDeployModal
             fileData={fileData}
             appTitle={appTitle}
+            vercelInfo={vercelInfo}
+            workspaceId={workspaceId}
           >
             <Button
               variant="ghost"
@@ -734,6 +742,8 @@ export function CodePanel({
   isProUser,
   onEnvVarsChange,
   subdomain,
+  vercelInfo,
+  workspaceId,
 }: CodePanelProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
@@ -823,6 +833,8 @@ export function CodePanel({
           onEnvVarsChange={onEnvVarsChange}
           subdomain={subdomain}
           processedFiles={files}
+          vercelInfo={vercelInfo}
+          workspaceId={workspaceId}
         />
       </SandpackProvider>
     </div>
