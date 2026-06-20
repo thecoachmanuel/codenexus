@@ -287,12 +287,16 @@ export async function POST(request: NextRequest) {
           autoStubMissingFiles(normalizedFiles, missing);
         }
 
-        enqueue(sseEvent("status", { message: "Validating packages…" }));
-        const validatedDeps = await extractDependencies(normalizedFiles, fileData?.dependencies ?? {});
+        enqueue(sseEvent("status", { message: "Extracting packages…" }));
+        const extracted = extractDependencies(normalizedFiles);
+        const finalDependencies: Record<string, string> = { ...(fileData?.dependencies ?? {}) };
+        extracted.forEach(pkg => {
+          if (!finalDependencies[pkg]) finalDependencies[pkg] = "latest";
+        });
 
         const newFileData: FileData = {
           files: normalizedFiles,
-          dependencies: validatedDeps,
+          dependencies: finalDependencies,
           title: aiTitle ?? fileData?.title,
           suggestions,
           envVars: fileData?.envVars,
