@@ -143,6 +143,7 @@ export default function App() {}
 
 RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
+2. Build specifically for a Create-React-App template. Do NOT use Vite structures. Place all files (including App.js and index.js) directly in the root directory (/). Do NOT create a /src/ directory.
 2. Use standard clean React architecture: put components in /components, pages in /pages, hooks in /hooks, and utils in /lib.
 3. Entry point MUST be /App.js with a default export.
 4. Use Tailwind CSS for all styling. Do NOT import "tailwindcss" or any CSS files directly. Tailwind is already loaded via CDN.
