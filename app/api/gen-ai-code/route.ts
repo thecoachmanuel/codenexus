@@ -324,6 +324,17 @@ export async function POST(request: NextRequest) {
             if (typeof rawCode === "string") {
               rawCode = rawCode.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
             }
+
+            // AUTO-HEALER: Prevent "ReferenceError: X is not defined" for React Router
+            const routerTokens = ["BrowserRouter", "Routes", "Route", "Link", "useNavigate", "useParams", "useLocation", "Navigate"];
+            routerTokens.forEach(token => {
+              const usesToken = new RegExp(`\\b${token}\\b`).test(rawCode);
+              const importsToken = new RegExp(`import\\s+.*\\b${token}\\b.*\\s+from\\s+['"]react-router-dom['"]`).test(rawCode);
+              if (usesToken && !importsToken) {
+                rawCode = `import { ${token} } from 'react-router-dom';\n` + rawCode;
+              }
+            });
+
             normalizedFiles[path] = { ...value, code: rawCode };
           }
         }
