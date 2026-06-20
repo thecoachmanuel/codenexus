@@ -791,9 +791,6 @@ export function CodePanel({
     for (const [key, val] of Object.entries(fileData.files)) {
       if (val && typeof val.code === "string") {
         let normalizedKey = key;
-        if (normalizedKey.startsWith("/src/")) {
-          normalizedKey = normalizedKey.replace("/src/", "/");
-        }
         let rawCode = val.code;
         if (typeof rawCode === "string") {
           rawCode = rawCode.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
