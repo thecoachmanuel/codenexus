@@ -801,24 +801,12 @@ export function CodePanel({
         f[normalizedKey] = { ...val, code: rawCode };
       }
     }
-    
-    // react template uses .js — map /App.jsx → /App.js
-    if (f["/App.jsx"]) {
-      f["/App.js"] = f["/App.jsx"];
-      delete f["/App.jsx"];
-    }
-    // Also map any /components/*.jsx → .js
-    for (const path of Object.keys(f)) {
-      if (path.endsWith(".jsx") && !f[path.replace(".jsx", ".js")]) {
-        f[path.replace(".jsx", ".js")] = f[path];
-        delete f[path];
-      }
-    }
+
     // Inject env variables directly into process.env at runtime safely
     if (fileData?.envVars && Object.keys(fileData.envVars).length > 0) {
       const envInject = `window.process = window.process || {}; window.process.env = { ...window.process.env, ...${JSON.stringify(fileData.envVars)} };\n`;
-      if (f["/index.js"]) {
-        f["/index.js"].code = envInject + f["/index.js"].code;
+      if (f["/src/index.jsx"]) {
+        f["/src/index.jsx"].code = envInject + f["/src/index.jsx"].code;
       }
     }
 

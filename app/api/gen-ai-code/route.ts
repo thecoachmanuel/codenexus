@@ -269,13 +269,50 @@ export async function POST(request: NextRequest) {
 
         // ── Merge existing files with new files ────────────────────────────────
 
-        const normalizedFiles: Record<string, { code: string }> = { ...(fileData?.files ?? {}) };
+        // Automatically upgrade older workspaces by ensuring Vite core files are present
+        const baseWorkspace: Record<string, { code: string }> = { 
+          ...(fileData?.files ?? {}) 
+        };
+        
+        // Force Vite configs
+        if (VITE_REACT_BOILERPLATE["/vite.config.js"]) {
+          baseWorkspace["/vite.config.js"] = VITE_REACT_BOILERPLATE["/vite.config.js"];
+        }
+        if (VITE_REACT_BOILERPLATE["/index.html"]) {
+          baseWorkspace["/index.html"] = VITE_REACT_BOILERPLATE["/index.html"];
+          // Remove old CRA public/index.html if it exists
+          delete baseWorkspace["/public/index.html"];
+        }
+        if (VITE_REACT_BOILERPLATE["/src/index.jsx"]) {
+          if (!baseWorkspace["/src/index.jsx"]) {
+            baseWorkspace["/src/index.jsx"] = VITE_REACT_BOILERPLATE["/src/index.jsx"];
+          }
+          delete baseWorkspace["/index.js"];
+        }
+        if (VITE_REACT_BOILERPLATE["/package.json"]) {
+          // If they had an old package.json, we must ensure it has Vite scripts and devDependencies
+          const oldPkgStr = baseWorkspace["/package.json"]?.code;
+          let mergedPkg = VITE_REACT_BOILERPLATE["/package.json"].code;
+          if (oldPkgStr) {
+            try {
+              const oldPkg = JSON.parse(oldPkgStr);
+              const newPkg = JSON.parse(mergedPkg);
+              // Preserve their dependencies but override scripts and devDependencies with Vite's
+              newPkg.dependencies = { ...newPkg.dependencies, ...(oldPkg.dependencies || {}) };
+              mergedPkg = JSON.stringify(newPkg, null, 2);
+            } catch {}
+          }
+          baseWorkspace["/package.json"] = { code: mergedPkg };
+        }
+
+        const normalizedFiles: Record<string, { code: string }> = { ...baseWorkspace };
         
         if (files) {
           for (const [key, value] of Object.entries(files)) {
             let path = key;
             if (!path.startsWith("/")) path = "/" + path;
-            if (path.startsWith("/src/") && path.endsWith("App.js")) path = "/App.js";
+            if (path.startsWith("/src/") && path.endsWith("App.js")) path = "/src/App.jsx";
+            if (path === "/App.js" || path === "/App.jsx") path = "/src/App.jsx";
             
             // Clean markdown fences (e.g. ```jsx ... ```)
             let rawCode = value.code;
