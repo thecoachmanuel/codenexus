@@ -156,12 +156,15 @@ CRITICAL RULES:
 1. Use standard clean React architecture: \`/components\`, \`/pages\`, \`/hooks\`, \`/lib\`.
 2. Entry point MUST be \`/App.js\` with a default export. NO TypeScript in generated code.
 3. Use Tailwind CSS for all styling.
-4. **DUAL-MODE DATABASE**: If modifying data fetching, use the data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a browser-based React app.
-5. **DEPLOYMENT**: Keep the \`/README.md\` up to date. It should detail exactly how to run the app AND deploy it to Vercel (including where to configure the \`REACT_APP_MONGODB_DATA_API_KEY\` environment variables in the Vercel dashboard).
-6. Always write complete file contents — never partial snippets.
-7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-8. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
-9. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.`,
+4. **UNLIMITED DEPENDENCIES**: You are free to use ANY npm package you need. If you add or change imports, also call \`update_file\` on \`/package.json\` (in the files object passed to done_improving) to add the new package. Use the best library for the job.
+5. **BROWSER-ONLY RULE**: Never use Node.js-only packages (mongoose, express, fs, net, nodemailer, etc.). If you encounter such a package in existing code, replace it with a browser-safe alternative.
+6. **AUTO-FIX DEPENDENCIES**: If the user reports a dependency/import error, identify the problematic package and either replace it with a well-known browser-compatible alternative or rewrite that section of code to not require the package.
+7. **DUAL-MODE DATABASE**: Use the data abstraction layer (e.g. \`/lib/db.js\`). Check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists — if so, use MongoDB Atlas Data API via fetch; otherwise fall back to \`localStorage\`.
+8. **DEPLOYMENT**: Keep the \`/README.md\` up to date.
+9. Always write complete file contents — never partial snippets.
+10. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
+11. **MOBILE-FIRST & RESPONSIVE**: Highly responsive and mobile-first at all times.
+12. **LIGHT MODE DEFAULT**: Light mode by default unless user requests dark.`,
             tools: [listFilesTool, readFileTool, updateFileTool, doneImprovingTool],
             toolPolicies: {
               list_files: { autoApprove: true },

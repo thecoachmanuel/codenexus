@@ -26,19 +26,60 @@ function extractThoughtLabel(text: string): string | null {
 
 // ─── npm validation ───────────────────────────────────────────────────────────
 
+// Known Node.js-only packages with browser-safe alternatives
+const BROWSER_UNSAFE_ALTERNATIVES: Record<string, string | null> = {
+  "fs": null,
+  "path": null,
+  "os": null,
+  "net": null,
+  "tls": null,
+  "crypto": "crypto-browserify",
+  "stream": "stream-browserify",
+  "buffer": "buffer",
+  "url": null, // built-in
+  "http": null,
+  "https": null,
+  "mongoose": null, // server-only ORM
+  "express": null,
+  "socket.io": "socket.io-client",
+  "bcrypt": "bcryptjs",
+  "nodemailer": null,
+  "next": null,
+  "child_process": null,
+  "worker_threads": null,
+};
+
 async function validateDependencies(
   deps: Record<string, string>
 ): Promise<Record<string, string>> {
   const valid: Record<string, string> = {};
   await Promise.all(
     Object.entries(deps).map(async ([pkg, version]) => {
+      // Skip packages we know are Node.js-only without a browser alternative
+      const unsafe = BROWSER_UNSAFE_ALTERNATIVES[pkg];
+      if (unsafe === null) {
+        console.warn(`[deps] Dropping Node.js-only package: ${pkg}`);
+        return;
+      }
+      // Swap to browser-safe alternative if one exists
+      const resolvedPkg = typeof unsafe === "string" ? unsafe : pkg;
+      const resolvedVersion = typeof unsafe === "string" ? "latest" : version;
       try {
-        const res = await fetch(`https://registry.npmjs.org/${pkg}/latest`, {
-          signal: AbortSignal.timeout(1500),
+        const res = await fetch(`https://registry.npmjs.org/${resolvedPkg}/latest`, {
+          signal: AbortSignal.timeout(3000),
         });
-        if (res.ok) valid[pkg] = version;
+        if (res.ok) {
+          // Get the latest version if "latest" is specified
+          const data = await res.json();
+          const latestVersion = data?.version;
+          valid[resolvedPkg] = latestVersion ? `^${latestVersion}` : resolvedVersion;
+        } else {
+          console.warn(`[deps] Package not found on npm: ${resolvedPkg}`);
+        }
       } catch {
-        // silently skip hallucinated packages
+        // On timeout or network issue, still include the package
+        // Sandpack will handle resolution errors gracefully
+        valid[resolvedPkg] = resolvedVersion;
       }
     })
   );
@@ -147,7 +188,8 @@ OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra t
     "/components/Sidebar.js": { "code": "<full file content>" }
   },
   "dependencies": {
-    "some-package": "latest"
+    "some-package": "latest",
+    "another-package": "^2.0.0"
   }
 }
 
@@ -157,16 +199,19 @@ RULES:
 3. Entry point MUST be \`/App.js\` with a default export.
 4. Use Tailwind CSS for all styling.
 5. All imports must reference files you include or packages in "dependencies".
-6. Do NOT include react, react-dom, tailwindcss in "dependencies".
+6. Do NOT include react, react-dom, tailwindcss in "dependencies" (they are pre-installed).
 7. Keep code clean, readable, production-quality.
 8. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-9. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections, as this is a purely browser-based React app.
-10. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the \`REACT_APP_MONGODB_DATA_API_URL\`, \`REACT_APP_MONGODB_DATA_API_KEY\`, and \`REACT_APP_MONGODB_DATA_API_CLUSTER\` environment variables in the Vercel dashboard.
-11. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
-12. **CRITICAL SPEED OPTIMIZATION**: When modifying existing code, output ONLY the files that you are actually changing or creating. You MUST omit all other files from the "files" object. Unchanged files are preserved automatically. Do not output unchanged files.
-13. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
-14. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
-15. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.`;
+9. **UNLIMITED DEPENDENCIES**: You are free to use ANY npm package you need. Declare ALL packages you import in the "dependencies" object. Do not hold back — use the best library for the job (e.g. react-router-dom, @tanstack/react-query, zustand, react-hook-form, zod, date-fns, react-beautiful-dnd, @dnd-kit/core, react-hot-toast, react-toastify, @radix-ui/react-*, react-player, react-map-gl, react-dropzone, react-pdf, react-chartjs-2, chart.js, etc.).
+10. **BROWSER-ONLY RULE**: This is a purely browser-based React app. NEVER use Node.js-only packages (mongoose, express, fs, net, http, nodemailer, child_process, etc.). For databases: fall back to localStorage simulation or the MongoDB Atlas Data API via fetch. For auth: use jwt-decode on the client side.
+11. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. \`/lib/db.js\`). This layer MUST check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists. If it does, use the MongoDB Atlas Data API (via \`fetch\`) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with \`localStorage\`. Do NOT attempt to use \`mongoose\` or direct TCP MongoDB connections.
+12. **DEPLOYMENT**: ALWAYS include a \`/README.md\` detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel.
+13. If the user is just chatting or asking a question, you can omit the "files" and "dependencies" fields entirely and just respond with "assistantMessage" and "suggestions".
+14. **CRITICAL SPEED OPTIMIZATION**: When modifying existing code, output ONLY the files that you are actually changing or creating. You MUST omit all other files from the "files" object. Unchanged files are preserved automatically. Do not output unchanged files.
+15. "suggestions" must be an array of exactly 3 specific, actionable short phrases the user could ask for next.
+16. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
+17. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.
+18. **DEPENDENCY VERSIONS**: Always prefer exact version ranges (e.g. "^2.1.0") over "latest" to ensure reproducible builds. Check compatibility with React 18.`;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
 
