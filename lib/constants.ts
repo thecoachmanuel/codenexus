@@ -52,36 +52,6 @@ export const PRICING_PLANS = [
 ] as const;
 
 export const VITE_REACT_BOILERPLATE = {
-  "/package.json": {
-    code: JSON.stringify(
-      {
-        name: "react-app",
-        type: "module",
-        scripts: {
-          "dev": "vite",
-          "build": "vite build",
-          "preview": "vite preview"
-        },
-        dependencies: {
-          "react": "^18.2.0",
-          "react-dom": "^18.2.0",
-          "lucide-react": "^0.263.1",
-          "recharts": "^2.10.3",
-          "framer-motion": "^10.16.16",
-          "@emotion/is-prop-valid": "^1.2.2",
-          "clsx": "^2.1.0",
-          "tailwind-merge": "^2.2.0",
-          "@swc/helpers": "^0.5.11"
-        },
-        devDependencies: {
-          "vite": "^4.4.5",
-          "@vitejs/plugin-react": "^4.0.3"
-        }
-      },
-      null,
-      2
-    )
-  },
   "/index.html": {
     code: `<!DOCTYPE html>
 <html lang="en">

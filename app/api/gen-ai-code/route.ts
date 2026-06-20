@@ -289,21 +289,10 @@ export async function POST(request: NextRequest) {
           }
           delete baseWorkspace["/index.js"];
         }
-        if (VITE_REACT_BOILERPLATE["/package.json"]) {
-          // If they had an old package.json, we must ensure it has Vite scripts and devDependencies
-          const oldPkgStr = baseWorkspace["/package.json"]?.code;
-          let mergedPkg = VITE_REACT_BOILERPLATE["/package.json"].code;
-          if (oldPkgStr) {
-            try {
-              const oldPkg = JSON.parse(oldPkgStr);
-              const newPkg = JSON.parse(mergedPkg);
-              // Preserve their dependencies but override scripts and devDependencies with Vite's
-              newPkg.dependencies = { ...newPkg.dependencies, ...(oldPkg.dependencies || {}) };
-              mergedPkg = JSON.stringify(newPkg, null, 2);
-            } catch {}
-          }
-          baseWorkspace["/package.json"] = { code: mergedPkg };
-        }
+        
+        // CRITICAL: Sandpack's vite-react template crashes if we override /package.json
+        // Delete any legacy package.json so Sandpack relies on customSetup.dependencies safely
+        delete baseWorkspace["/package.json"];
 
         const normalizedFiles: Record<string, { code: string }> = { ...baseWorkspace };
         
