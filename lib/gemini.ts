@@ -104,6 +104,56 @@ export async function generateContentStream(options: GenerateOptions) {
 
 // ─── For non-streaming (agent / cline SDK) ────────────────────────────────────
 
+export async function generateContent(options: GenerateOptions) {
+  const { model = DEFAULT_MODEL, contents, config } = options;
+  const maxAttempts = API_KEYS.length;
+
+  let lastError: unknown;
+
+  const tryModel = async (targetModel: string) => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const { client, keyIndex } = getCurrentClient();
+      try {
+        return await client.models.generateContent({
+          model: targetModel,
+          contents: contents as Parameters<typeof client.models.generateContent>[0]["contents"],
+          config: config as Parameters<typeof client.models.generateContent>[0]["config"],
+        });
+      } catch (err: unknown) {
+        lastError = err;
+        const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+        
+        const isTransientOrRateLimit = 
+          msg.includes("429") || 
+          msg.includes("503") || 
+          msg.includes("rate limit") || 
+          msg.includes("quota") ||
+          msg.includes("overloaded");
+
+        if (isTransientOrRateLimit && attempt < maxAttempts - 1) {
+          console.warn(`[gemini] Key ${keyIndex + 1} rate-limited on ${targetModel} (non-stream), rotating...`);
+          globalForGemini.geminiKeyIndex = (keyIndex + 1) % API_KEYS.length;
+          continue;
+        }
+        break;
+      }
+    }
+    return null;
+  };
+
+  let response = await tryModel(model);
+  if (response) return response;
+
+  if (model === DEFAULT_MODEL) {
+    console.warn(`[gemini] All keys exhausted for ${DEFAULT_MODEL} (non-stream). Falling back to gemini-2.5-flash-lite...`);
+    globalForGemini.geminiKeyIndex = (globalForGemini.geminiKeyIndex + 1) % API_KEYS.length;
+    response = await tryModel("gemini-2.5-flash-lite");
+    if (response) return response;
+  }
+
+  throw lastError ?? new Error("All Gemini API keys failed or the models are currently unavailable.");
+}
+
 export function getGeminiClient(): GoogleGenAI {
   const { client } = getCurrentClient();
   return client;
