@@ -392,19 +392,48 @@ export async function POST(request: NextRequest) {
               }
             });
 
-            // AUTO-HEALER: Fix Lucide Icon Hallucinations
-            // Replaces: import { HomeIcon, User } from 'lucide-react'
-            // With: import { Home as HomeIcon, User } from 'lucide-react'
+            // AUTO-HEALER: Fix Lucide Icon Hallucinations & Remap Non-existent Icons
+            const iconRemap: Record<string, string> = {
+              "Chat": "MessageCircle",
+              "Comment": "MessageSquare",
+              "ThumbUp": "ThumbsUp",
+              "ThumbDown": "ThumbsDown",
+              "DotsVertical": "MoreVertical",
+              "DotsHorizontal": "MoreHorizontal",
+              "Cross": "X",
+              "Close": "X",
+              "Error": "AlertCircle",
+              "Warning": "AlertTriangle",
+              "Success": "CheckCircle2",
+              "Add": "Plus",
+              "Remove": "Minus",
+              "Delete": "Trash2",
+              "Edit": "Edit2"
+            };
+            
             rawCode = rawCode.replace(/import\s+{([^}]+)}\s+from\s+['"]lucide-react['"]/g, (match, p1) => {
               const fixedImports = p1.split(',').map((i: string) => {
                 const trimmed = i.trim();
-                // If it ends with Icon but doesn't already have an alias " as "
-                if (trimmed.endsWith("Icon") && !trimmed.includes(" as ")) {
-                  const baseName = trimmed.replace(/Icon$/, "");
-                  return `${baseName} as ${trimmed}`;
+                if (!trimmed) return "";
+                
+                let baseName = trimmed.replace(/Icon$/, "");
+                let aliasName = trimmed;
+                
+                // If it already has an alias " as ", extract the base
+                if (trimmed.includes(" as ")) {
+                  const parts = trimmed.split(" as ");
+                  baseName = parts[0].trim();
+                  aliasName = parts[1].trim();
                 }
-                return trimmed;
-              }).join(', ');
+                
+                // Remap hallucinated base name if it exists in our map
+                if (iconRemap[baseName]) {
+                  baseName = iconRemap[baseName];
+                }
+                
+                // Always alias it back to what the AI's JSX expects
+                return `${baseName} as ${aliasName}`;
+              }).filter(Boolean).join(', ');
               return `import { ${fixedImports} } from 'lucide-react'`;
             });
 
