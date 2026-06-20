@@ -165,7 +165,8 @@ CRITICAL RULES:
 6. Always write complete file contents — never partial snippets.
 7. NEVER use local image paths. For placeholder images, ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
 8. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars, navigation menus, and content grids MUST collapse and adapt gracefully to small screens (e.g., using Tailwind's sm:, md:, lg: prefixes). Mobile responsiveness is CRITICAL.
-9. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.`,
+9. **LIGHT MODE DEFAULT**: Design the application in light mode by default (e.g., using white backgrounds and dark text) unless the user explicitly requests a dark mode theme.
+10. **NO ORPHANED CSS IMPORTS**: Our boilerplate already imports \`./styles.css\` globally. DO NOT import \`./index.css\`, \`./App.css\`, or other generic CSS files in your components. Rely entirely on Tailwind classes for styling.`,
             tools: [listFilesTool, readFileTool, updateFileTool, doneImprovingTool],
             toolPolicies: {
               list_files: { autoApprove: true },
