@@ -293,13 +293,19 @@ export async function POST(request: NextRequest) {
           rawJson += chunk;
           
           let checkStr = rawJson.trim();
-          if (checkStr.endsWith("```")) {
-            checkStr = checkStr.replace(/```$/, "").trim();
-          }
+          if (checkStr.startsWith("```json")) checkStr = checkStr.replace(/^```json\s*/i, "");
+          else if (checkStr.startsWith("```")) checkStr = checkStr.replace(/^```[a-z]*\s*/i, "");
+          if (checkStr.endsWith("```")) checkStr = checkStr.replace(/```$/, "").trim();
           
-          if (checkStr.endsWith("}")) {
-            isComplete = true;
-          } else {
+          try {
+            JSON.parse(checkStr);
+            isComplete = true; // If it parses, it's a complete JSON object!
+            rawJson = checkStr; // Save the cleaned string for the final parse
+          } catch (e) {
+            isComplete = false; // Failed to parse, meaning it's highly likely truncated
+          }
+
+          if (!isComplete) {
             enqueue(sseEvent("status", { message: "App is massive! Seamlessly extending context window..." }));
             currentContents.push({ role: "model", parts: [{ text: chunk }] });
             currentContents.push({ 
