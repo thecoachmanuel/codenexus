@@ -14,6 +14,7 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  RefreshCcw,
   Copy,
   Check,
 } from "lucide-react";
@@ -193,21 +194,46 @@ function MessageBubble({
           
           {showSuggestions && (
             <div className="flex flex-col gap-3 mt-1 animate-in fade-in slide-in-from-top-2 duration-200">
-              {suggestions.map((suggestion, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => onGenerate(suggestion)}
-                  className="group relative flex w-full flex-col items-start justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 text-left transition-all hover:border-blue-500/30 hover:bg-blue-500/5 hover:shadow-lg hover:shadow-blue-500/5"
-                >
-                  <span className="text-[13px] leading-relaxed text-white/90 group-hover:text-white mb-3">{suggestion}</span>
-                  <div className="flex w-full items-center justify-between">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30 group-hover:text-blue-400/70 transition-colors">Apply</span>
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/5 transition-colors group-hover:bg-blue-500/20">
-                      <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-blue-400" />
+              {suggestions.map((suggestion, idx) => {
+                const isRebuild = suggestion.toUpperCase().startsWith("REBUILD:") || suggestion.toUpperCase().startsWith("REBUILD ");
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => onGenerate(suggestion)}
+                    className={cn(
+                      "group relative flex w-full flex-col items-start justify-between rounded-2xl border p-3.5 text-left transition-all",
+                      isRebuild 
+                        ? "border-red-500/30 bg-red-500/10 hover:border-red-500/50 hover:bg-red-500/20 hover:shadow-lg hover:shadow-red-500/10"
+                        : "border-white/10 bg-white/[0.03] hover:border-blue-500/30 hover:bg-blue-500/5 hover:shadow-lg hover:shadow-blue-500/5"
+                    )}
+                  >
+                    <span className={cn(
+                      "text-[13px] leading-relaxed mb-3 transition-colors",
+                      isRebuild ? "font-semibold text-red-100 group-hover:text-white" : "text-white/90 group-hover:text-white"
+                    )}>
+                      {suggestion}
+                    </span>
+                    <div className="flex w-full items-center justify-between">
+                      <span className={cn(
+                        "text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                        isRebuild ? "text-red-400/70 group-hover:text-red-400" : "text-white/30 group-hover:text-blue-400/70"
+                      )}>
+                        {isRebuild ? "Rebuild component" : "Apply"}
+                      </span>
+                      <div className={cn(
+                        "flex h-5 w-5 items-center justify-center rounded-full transition-colors",
+                        isRebuild ? "bg-red-500/20 group-hover:bg-red-500/40" : "bg-white/5 group-hover:bg-blue-500/20"
+                      )}>
+                        {isRebuild ? (
+                          <RefreshCcw className="h-3 w-3 text-red-400 group-hover:text-white" />
+                        ) : (
+                          <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-blue-400" />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
