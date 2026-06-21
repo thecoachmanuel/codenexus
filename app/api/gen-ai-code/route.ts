@@ -291,7 +291,7 @@ export async function POST(request: NextRequest) {
         let isComplete = false;
         let loops = 0;
 
-        while (!isComplete && loops < 3) {
+        while (!isComplete && loops < 15) {
           loops++;
           
           const isExistingApp = !!(fileData?.files && Object.keys(fileData.files).length > 0);
