@@ -114,8 +114,66 @@ export async function POST(request: NextRequest) {
           if (normalizedPath === "/App.jsx" || normalizedPath === "/App.tsx") {
             normalizedPath = "/App.js";
           }
-          patchedFiles[normalizedPath] = { code };
-          enqueue(sseEvent("file_patch", { path: normalizedPath, code, reason }));
+          
+          let rawCode = code;
+          if (typeof rawCode === "string") {
+            rawCode = rawCode.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
+          }
+
+          // AUTO-HEALER: Prevent "ReferenceError: X is not defined" for React Router
+          const routerTokens = ["BrowserRouter", "Routes", "Route", "Link", "useNavigate", "useParams", "useLocation", "Navigate", "NavLink"];
+          routerTokens.forEach(token => {
+            const usesToken = new RegExp(`\\b${token}\\b`).test(rawCode);
+            const importsToken = new RegExp(`import\\s+.*\\b${token}\\b.*\\s+from\\s+['"]react-router-dom['"]`).test(rawCode);
+            if (usesToken && !importsToken) {
+              rawCode = `import { ${token} } from 'react-router-dom';\n` + rawCode;
+            }
+          });
+
+          // AUTO-HEALER: Fix Lucide Icon Hallucinations & Remap Non-existent Icons
+          const iconRemap: Record<string, string> = {
+            "Chat": "MessageCircle", "Comment": "MessageSquare", "ThumbUp": "ThumbsUp", "ThumbDown": "ThumbsDown",
+            "DotsVertical": "MoreVertical", "DotsHorizontal": "MoreHorizontal", "Cross": "X", "Close": "X",
+            "Error": "AlertCircle", "Warning": "AlertTriangle", "Success": "CheckCircle2", "Add": "Plus",
+            "Remove": "Minus", "Delete": "Trash2", "Edit": "Edit2", "Explore": "Compass", "Notifications": "Bell",
+            "Notification": "Bell", "Messages": "Mail", "Message": "MessageSquare", "Bookmarks": "Bookmark",
+            "Profile": "User", "Retweet": "Repeat", "Like": "Heart", "Reply": "MessageCircle", "Gif": "FileImage",
+            "Poll": "BarChart2", "Emoji": "Smile", "Schedule": "Calendar", "Location": "MapPin", "More": "MoreHorizontal",
+            "Analytics": "BarChart2", "Settings": "Settings"
+          };
+          
+          rawCode = rawCode.replace(/import\s+{([^}]+)}\s+from\s+['"]lucide-react['"]/g, (match, p1) => {
+            const fixedImports = p1.split(',').map((i: string) => {
+              const trimmed = i.trim();
+              if (!trimmed) return "";
+              let baseName = trimmed.replace(/Icon$/, "");
+              let aliasName = trimmed;
+              if (trimmed.includes(" as ")) {
+                const parts = trimmed.split(" as ");
+                baseName = parts[0].trim();
+                aliasName = parts[1].trim();
+              }
+              if (iconRemap[baseName]) baseName = iconRemap[baseName];
+              return `${baseName} as ${aliasName}`;
+            }).filter(Boolean).join(', ');
+            return `import { ${fixedImports} } from 'lucide-react'`;
+          });
+
+          // AUTO-HEALER: Fix missing export default
+          if (!rawCode.includes("export default")) {
+            const funcMatch = rawCode.match(/function\s+([A-Z][a-zA-Z0-9_]*)\s*\(/);
+            if (funcMatch) {
+              rawCode += `\nexport default ${funcMatch[1]};\n`;
+            } else {
+              const arrowMatch = rawCode.match(/const\s+([A-Z][a-zA-Z0-9_]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9_]+)\s*=>/);
+              if (arrowMatch) {
+                rawCode += `\nexport default ${arrowMatch[1]};\n`;
+              }
+            }
+          }
+
+          patchedFiles[normalizedPath] = { code: rawCode };
+          enqueue(sseEvent("file_patch", { path: normalizedPath, code: rawCode, reason }));
           return `Updated frontend ${normalizedPath}: ${reason}`;
         },
       });
@@ -173,19 +231,19 @@ WORKFLOW:
 
 CRITICAL RULES:
 1. **RETAIN EVERYTHING**: Your \`update_file\` MUST contain the ENTIRE modified file contents, including all original styling, classes, and logic! NEVER delete existing functionality or styling unless explicitly asked. If you output a stub or a stripped-down version, the app will look ugly and break!
-2. **ARCHITECTURE**: Use standard clean React architecture: \`/components\`, \`/pages\`, \`/hooks\`, \`/lib\`. Entry point MUST be \`/App.js\` with a default export. NO TypeScript.
-2. **RICH AESTHETICS & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design best practices (vibrant colors, glassmorphism, soft shadows, rounded corners). The user should be WOWED at first glance. If your app looks basic or simple, you have FAILED.
-3. **DYNAMIC ANIMATIONS**: Use \`framer-motion\` to add micro-interactions, page transitions, and hover effects. An interface that feels alive encourages interaction.
-4. **COMPLETENESS**: DO NOT stub out files or use placeholders like \`// implement later\`. Write fully-featured, production-ready code. Always write complete file contents.
-5. **STYLING**: Use Tailwind CSS for all styling. Rely on utility classes exclusively. Always include generous padding, rounded corners, subtle borders, and harmonious color palettes.
-6. **DATABASE**: If modifying data fetching, use a data abstraction layer (e.g. \`/lib/db.js\`). Check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists to use Atlas, else simulate with \`localStorage\`.
-7. **DEPLOYMENT**: Keep \`/README.md\` updated with instructions for running and deploying to Vercel.
-8. **IMAGES**: NEVER use local image paths. ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-9. **MOBILE-FIRST**: You MUST design the application to be highly responsive and adapt gracefully to mobile screens.
-10. **LIGHT MODE DEFAULT**: Design in light mode by default unless requested otherwise.
+2. **ARCHITECTURE**: Build specifically for a Create-React-App template. Place all files directly in the root directory (/). Do NOT use Vite structures or create a /src/ directory. Entry point MUST be \`/App.js\` with a default export. NO TypeScript.
+3. **RICH AESTHETICS & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design best practices (vibrant colors, glassmorphism, soft shadows, rounded corners). The user should be WOWED at first glance. If your app looks basic or simple, you have FAILED.
+4. **DYNAMIC ANIMATIONS**: Use \`framer-motion\` to add micro-interactions, page transitions, and hover effects. An interface that feels alive encourages interaction.
+5. **COMPLETENESS**: DO NOT stub out files or use placeholders like \`// implement later\`. Write fully-featured, production-ready code. Always write complete file contents.
+6. **STYLING**: Use Tailwind CSS for all styling. Rely on utility classes exclusively. Always include generous padding, rounded corners, subtle borders, and harmonious color palettes.
+7. **DATABASE**: If modifying data fetching, use a data abstraction layer (e.g. \`/lib/db.js\`). Check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists to use Atlas, else simulate with \`localStorage\`.
+8. **DEPLOYMENT**: Keep \`/README.md\` updated with instructions for running and deploying to Vercel.
+9. **IMAGES**: NEVER use local image paths. ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
+10. **MOBILE-FIRST**: You MUST design the application to be highly responsive and adapt gracefully to mobile screens.
+11. **CRITICAL ROUTING & IMPORTS**: If you use routing, you MUST import ALL components (e.g. \`BrowserRouter\`, \`Routes\`, \`Route\`, \`Link\`, \`NavLink\`, \`useNavigate\`) from \`react-router-dom\`. DO NOT use \`<Link>\` or \`<NavLink>\` without importing them first! WARNING: If you use \`<NavLink>\`, do NOT use the \`isActive\` property inside its children unless you use the render prop pattern \`{({ isActive }) => (...)}\`. If you use icons, MUST import them from \`lucide-react\`.
+12. **NO ORPHANED CSS**: Our boilerplate imports \`./styles.css\` globally. DO NOT import \`./index.css\` or \`./App.css\`.
 
-CRITICAL REMINDER: AESTHETICS ARE VERY IMPORTANT. If your web app looks simple and basic then you have FAILED! Do not just output standard HTML elements.
-12. **NO ORPHANED CSS**: Our boilerplate imports \`./styles.css\` globally. DO NOT import \`./index.css\` or \`./App.css\`.`,
+CRITICAL REMINDER: AESTHETICS ARE VERY IMPORTANT. If your web app looks simple and basic then you have FAILED! Do not just output standard HTML elements.`,
             tools: [listFilesTool, readFileTool, updateFileTool, doneImprovingTool],
             toolPolicies: {
               list_files: { autoApprove: true },
