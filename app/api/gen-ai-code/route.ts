@@ -303,7 +303,14 @@ export async function POST(request: NextRequest) {
             (label) => enqueue(sseEvent("status", { message: loops > 1 ? `Continuing generation (Part ${loops})...` : label }))
           );
           
-          rawJson += chunk;
+          let newChunk = chunk;
+          if (loops > 1) {
+            newChunk = newChunk.trimStart();
+            if (newChunk.startsWith("```json")) newChunk = newChunk.replace(/^```json\s*/i, "");
+            else if (newChunk.startsWith("```")) newChunk = newChunk.replace(/^```[a-z]*\s*/i, "");
+          }
+          
+          rawJson += newChunk;
           
           let checkStr = rawJson.trim();
           if (checkStr.startsWith("```json")) checkStr = checkStr.replace(/^```json\s*/i, "");
