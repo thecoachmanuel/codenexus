@@ -4,15 +4,12 @@ import { GoogleGenAI } from "@google/genai";
 
 function collectApiKeys(): string[] {
   const keys: string[] = [];
-  let i = 1;
-  while (true) {
+  for (let i = 1; i <= 100; i++) {
     const key = process.env[`GEMINI_API_KEY_${i}`];
-    if (!key) break;
-    keys.push(key);
-    i++;
+    if (key) keys.push(key);
   }
-  // Fallback to legacy GEMINI_API_KEY if no numbered keys found
-  if (keys.length === 0 && process.env.GEMINI_API_KEY) {
+  // Fallback to legacy GEMINI_API_KEY if no numbered keys found, or add it if it's unique
+  if (process.env.GEMINI_API_KEY && !keys.includes(process.env.GEMINI_API_KEY)) {
     keys.push(process.env.GEMINI_API_KEY);
   }
   if (keys.length === 0) {
