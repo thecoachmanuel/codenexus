@@ -50,8 +50,8 @@ interface GenerateOptions {
 
 export async function generateContentStream(options: GenerateOptions) {
   const { model = DEFAULT_MODEL, contents, config } = options;
-  // Loop through all keys TWICE to allow token buckets to naturally refill
-  const maxAttempts = API_KEYS.length * 2;
+  // Loop multiple times to allow token buckets to refill and to survive long 503 spikes
+  const maxAttempts = Math.max(API_KEYS.length * 4, 10);
 
   let lastError: unknown;
 
@@ -71,6 +71,7 @@ export async function generateContentStream(options: GenerateOptions) {
         const isTransientOrRateLimit = 
           msg.includes("429") || 
           msg.includes("503") || 
+          msg.includes("unavailable") || 
           msg.includes("rate limit") || 
           msg.includes("quota") ||
           msg.includes("overloaded");
@@ -105,7 +106,7 @@ export async function generateContentStream(options: GenerateOptions) {
 
 export async function generateContent(options: GenerateOptions) {
   const { model = DEFAULT_MODEL, contents, config } = options;
-  const maxAttempts = API_KEYS.length * 2;
+  const maxAttempts = Math.max(API_KEYS.length * 4, 10);
 
   let lastError: unknown;
 
@@ -125,6 +126,7 @@ export async function generateContent(options: GenerateOptions) {
         const isTransientOrRateLimit = 
           msg.includes("429") || 
           msg.includes("503") || 
+          msg.includes("unavailable") || 
           msg.includes("rate limit") || 
           msg.includes("quota") ||
           msg.includes("overloaded");
