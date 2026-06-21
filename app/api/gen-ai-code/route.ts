@@ -377,7 +377,7 @@ ${lastUserMessage.content}
 Output strict JSON ONLY: { "requirements": "...", "pages": [...], "features": [...] }`;
           
           const analystRes = await generateContent({ model: DEFAULT_MODEL, contents: [{ role: "user", parts: [{ text: analystPrompt }] }] });
-          const analystJson = safeParseJSON<{ requirements: string, pages: string[], features: string[] }>(analystRes?.text() || "") || { requirements: lastUserMessage.content, pages: [], features: [] };
+          const analystJson = safeParseJSON<{ requirements: string, pages: string[], features: string[] }>(analystRes?.text || "") || { requirements: lastUserMessage.content, pages: [], features: [] };
           
           // Agent 2: Project Architect
           enqueue(sseEvent("status", { message: "Project Architect: Designing architecture..." }));
@@ -392,7 +392,7 @@ Output strict JSON ONLY: {
           
           // Architect uses PRO_MODEL for deep reasoning
           const architectRes = await generateContent({ model: PRO_MODEL, contents: [{ role: "user", parts: [{ text: architectPrompt }] }] });
-          const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[] }>(architectRes?.text() || "") || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
+          const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[] }>(architectRes?.text || "") || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
           
           // Set dependencies based on Architect
           architectJson.dependencies.forEach((dep: string) => { finalDependencies[dep] = "latest"; });
@@ -419,7 +419,7 @@ Constraints:
 Output strict JSON ONLY: { "code": "..." }`;
             
             const fileRes = await generateContent({ model: DEFAULT_MODEL, contents: [{ role: "user", parts: [{ text: generatorPrompt }] }] });
-            const fileJson = safeParseJSON<{ code: string }>(fileRes?.text() || "");
+            const fileJson = safeParseJSON<{ code: string }>(fileRes?.text || "");
             
             if (fileJson?.code) {
                files[filepath] = { code: fileJson.code };
