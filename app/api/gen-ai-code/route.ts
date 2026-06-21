@@ -420,10 +420,11 @@ export async function POST(request: NextRequest) {
             }
 
             // AUTO-HEALER: Prevent "ReferenceError: X is not defined" for React Router
+            rawCode = rawCode ?? "";
             const routerTokens = ["BrowserRouter", "Routes", "Route", "Link", "useNavigate", "useParams", "useLocation", "Navigate"];
             routerTokens.forEach(token => {
-              const usesToken = new RegExp(`\\b${token}\\b`).test(rawCode);
-              const importsToken = new RegExp(`import\\s+.*\\b${token}\\b.*\\s+from\\s+['"]react-router-dom['"]`).test(rawCode);
+              const usesToken = new RegExp(`\\b${token}\\b`).test(rawCode as string);
+              const importsToken = new RegExp(`import\\s+.*\\b${token}\\b.*\\s+from\\s+['"]react-router-dom['"]`).test(rawCode as string);
               if (usesToken && !importsToken) {
                 rawCode = `import { ${token} } from 'react-router-dom';\n` + rawCode;
               }
