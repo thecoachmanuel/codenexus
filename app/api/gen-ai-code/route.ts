@@ -134,12 +134,12 @@ OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra t
     "Add sample data to the table"
   ],
   "files": {
-    "/App.js": { "code": "<full file content>" },
-    "/components/MassiveComponent.js": { 
+    "/App.js": { "code": "<full file content - ONLY FOR BRAND NEW FILES OR APPS>" },
+    "/components/ExistingComponent.js": { 
       "replacements": [
         {
-          "target": "<exact string of existing code to replace>",
-          "replacement": "<new code to insert>"
+          "target": "<exact string of existing code to replace (must match exactly)>",
+          "replacement": "<new 1-2 lines of code to insert>"
         }
       ]
     }
@@ -158,7 +158,7 @@ RULES:
 8. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. /lib/db.js). This layer MUST check if process.env.REACT_APP_MONGODB_DATA_API_KEY exists. If it does, use the MongoDB Atlas Data API (via fetch) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with localStorage. Do NOT attempt to use mongoose or direct TCP MongoDB connections, as this is a purely browser-based React app.
 9. **DEPLOYMENT**: ALWAYS include a /README.md detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the REACT_APP_MONGODB_DATA_API_URL, REACT_APP_MONGODB_DATA_API_KEY, and REACT_APP_MONGODB_DATA_API_CLUSTER environment variables in the Vercel dashboard.
 10. If the user is just chatting or asking a question, you can omit the "files" field entirely and just respond with "assistantMessage" and "suggestions".
-11. **TOKEN LIMIT SURVIVAL (CRITICAL)**: If the user is modifying an EXISTING app, you MUST be surgically precise: use the \`replacements\` array format to output ONLY the exact find-and-replace patches instead of rewriting massive files. \`target\` MUST exactly match existing code character-for-character. NEVER output unchanged files. HOWEVER, if the user is asking to build a BRAND NEW app from scratch, you MUST output ALL necessary files using the \`code\` format (e.g. App.js, components, etc) otherwise the preview will crash!
+11. **SURGICAL REPLACEMENTS (CRITICAL)**: If the user is modifying an EXISTING app, you MUST be surgically precise: use the \`replacements\` array format to output ONLY the exact 1-2 lines of code that need to change! DO NOT output the full file \`code\` unless you are creating a BRAND NEW file. \`target\` MUST exactly match existing code character-for-character. If you rewrite massive files using the \`code\` format for a minor fix, YOU HAVE FAILED AND WILL CRASH THE APP. HOWEVER, if the user asks you to build a BRAND NEW app from scratch, you MUST output ALL necessary files using the \`code\` format.
 12. **NO STUBS OR PLACEHOLDERS**: When using the \`code\` format, you MUST output the ENTIRE, fully-featured file contents. NEVER use placeholders like \`// ... existing code\`. If you output a stub using the \`code\` format, you will delete the user's existing code and break the app! Always prefer \`replacements\` for minor tweaks!
 13. "suggestions" must be an array of exactly 3 specific, highly actionable feature suggestions that would elevate this app to a professional, top-tier level (e.g., "Add user profiles and secure authentication", "Add dark mode toggle and real-time notifications", "Implement advanced search and filtering").
 14. **COMPLEX TASK SPLITTING**: If the user requests a massive, complex feature that requires generating large amounts of code across multiple files, DO NOT try to build it all at once! You will hit the token limit. Instead, automatically split the work into smaller sequential steps. Build ONLY Step 1 right now. Then, in your \`suggestions\` array, provide exactly one suggestion to continue: "Proceed to Step 2: [Description of next step]". When the user clicks it, you will build Step 2, and so on until the complex feature is complete. The user should be able to click through the suggestions to automatically build the full feature.
@@ -167,7 +167,7 @@ RULES:
 16. **RICH AESTHETICS, TYPOGRAPHY & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design trends: trendy custom color palettes (e.g., sleek dark modes, vibrant pastels, or neon accents), glassmorphism, soft drop-shadows, and rounded corners. **TYPOGRAPHY**: Keep body text at standard professional sizes (e.g., \`text-sm\` or \`text-base\`); do not use excessively large fonts for normal text. Use tight tracking (\`tracking-tight\`) on large headers. NEVER use generic flat colors (like \`bg-blue-500\`); use rich gradients and tailored HSL palettes to ensure a rich UX. Use \`framer-motion\` heavily for micro-interactions. If your app looks basic, you have FAILED.
 17. **CRITICAL ROUTING & IMPORTS**: If you use routing, you MUST import ALL components (e.g. \`BrowserRouter\`, \`Routes\`, \`Route\`, \`Link\`, \`NavLink\`, \`useNavigate\`) from \`react-router-dom\`. DO NOT use \`<Link>\` or \`<NavLink>\` without importing them first! WARNING: If you use \`<NavLink>\`, do NOT use the \`isActive\` property inside its children unless you use the render prop pattern \`{({ isActive }) => (...)}\`. If you use icons, MUST import them from \`lucide-react\`.
 18. **CRITICAL EXPORTS**: You MUST use \`export default function\` for ALL your components. When importing local components, you MUST use default imports (e.g. \`import Sidebar from './components/Sidebar'\`). NEVER use named exports/imports for your own components!
-19. **PRECISION TARGETING**: When asked to fix or add a feature to an EXISTING app, DO NOT rewrite the entire app architecture. Understand exactly what component handles that feature, and ONLY output that specific component file. The rest of the app is safely preserved in memory.
+19. **PRECISION TARGETING**: When asked to fix or add a feature to an EXISTING app, understand exactly what component handles that feature, and ONLY output a \`replacements\` patch for that specific file. DO NOT output the full file contents. The rest of the app is safely preserved in memory.
 `;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────

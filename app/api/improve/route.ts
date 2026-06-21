@@ -177,6 +177,36 @@ export async function POST(request: NextRequest) {
           return `Updated frontend ${normalizedPath}: ${reason}`;
         },
       });
+      const patchFileTool = createTool({
+        name: "patch_file",
+        description:
+          "Surgically update an existing file by replacing a specific string of code. Use this for minor 1-2 line fixes to avoid rewriting massive files.",
+        inputSchema: z.object({
+          path: z.string().describe("File path, e.g. /App.js"),
+          target: z.string().describe("Exact string of existing code to replace. Must match exactly, including whitespace!"),
+          replacement: z.string().describe("The new code to insert in place of the target."),
+          reason: z.string().describe("Why you are making this patch"),
+        }),
+        async execute({ path, target, replacement, reason }) {
+          let normalizedPath = path;
+          if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+          if (normalizedPath === "/App.jsx" || normalizedPath === "/App.tsx") normalizedPath = "/App.js";
+
+          const existingCode = patchedFiles[normalizedPath]?.code || baseWorkspace[normalizedPath]?.code;
+          if (!existingCode) {
+            throw new Error(`Cannot patch ${normalizedPath} because it does not exist.`);
+          }
+          if (!existingCode.includes(target)) {
+            throw new Error(`Patch failed! The exact target string was not found in ${normalizedPath}. Please ensure whitespace matches exactly, or use update_file instead.`);
+          }
+
+          const rawCode = existingCode.replace(target, replacement);
+          patchedFiles[normalizedPath] = { code: rawCode };
+          enqueue(sseEvent("file_patch", { path: normalizedPath, code: rawCode, reason }));
+          return `Successfully patched ${normalizedPath}: ${reason}`;
+        },
+      });
+
 
 
       const doneImprovingTool = createTool({
@@ -230,7 +260,8 @@ WORKFLOW:
 5. Once all target files are updated, call \`done_improving\` with a short summary.
 
 CRITICAL RULES:
-1. **RETAIN EVERYTHING**: Your \`update_file\` MUST contain the ENTIRE modified file contents, including all original styling, classes, and logic! NEVER delete existing functionality or styling unless explicitly asked. If you output a stub or a stripped-down version, the app will look ugly and break!
+1. **RETAIN EVERYTHING**: When using \`update_file\`, your output MUST contain the ENTIRE modified file contents! NEVER delete existing functionality or styling unless explicitly asked. If you output a stub, the app will break!
+1b. **SURGICAL PATCHING**: ALWAYS prefer using the \`patch_file\` tool for minor bug fixes or 1-2 line changes. \`update_file\` should only be used when writing brand new files or rewriting major sections.
 2. **ARCHITECTURE**: Build specifically for a Create-React-App template. Place all files directly in the root directory (/). Do NOT use Vite structures or create a /src/ directory. Entry point MUST be \`/App.js\` with a default export. NO TypeScript.
 3. **RICH AESTHETICS, TYPOGRAPHY & UI/UX**: You MUST build premium, state-of-the-art designs. Use modern web design trends: trendy custom color palettes (e.g., sleek dark modes, vibrant pastels, or neon accents), glassmorphism, soft drop-shadows, and rounded corners. **TYPOGRAPHY**: Keep body text at standard professional sizes (e.g., \`text-sm\` or \`text-base\`); do not use excessively large fonts for normal text. Use tight tracking (\`tracking-tight\`) on large headers. NEVER use generic flat colors (like \`bg-blue-500\`); use rich gradients and tailored HSL palettes to ensure a rich UX. If your app looks basic, you have FAILED.
 4. **DYNAMIC ANIMATIONS**: Use \`framer-motion\` to add micro-interactions, page transitions, and hover effects. An interface that feels alive encourages interaction.
@@ -245,11 +276,12 @@ CRITICAL RULES:
 14. **NO ORPHANED CSS**: Our boilerplate imports \`./styles.css\` globally. DO NOT import \`./index.css\` or \`./App.css\`.
 
 CRITICAL REMINDER: AESTHETICS ARE VERY IMPORTANT. If your web app looks simple and basic then you have FAILED! Do not just output standard HTML elements.`,
-            tools: [listFilesTool, readFileTool, updateFileTool, doneImprovingTool],
+            tools: [listFilesTool, readFileTool, updateFileTool, patchFileTool, doneImprovingTool],
             toolPolicies: {
               list_files: { autoApprove: true },
               read_file: { autoApprove: true },
               update_file: { autoApprove: true },
+              patch_file: { autoApprove: true },
               done_improving: { autoApprove: true },
             },
             hooks: {
