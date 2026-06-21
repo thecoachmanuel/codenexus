@@ -274,13 +274,40 @@ export async function POST(request: NextRequest) {
 
         enqueue(sseEvent("status", { message: "Thinking…" }));
 
-        const contents = buildFrontendContents(messages, fileData);
+        const initialContents = buildFrontendContents(messages, fileData);
+        let currentContents = [...initialContents];
+        
+        let rawJson = "";
+        let isComplete = false;
+        let loops = 0;
 
-        const rawJson = await runGeminiPass(
-          contents,
-          SYSTEM_PROMPT,
-          (label) => enqueue(sseEvent("status", { message: label }))
-        );
+        while (!isComplete && loops < 3) {
+          loops++;
+          
+          const chunk = await runGeminiPass(
+            currentContents,
+            SYSTEM_PROMPT,
+            (label) => enqueue(sseEvent("status", { message: loops > 1 ? `Continuing generation (Part ${loops})...` : label }))
+          );
+          
+          rawJson += chunk;
+          
+          let checkStr = rawJson.trim();
+          if (checkStr.endsWith("```")) {
+            checkStr = checkStr.replace(/```$/, "").trim();
+          }
+          
+          if (checkStr.endsWith("}")) {
+            isComplete = true;
+          } else {
+            enqueue(sseEvent("status", { message: "App is massive! Seamlessly extending context window..." }));
+            currentContents.push({ role: "model", parts: [{ text: chunk }] });
+            currentContents.push({ 
+              role: "user", 
+              parts: [{ text: "Your previous response was cut off by the output token limit. Please continue generating the exact JSON string from the precise character where you left off. Do not include any explanations, markdown fences, or starting brackets. Just append directly to the previous string." }] 
+            });
+          }
+        }
 
         const parsed = safeParseJSON<{
           assistantMessage: string;
