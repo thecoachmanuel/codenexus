@@ -216,18 +216,17 @@ export async function POST(request: NextRequest) {
           let currentModelId = PRO_MODEL;
 
           const agent = new Agent({
-            providerId: "gemini",
             modelId: currentModelId,
             apiKey: getApiKey(),
-            maxIterations: 15,
+            maxIterations: 30,
             systemPrompt: `You are an expert full-stack React developer improving an app.
 
 WORKFLOW:
 1. Understand what the user wants improved.
 2. Use \`list_files\` to see the directory structure.
-3. Use \`read_file\` to read ONLY the specific files you need to understand or modify. Do not guess file contents.
-4. Call \`update_file\` to rewrite the files with your improvements.
-5. Once all files are updated, call \`done_improving\` with a short summary.
+3. Use \`read_file\` to read ONLY the specific files you need to understand or modify. Act efficiently; do not waste iterations reading unnecessary files.
+4. Call \`update_file\` to rewrite the target files with your improvements.
+5. Once all target files are updated, call \`done_improving\` with a short summary.
 
 CRITICAL RULES:
 1. **RETAIN EVERYTHING**: Your \`update_file\` MUST contain the ENTIRE modified file contents, including all original styling, classes, and logic! NEVER delete existing functionality or styling unless explicitly asked. If you output a stub or a stripped-down version, the app will look ugly and break!
