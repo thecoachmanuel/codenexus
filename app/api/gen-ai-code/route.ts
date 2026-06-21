@@ -284,11 +284,8 @@ export async function POST(request: NextRequest) {
         while (!isComplete && loops < 3) {
           loops++;
           
-          const isModifying = fileData && Object.keys(fileData.files || {}).length > 0;
-          const targetModel = isModifying ? PRO_MODEL : DEFAULT_MODEL;
-
           const chunk = await runGeminiPass(
-            targetModel,
+            DEFAULT_MODEL,
             currentContents,
             SYSTEM_PROMPT,
             (label) => enqueue(sseEvent("status", { message: loops > 1 ? `Continuing generation (Part ${loops})...` : label }))
