@@ -406,10 +406,10 @@ export function WorkspaceClient({
             isGenerating={isGenerating}
             statusLog={statusLog}
             onImprove={handleGenerate}
-            onFixError={(error) => {
+            onFixError={async (error) => {
               const newCount = fixRetryCount + 1;
               setFixRetryCount(newCount);
-              handleGenerate(
+              await handleGenerate(
                 `[COMPILER ERROR]\nThere is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`,
                 undefined,
                 newCount
