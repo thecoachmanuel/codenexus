@@ -140,6 +140,8 @@ export function WorkspaceClient({
     fileDataRef.current = fileData;
   }, [fileData]);
 
+  const [fixRetryCount, setFixRetryCount] = useState(0);
+
   const pushStep = (label: string) => {
     setStatusLog((prev) => [
       ...prev.map((s, i) =>
@@ -158,7 +160,7 @@ export function WorkspaceClient({
   };
 
   const handleGenerate = useCallback(
-    async (prompt: string, imageUrl?: string) => {
+    async (prompt: string, imageUrl?: string, retryCount: number = 0) => {
       if (isGenerating) return;
       if (credits < MIN_CREDITS_TO_GENERATE) return;
 
@@ -195,6 +197,7 @@ export function WorkspaceClient({
             userId,
             messages: conversationHistory,
             fileData: fileDataRef.current,
+            retryCount, // Pass retryCount to backend for Bounded Repair Loop
           }),
         });
 
@@ -379,6 +382,7 @@ export function WorkspaceClient({
             onGenerate={async (prompt, imageUrl) => {
               // Automatically collapse sheet when generating on mobile
               setIsMobileChatOpen(false);
+              setFixRetryCount(0); // Reset compile error retries on explicit user prompt
               await handleGenerate(prompt, imageUrl);
             }}
             onStop={handleStop}
@@ -402,11 +406,15 @@ export function WorkspaceClient({
             isGenerating={isGenerating}
             statusLog={statusLog}
             onImprove={handleGenerate}
-            onFixError={(error) =>
+            onFixError={(error) => {
+              const newCount = fixRetryCount + 1;
+              setFixRetryCount(newCount);
               handleGenerate(
-                `There is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`
-              )
-            }
+                `[COMPILER ERROR]\nThere is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`,
+                undefined,
+                newCount
+              );
+            }}
             onFilePatch={handleFilePatch}
             appTitle={fileData?.title ?? workspace?.title ?? null}
             subdomain={subdomain}

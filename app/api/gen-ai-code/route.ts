@@ -171,6 +171,7 @@ RULES:
 17. **CRITICAL ROUTING & IMPORTS**: If you use routing, you MUST import ALL components (e.g. \`BrowserRouter\`, \`Routes\`, \`Route\`, \`Link\`, \`NavLink\`, \`useNavigate\`) from \`react-router-dom\`. DO NOT use \`<Link>\` or \`<NavLink>\` without importing them first! WARNING: If you use \`<NavLink>\`, do NOT use the \`isActive\` property inside its children unless you use the render prop pattern \`{({ isActive }) => (...)}\`. If you use icons, MUST import them from \`lucide-react\`.
 18. **CRITICAL EXPORTS & IMPORTS**: You MUST use \`export default\` for ALL your components, hooks, and utilities (e.g., \`export default function useTasks()\`). NEVER use named exports! When importing your own files, you MUST use default imports (e.g., \`import Sidebar from './components/Sidebar'\` or \`import useTasks from './hooks/useTasks'\`). If you see an error like \`(0, _useTasks.useTasks) is not a function\`, it means you incorrectly used a named import \`import { useTasks }\` for a default export! Fix it instantly by changing the import to \`import useTasks from\`.
 19. **PRECISION TARGETING**: When asked to fix or add a feature to an EXISTING app, understand exactly what component handles that feature, and ONLY output a \`replacements\` patch for that specific file. DO NOT output the full file contents. The rest of the app is safely preserved in memory.
+20. **ERROR CLASSIFIER**: If the user provides a compiler error, analyze it, determine the root cause (Syntax, Missing Import, Undefined Export, Hook Misuse), and provide a minimal surgical replacement to fix it.
 `;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
@@ -252,6 +253,7 @@ export async function POST(request: NextRequest) {
     userId: string;
     messages: Message[];
     fileData: FileData | null;
+    retryCount?: number;
   };
 
   if (!messages?.length) {
@@ -307,8 +309,13 @@ export async function POST(request: NextRequest) {
 
           while (!isComplete && loops < 15) {
             loops++;
+            const targetModel = (retryCount ?? 0) >= 3 ? PRO_MODEL : DEFAULT_MODEL;
+            if ((retryCount ?? 0) >= 3 && loops === 1) {
+              enqueue(sseEvent("status", { message: "Escalating to Deep Reasoning Mode..." }));
+            }
+            
             const chunk = await runGeminiPass(
-              DEFAULT_MODEL,
+              targetModel,
               currentContents,
               getSystemPrompt(isExistingApp),
               (label) => enqueue(sseEvent("status", { message: loops > 1 ? "Writing massive codebase..." : label }))
