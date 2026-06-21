@@ -239,7 +239,7 @@ CRITICAL RULES:
 7. **DATABASE**: If modifying data fetching, use a data abstraction layer (e.g. \`/lib/db.js\`). Check if \`process.env.REACT_APP_MONGODB_DATA_API_KEY\` exists to use Atlas, else simulate with \`localStorage\`.
 8. **DEPLOYMENT**: Keep \`/README.md\` updated with instructions for running and deploying to Vercel.
 9. **IMAGES**: NEVER use local image paths. ALWAYS use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-10. **MOBILE-FIRST**: You MUST design the application to be highly responsive and adapt gracefully to mobile screens.
+10. **MOBILE-FIRST & RESPONSIVE**: You MUST design the application to be highly responsive and mobile-first. All layouts, sidebars (if applicable), navigation menus, and content grids MUST collapse gracefully on small screens, BUT they MUST permanently expand and remain fully visible on desktop screens (e.g., using Tailwind's \`md:flex\`, \`md:block\`, or \`lg:block\` prefixes). NEVER permanently hide sidebars or navigation on desktop sizes. Note: Only build sidebars if they logically fit the app's architecture.
 11. **CRITICAL ROUTING & IMPORTS**: If you use routing, you MUST import ALL components (e.g. \`BrowserRouter\`, \`Routes\`, \`Route\`, \`Link\`, \`NavLink\`, \`useNavigate\`) from \`react-router-dom\`. DO NOT use \`<Link>\` or \`<NavLink>\` without importing them first! WARNING: If you use \`<NavLink>\`, do NOT use the \`isActive\` property inside its children unless you use the render prop pattern \`{({ isActive }) => (...)}\`. If you use icons, MUST import them from \`lucide-react\`.
 12. **NO ORPHANED CSS**: Our boilerplate imports \`./styles.css\` globally. DO NOT import \`./index.css\` or \`./App.css\`.
 
