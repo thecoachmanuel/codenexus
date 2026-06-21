@@ -300,7 +300,7 @@ export async function POST(request: NextRequest) {
             DEFAULT_MODEL,
             currentContents,
             getSystemPrompt(isExistingApp),
-            (label) => enqueue(sseEvent("status", { message: loops > 1 ? `Continuing generation (Part ${loops})...` : label }))
+            (label) => enqueue(sseEvent("status", { message: loops > 1 ? "Writing massive codebase..." : label }))
           );
           
           let newChunk = chunk;
@@ -326,7 +326,7 @@ export async function POST(request: NextRequest) {
           }
 
           if (!isComplete) {
-            enqueue(sseEvent("status", { message: "App is massive! Seamlessly extending context window..." }));
+            enqueue(sseEvent("status", { message: "Writing massive codebase..." }));
             currentContents.push({ role: "model", parts: [{ text: chunk }] });
             currentContents.push({ 
               role: "user", 
