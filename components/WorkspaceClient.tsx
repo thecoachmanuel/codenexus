@@ -69,6 +69,7 @@ export function WorkspaceClient({
   const [credits, setCredits] = useState(userCredits);
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusLog, setStatusLog] = useState<StatusStep[]>([]);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   
   // Undo / Revert History Stack
   const [fileHistory, setFileHistory] = useState<FileData[]>([]);
@@ -159,9 +160,13 @@ export function WorkspaceClient({
       if (isGenerating) return;
       if (credits < MIN_CREDITS_TO_GENERATE) return;
 
+      const augmentedPrompt = previewError 
+        ? `${prompt}\n\n[System Context: The preview is currently crashing. Please fix this exact error:\n${previewError}]` 
+        : prompt;
+
       const userMessage: Message = {
         role: "user",
-        content: prompt,
+        content: augmentedPrompt,
         ...(imageUrl ? { imageUrl } : {}),
       };
 
@@ -382,8 +387,10 @@ export function WorkspaceClient({
           isImproving={false}
           isProUser={userPlan === "pro"}
           onEnvVarsChange={handleEnvVarsChange}
-          vercelInfo={workspace?.vercel}
+          vercelInfo={workspace?.vercelInfo}
           workspaceId={workspaceId}
+          previewError={previewError}
+          setPreviewError={setPreviewError}
         />
       </div>
     </>

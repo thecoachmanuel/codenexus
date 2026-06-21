@@ -85,6 +85,8 @@ interface CodePanelProps {
   subdomain?: string | null;
   vercelInfo?: VercelInfo;
   workspaceId?: string | null;
+  previewError: string | null;
+  setPreviewError: (error: string | null) => void;
 }
 
 // ─── SandpackInner ────────────────────────────────────────────────────────────
@@ -108,6 +110,8 @@ function SandpackInner({
   processedFiles,
   vercelInfo,
   workspaceId,
+  previewError,
+  setPreviewError,
 }: {
   isGenerating: boolean;
   statusLog: StatusStep[];
@@ -124,9 +128,10 @@ function SandpackInner({
   processedFiles: Record<string, { code: string }>;
   vercelInfo?: VercelInfo;
   workspaceId?: string | null;
+  previewError: string | null;
+  setPreviewError: (error: string | null) => void;
 }) {
   const { sandpack, listen } = useSandpack();
-  const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("desktop");
   const [isExporting, setIsExporting] = useState(false);
   const [improveInput, setImproveInput] = useState("");
@@ -774,6 +779,8 @@ export function CodePanel({
   subdomain,
   vercelInfo,
   workspaceId,
+  previewError,
+  setPreviewError,
 }: CodePanelProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
 
@@ -852,6 +859,8 @@ export function CodePanel({
           processedFiles={files}
           vercelInfo={vercelInfo}
           workspaceId={workspaceId}
+          previewError={previewError}
+          setPreviewError={setPreviewError}
         />
       </SandpackProvider>
     </div>
