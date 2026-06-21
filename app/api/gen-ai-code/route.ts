@@ -46,7 +46,7 @@ async function runGeminiPass(
     config: {
       systemInstruction,
       temperature: 0.7,
-      responseMimeType: "text/plain",
+      responseMimeType: "application/json",
     },
   });
 
@@ -117,29 +117,20 @@ function safeParseJSON<T>(raw: string): T | null {
 
 const SYSTEM_PROMPT = `You are an elite, Principal React Architect with over 20 years of industry experience. Generate a complete, working React frontend application. You possess deep wisdom in building scalable, production-grade architectures.
 
-CRITICAL ARCHITECTURE RULES:
-For complex architectures, you CANNOT write the entire app blindly. You MUST enter "Planning Mode" first. 
-1. Use the <write_plan> tool to write an implementation_plan.md detailing the files you will create.
-2. Execute the plan step-by-step using the <write_file> tool for each file.
-3. Use the <verify> tool if you want the system to check for syntax errors before you finish.
-4. When everything is perfect, call the <finish> tool.
-
-OUTPUT FORMAT (XML TOOLS ONLY):
-You must respond ONLY using the following XML tags. Do NOT wrap them in markdown code blocks.
-
-<write_plan>
-# Implementation Plan
-I will build...
-</write_plan>
-
-<write_file path="/App.js">
-import React from 'react';
-export default function App() {}
-</write_file>
-
-<verify />
-
-<finish title="Short App Title" message="I have finished building the application. Here is what I did..." suggestions='["Add dark mode", "Deploy to Vercel", "Add user auth"]' />
+OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra text.
+{
+  "assistantMessage": "<chat response or brief explanation of what you built/changed>",
+  "title": "<short 2-4 word title>",
+  "suggestions": [
+    "Add a dark mode toggle",
+    "Implement the settings page",
+    "Add sample data to the table"
+  ],
+  "files": {
+    "/App.js": { "code": "<full file content>" },
+    "/components/Sidebar.js": { "code": "<full file content>" }
+  }
+}
 
 RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
@@ -275,81 +266,28 @@ export async function POST(request: NextRequest) {
 
         enqueue(sseEvent("status", { message: "Thinking…" }));
 
-        let currentContents = buildFrontendContents(messages, fileData);
-        const { parseXmlTools } = await import("@/lib/xml-parser");
+        const contents = buildFrontendContents(messages, fileData);
 
-        let loopCount = 0;
-        let isFinished = false;
-        let assistantMessage = "I have finished the architecture.";
-        let aiTitle = "New App";
-        let suggestions: string[] = ["Add authentication", "Deploy to Vercel", "Customize theme"];
-        let generatedFiles: Record<string, { code: string }> = {};
+        const rawJson = await runGeminiPass(
+          contents,
+          SYSTEM_PROMPT,
+          (label) => enqueue(sseEvent("status", { message: label }))
+        );
 
-        // Agentic Execution Loop
-        while (!isFinished && loopCount < 4) {
-          loopCount++;
-          
-          enqueue(sseEvent("status", { message: `Executing step ${loopCount}...` }));
-          
-          const rawXml = await runGeminiPass(
-            currentContents,
-            SYSTEM_PROMPT,
-            (label) => enqueue(sseEvent("status", { message: label }))
-          );
+        const parsed = safeParseJSON<{
+          assistantMessage: string;
+          title?: string;
+          suggestions?: string[];
+          files?: Record<string, { code: string }>;
+        }>(rawJson);
 
-          // COMPRESSION: Strip out the massive code payloads to save tokens for the next loop pass
-          const compressedXml = rawXml.replace(
-            /<write_file([^>]*)>([\s\S]*?)<\/write_file>/g,
-            '<write_file$1>\n[System: File successfully written to virtual workspace (Token Compressed)]\n</write_file>'
-          );
-
-          // Append the COMPRESSED output to the conversation history, drastically reducing TPM burn
-          currentContents[currentContents.length - 1].parts.push({ text: "\n" + compressedXml });
-
-          const tools = parseXmlTools(rawXml); // We still extract the actual code from the rawXml!
-          let verificationLog = [];
-
-          for (const tool of tools) {
-            if (tool.name === "write_plan") {
-              generatedFiles["/implementation_plan.md"] = { code: tool.content };
-              enqueue(sseEvent("status", { message: "Drafting implementation plan..." }));
-            } else if (tool.name === "write_file") {
-              const path = tool.attributes.path;
-              if (path) {
-                generatedFiles[path] = { code: tool.content };
-                enqueue(sseEvent("status", { message: `Creating ${path}...` }));
-              }
-            } else if (tool.name === "verify") {
-               enqueue(sseEvent("status", { message: "Verifying codebase..." }));
-               verificationLog.push(`Verification complete. ${Object.keys(generatedFiles).length} files exist in the virtual workspace. Ensure all React components use default exports.`);
-            } else if (tool.name === "finish") {
-              isFinished = true;
-              if (tool.attributes.title) aiTitle = tool.attributes.title;
-              if (tool.attributes.message) assistantMessage = tool.attributes.message;
-              if (tool.attributes.suggestions) {
-                try { suggestions = JSON.parse(tool.attributes.suggestions); } catch (e) {}
-              }
-            }
-          }
-
-          if (!isFinished) {
-            const nextPrompt = verificationLog.length > 0
-              ? `<tool_response name="verify">${verificationLog.join('\n')}\nContinue executing your plan.</tool_response>`
-              : `Continue executing the next steps of your plan.`;
-              
-            currentContents.push({ role: "user", parts: [{ text: nextPrompt }] });
-          }
+        if (!parsed) {
+          enqueue(sseEvent("error", { message: "Generation failed due to output length limits. Please ask for a simpler app." }));
+          controller.close();
+          return;
         }
 
-        // Merge back into the expected parsed format for the rest of the backend auto-healers
-        const parsed = {
-          assistantMessage,
-          title: aiTitle,
-          suggestions,
-          files: generatedFiles
-        };
-
-        const files = parsed.files;
+        const { assistantMessage, title: aiTitle, suggestions, files } = parsed;
 
         // ── Merge existing files with new files ────────────────────────────────
 
