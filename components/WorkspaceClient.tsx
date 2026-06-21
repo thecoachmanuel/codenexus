@@ -387,7 +387,7 @@ export function WorkspaceClient({
           isImproving={false}
           isProUser={userPlan === "pro"}
           onEnvVarsChange={handleEnvVarsChange}
-          vercelInfo={workspace?.vercelInfo}
+          vercelInfo={workspace?.vercel}
           workspaceId={workspaceId}
           previewError={previewError}
           setPreviewError={setPreviewError}
