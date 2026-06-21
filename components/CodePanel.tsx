@@ -221,8 +221,12 @@ function SandpackInner({
   // Listen for Sandpack runtime errors
   useEffect(() => {
     unsubscribeRef.current = listen((msg) => {
-      // Successful compile
-      if (msg.type === "success") {
+      // Clear errors only when Sandpack explicitly clears its error overlay
+      if (
+        msg.type === "action" &&
+        "action" in msg &&
+        msg.action === "clear-errors"
+      ) {
         setPreviewError(null);
         return;
       }
