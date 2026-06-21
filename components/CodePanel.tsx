@@ -585,9 +585,9 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
               isFullscreen ? "fixed inset-0 z-50 !pb-0" : ""
             }`}
           >
-            {/* Viewport Toggles (only visible in preview tab) */}
+            {/* Viewport Toggles (only visible in preview tab on desktop) */}
             {activeTab === "preview" && (
-              <div className="absolute top-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-black/10 bg-white/50 p-1 backdrop-blur-md shadow-lg transition-opacity duration-200 opacity-60 hover:opacity-100">
+              <div className="hidden md:flex absolute top-4 right-4 z-10 items-center gap-1 rounded-lg border border-black/10 bg-white/50 p-1 backdrop-blur-md shadow-lg transition-opacity duration-200 opacity-60 hover:opacity-100">
                 <button
                   onClick={() => setPreviewMode("mobile")}
                   className={`rounded-md p-1.5 transition-colors ${

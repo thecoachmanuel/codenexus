@@ -235,6 +235,7 @@ interface ChatPanelProps {
   suggestions?: string[];
   onRevert?: () => void;
   canRevert?: boolean;
+  onCloseMobile?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -256,6 +257,7 @@ export function ChatPanel({
   suggestions,
   onRevert,
   canRevert,
+  onCloseMobile,
 }: ChatPanelProps) {
   const { user } = useAuthContext();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -344,10 +346,20 @@ export function ChatPanel({
   void workspaceId;
 
   return (
-    <div className="flex w-[320px] shrink-0 flex-col bg-[#0d0d0d]">
+    <div className="flex w-full md:w-[320px] shrink-0 flex-col bg-[#0d0d0d] h-full rounded-t-3xl md:rounded-none overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/6 px-2 py-3">
-        <BlueTitle>{appTitle}</BlueTitle>
+      <div className="flex items-center justify-between border-b border-white/6 px-4 md:px-2 py-3">
+        <div className="flex items-center gap-3">
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="md:hidden flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          <BlueTitle>{appTitle}</BlueTitle>
+        </div>
         <div className="flex items-center gap-1.5">
           {canRevert && onRevert && (
             <button
@@ -362,7 +374,7 @@ export function ChatPanel({
           <PricingModal reason={noCredits ? "credits" : "upgrade"}>
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-[11px] transition-colors",
+                "hidden sm:inline-flex rounded-full px-2 py-0.5 text-[11px] transition-colors",
                 noCredits
                   ? "bg-red-500/15 text-red-400/80 hover:bg-red-500/25"
                   : "bg-white/6 text-white/60 hover:bg-white/10 hover:text-white/50"

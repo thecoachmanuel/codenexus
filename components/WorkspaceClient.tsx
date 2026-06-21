@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { MessageSquare } from "lucide-react";
 import { ChatPanel } from "./ChatPanel";
 import { CodePanel } from "./CodePanel";
 import { MobileBlocker } from "./MobileBlocker";
@@ -70,6 +71,7 @@ export function WorkspaceClient({
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusLog, setStatusLog] = useState<StatusStep[]>([]);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   
   // Undo / Revert History Stack
   const [fileHistory, setFileHistory] = useState<FileData[]>([]);
@@ -345,53 +347,91 @@ export function WorkspaceClient({
 
   return (
     <>
-      {/* Mobile blocker — visible only on small screens */}
-      <div className="md:hidden">
-        <MobileBlocker />
-      </div>
+      <div className="relative flex h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-[#0a0a0a]">
+        
+        {/* Mobile Backdrop overlay */}
+        {isMobileChatOpen && (
+          <div 
+            className="md:hidden absolute inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setIsMobileChatOpen(false)}
+          />
+        )}
 
-      {/* Workspace — visible only on md+ screens */}
-      <div className="hidden md:flex h-[calc(100vh-3.5rem)] overflow-hidden bg-[#0a0a0a]">
-        <ChatPanel
-          isImproving={false}
-          messages={messages}
-          isGenerating={isGenerating}
-          statusLog={statusLog}
-          credits={credits}
-          initialPrompt={initialPrompt}
-          initialImageUrl={resolvedImageUrl}
-          suggestions={fileData?.suggestions}
-          onGenerate={handleGenerate}
-          onStop={handleStop}
-          onRevert={handleRevert}
-          canRevert={fileHistory.length > 0}
-          userId={userId}
-          workspaceId={workspaceId}
-          appTitle={fileData?.title ?? workspace?.title ?? null}
-        />
-        <div className="w-px shrink-0 bg-white/6" />
-        <CodePanel
-          key={workspaceId || "new"}
-          fileData={fileData}
-          isGenerating={isGenerating}
-          statusLog={statusLog}
-          onImprove={handleGenerate}
-          onFixError={(error) =>
-            handleGenerate(
-              `There is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`
-            )
-          }
-          onFilePatch={handleFilePatch}
-          appTitle={fileData?.title ?? workspace?.title ?? null}
-          subdomain={subdomain}
-          isImproving={false}
-          isProUser={userPlan === "pro"}
-          onEnvVarsChange={handleEnvVarsChange}
-          vercelInfo={workspace?.vercel}
-          workspaceId={workspaceId}
-          previewError={previewError}
-          setPreviewError={setPreviewError}
-        />
+        {/* ChatPanel Container */}
+        <div 
+          className={`
+            md:relative md:flex md:h-full md:shrink-0 md:translate-y-0
+            ${isMobileChatOpen 
+              ? 'absolute inset-x-0 bottom-0 z-50 h-[85vh] rounded-t-3xl shadow-2xl transition-transform duration-300 translate-y-0' 
+              : 'absolute inset-x-0 bottom-0 z-50 h-[85vh] transition-transform duration-300 translate-y-full md:translate-y-0'
+            }
+          `}
+        >
+          <ChatPanel
+            isImproving={false}
+            messages={messages}
+            isGenerating={isGenerating}
+            statusLog={statusLog}
+            credits={credits}
+            initialPrompt={initialPrompt}
+            initialImageUrl={resolvedImageUrl}
+            suggestions={fileData?.suggestions}
+            onGenerate={async (prompt, imageUrl) => {
+              // Automatically collapse sheet when generating on mobile
+              setIsMobileChatOpen(false);
+              await handleGenerate(prompt, imageUrl);
+            }}
+            onStop={handleStop}
+            onRevert={handleRevert}
+            canRevert={fileHistory.length > 0}
+            userId={userId}
+            workspaceId={workspaceId}
+            appTitle={fileData?.title ?? workspace?.title ?? null}
+            onCloseMobile={() => setIsMobileChatOpen(false)}
+          />
+        </div>
+
+        {/* Desktop Divider */}
+        <div className="hidden md:block w-px shrink-0 bg-white/6" />
+
+        {/* CodePanel Container */}
+        <div className="flex-1 min-w-0 h-full relative">
+          <CodePanel
+            key={workspaceId || "new"}
+            fileData={fileData}
+            isGenerating={isGenerating}
+            statusLog={statusLog}
+            onImprove={handleGenerate}
+            onFixError={(error) =>
+              handleGenerate(
+                `There is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`
+              )
+            }
+            onFilePatch={handleFilePatch}
+            appTitle={fileData?.title ?? workspace?.title ?? null}
+            subdomain={subdomain}
+            isImproving={false}
+            isProUser={userPlan === "pro"}
+            onEnvVarsChange={handleEnvVarsChange}
+            vercelInfo={workspace?.vercel}
+            workspaceId={workspaceId}
+            previewError={previewError}
+            setPreviewError={setPreviewError}
+          />
+          
+          {/* Mobile Floating Action Button */}
+          <button 
+            onClick={() => setIsMobileChatOpen(true)}
+            className={`
+              md:hidden absolute bottom-6 right-6 z-40 
+              flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/20
+              transition-transform duration-300
+              ${isMobileChatOpen ? 'scale-0' : 'scale-100'}
+            `}
+          >
+            <MessageSquare className="h-6 w-6" />
+          </button>
+        </div>
       </div>
     </>
   );
