@@ -1,7 +1,5 @@
 import { getSession } from "@/lib/auth";
 import { NextRequest } from "next/server";
-
-export const maxDuration = 300;
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";

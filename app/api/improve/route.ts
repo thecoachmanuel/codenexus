@@ -1,7 +1,5 @@
 import { getSession } from "@/lib/auth";
 import { NextRequest } from "next/server";
-
-export const maxDuration = 300;
 import { Agent, createTool } from "@cline/sdk";
 import { z } from "zod";
 import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
