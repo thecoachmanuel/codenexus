@@ -191,11 +191,30 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
 
       const isLast = idx === trimmed.length - 1;
       if (isLast && fileData) {
-        const fileSummary = Object.entries(fileData.files ?? {})
-          .map(([path, { code }]) => {
-            return `### ${path}\n\`\`\`\n${code}\n\`\`\``;
-          })
-          .join("\n\n");
+        let fileEntries = Object.entries(fileData.files ?? {});
+        
+        // TRUNCATION: Prioritize root and core architecture files
+        fileEntries.sort(([pathA], [pathB]) => {
+           const aImportant = pathA.includes("App") || pathA.includes("index") || pathA.includes("package.json");
+           const bImportant = pathB.includes("App") || pathB.includes("index") || pathB.includes("package.json");
+           if (aImportant && !bImportant) return -1;
+           if (!aImportant && bImportant) return 1;
+           return 0;
+        });
+
+        let fileSummary = "";
+        let charCount = 0;
+        const MAX_CHARS = 25000; // Capped at ~6000 tokens
+
+        for (const [path, { code }] of fileEntries) {
+          const entry = `### ${path}\n\`\`\`\n${code}\n\`\`\`\n\n`;
+          if (charCount + entry.length > MAX_CHARS) {
+             fileSummary += `\n\n[System: Additional older files omitted from context to save tokens. Proceed with available files.]`;
+             break;
+          }
+          fileSummary += entry;
+          charCount += entry.length;
+        }
 
         text += `\n\nCurrent project files:\n${fileSummary}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
       }
@@ -278,10 +297,16 @@ export async function POST(request: NextRequest) {
             (label) => enqueue(sseEvent("status", { message: label }))
           );
 
-          // Append what the AI just generated to the conversation history
-          currentContents[currentContents.length - 1].parts.push({ text: "\n" + rawXml });
+          // COMPRESSION: Strip out the massive code payloads to save tokens for the next loop pass
+          const compressedXml = rawXml.replace(
+            /<write_file([^>]*)>([\s\S]*?)<\/write_file>/g,
+            '<write_file$1>\n[System: File successfully written to virtual workspace (Token Compressed)]\n</write_file>'
+          );
 
-          const tools = parseXmlTools(rawXml);
+          // Append the COMPRESSED output to the conversation history, drastically reducing TPM burn
+          currentContents[currentContents.length - 1].parts.push({ text: "\n" + compressedXml });
+
+          const tools = parseXmlTools(rawXml); // We still extract the actual code from the rawXml!
           let verificationLog = [];
 
           for (const tool of tools) {
