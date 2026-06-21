@@ -823,7 +823,7 @@ export function CodePanel({
       <SandpackProvider
         key={providerKey}
         template="react"
-        theme={dracula}
+        theme="light"
         files={files}
         customSetup={{ 
           dependencies
