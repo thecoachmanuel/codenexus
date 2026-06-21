@@ -233,6 +233,20 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
       return { role, parts };
     }
 
+    if (msg.role === "assistant") {
+      let text = msg.content;
+      try {
+        // Token Optimization: Strip massive code blocks from previous assistant messages
+        const parsed = JSON.parse(text);
+        if (parsed.assistantMessage) {
+          text = `{"assistantMessage": ${JSON.stringify(parsed.assistantMessage)}, "files": "[Omitted to save tokens. Current files are provided below.]"}`;
+        }
+      } catch (e) {
+        // Not JSON, leave as is
+      }
+      return { role, parts: [{ text }] };
+    }
+
     return { role, parts: [{ text: msg.content }] };
   });
 }
