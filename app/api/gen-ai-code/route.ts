@@ -376,7 +376,11 @@ export async function POST(request: NextRequest) {
 ${lastUserMessage.content}
 Output strict JSON ONLY: { "requirements": "...", "pages": [...], "features": [...] }`;
           
-          const analystRes = await generateContent({ model: DEFAULT_MODEL, contents: [{ role: "user", parts: [{ text: analystPrompt }] }] });
+          const analystRes = await generateContent({ 
+            model: DEFAULT_MODEL, 
+            contents: [{ role: "user", parts: [{ text: analystPrompt }] }],
+            config: { responseMimeType: "application/json" }
+          });
           const analystJson = safeParseJSON<{ requirements: string, pages: string[], features: string[] }>(analystRes?.text || "") || { requirements: lastUserMessage.content, pages: [], features: [] };
           
           // Agent 2: Project Architect
@@ -391,16 +395,20 @@ Output strict JSON ONLY: {
 }`;
           
           // Architect uses PRO_MODEL for deep reasoning
-          const architectRes = await generateContent({ model: PRO_MODEL, contents: [{ role: "user", parts: [{ text: architectPrompt }] }] });
+          const architectRes = await generateContent({ 
+            model: PRO_MODEL, 
+            contents: [{ role: "user", parts: [{ text: architectPrompt }] }],
+            config: { responseMimeType: "application/json" }
+          });
           const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[] }>(architectRes?.text || "") || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
           
           // Set dependencies based on Architect
-          architectJson.dependencies.forEach((dep: string) => { finalDependencies[dep] = "latest"; });
+          (architectJson.dependencies || []).forEach((dep: string) => { finalDependencies[dep] = "latest"; });
           
           files = {};
           let generatedSoFar: Record<string, string> = {};
           
-          const filesToGenerate = architectJson.folderStructure;
+          const filesToGenerate = architectJson.folderStructure || ["/App.js"];
           
           // Agent 3: Sequential File Generator
           for (const filepath of filesToGenerate) {
@@ -418,7 +426,11 @@ Constraints:
 4. Do NOT output placeholders! Write the FULL, working file.
 Output strict JSON ONLY: { "code": "..." }`;
             
-            const fileRes = await generateContent({ model: DEFAULT_MODEL, contents: [{ role: "user", parts: [{ text: generatorPrompt }] }] });
+            const fileRes = await generateContent({ 
+              model: DEFAULT_MODEL, 
+              contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
+              config: { responseMimeType: "application/json" }
+            });
             const fileJson = safeParseJSON<{ code: string }>(fileRes?.text || "");
             
             if (fileJson?.code) {
