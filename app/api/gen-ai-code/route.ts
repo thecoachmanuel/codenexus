@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { generateContentStream, DEFAULT_MODEL } from "@/lib/gemini";
+import { generateContentStream, DEFAULT_MODEL, PRO_MODEL } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
 import { BASE_DEPENDENCIES, REACT_BOILERPLATE } from "@/lib/constants";
@@ -33,15 +33,14 @@ function trimHistory(messages: Message[]): Message[] {
   return [messages[0], ...messages.slice(-8)];
 }
 
-// ─── Helper: run a single Gemini streaming call and collect the full text ─────
-
 async function runGeminiPass(
+  model: string,
   contents: object[],
   systemInstruction: string,
   onThought: (label: string) => void
 ): Promise<string> {
   const geminiStream = await generateContentStream({
-    model: DEFAULT_MODEL,
+    model: model,
     contents,
     config: {
       systemInstruction,
@@ -285,7 +284,11 @@ export async function POST(request: NextRequest) {
         while (!isComplete && loops < 3) {
           loops++;
           
+          const isModifying = fileData && Object.keys(fileData.files || {}).length > 0;
+          const targetModel = isModifying ? PRO_MODEL : DEFAULT_MODEL;
+
           const chunk = await runGeminiPass(
+            targetModel,
             currentContents,
             SYSTEM_PROMPT,
             (label) => enqueue(sseEvent("status", { message: loops > 1 ? `Continuing generation (Part ${loops})...` : label }))
