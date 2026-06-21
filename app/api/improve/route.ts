@@ -206,7 +206,79 @@ export async function POST(request: NextRequest) {
           return `Successfully patched ${normalizedPath}: ${reason}`;
         },
       });
+function autoFixLucideIcons(files: Record<string, { code: string }>) {
+  const iconRemap: Record<string, string> = {
+    "Chat": "MessageCircle",
+    "Comment": "MessageSquare",
+    "ThumbUp": "ThumbsUp",
+    "ThumbDown": "ThumbsDown",
+    "DotsVertical": "MoreVertical",
+    "DotsHorizontal": "MoreHorizontal",
+    "Cross": "X",
+    "Close": "X",
+    "Error": "AlertCircle",
+    "Warning": "AlertTriangle",
+    "Success": "CheckCircle2",
+    "Add": "Plus",
+    "Remove": "Minus",
+    "Delete": "Trash2",
+    "Edit": "Edit2",
+    "Explore": "Compass",
+    "Notifications": "Bell",
+    "Notification": "Bell",
+    "Messages": "Mail",
+    "Message": "MessageSquare",
+    "Bookmarks": "Bookmark",
+    "Profile": "User",
+    "Retweet": "Repeat",
+    "Like": "Heart",
+    "Reply": "MessageCircle",
+    "Gif": "FileImage",
+    "Poll": "BarChart2",
+    "Emoji": "Smile",
+    "Schedule": "Calendar",
+    "Location": "MapPin",
+    "More": "MoreHorizontal",
+    "Analytics": "BarChart2",
+    "Settings": "Settings"
+  };
+  const commonIcons = ["Plus", "Minus", "Trash", "Trash2", "Edit", "Edit2", "Settings", "User", "Check", "X", "Search", "Menu", "Home", "ChevronLeft", "ChevronRight", "ChevronUp", "ChevronDown", "ArrowLeft", "ArrowRight", "LogOut", "Bell", "Heart", "Star", "Camera", "Image", "Upload", "Download", "Loader2", "Eye", "EyeOff", "MoreVertical", "MoreHorizontal", "Info", "AlertCircle", "AlertTriangle", "CheckCircle2", "Play", "Pause", "SkipForward", "SkipBack", "Volume2", "VolumeX", "Maximize", "Minimize", "Maximize2", "Minimize2", "RefreshCw", "Share2", "Link", "Copy", "Calendar", "Clock", "MapPin", "MessageCircle", "MessageSquare", "Send", "Paperclip", "File", "Folder", "ShoppingCart", "CreditCard", "Lock", "Unlock", "Shield", "Wifi", "WifiOff", "Battery", "BatteryCharging", "Smartphone", "Monitor", "Laptop", "Tv", "Headphones", "Mic", "MicOff", "Video", "VideoOff"];
 
+  for (const path in files) {
+    if (!path.endsWith(".js") && !path.endsWith(".jsx")) continue;
+    let rawCode = files[path].code;
+
+    commonIcons.forEach(icon => {
+      const usesIcon = new RegExp(`<${icon}\\b`).test(rawCode);
+      const isDeclared = new RegExp(`import\\s+.*\\b${icon}\\b.*\\s+from`).test(rawCode) || 
+                         new RegExp(`(?:const|let|var|function|class)\\s+${icon}\\b`).test(rawCode);
+      if (usesIcon && !isDeclared) {
+        rawCode = `import { ${icon} } from 'lucide-react';\n` + rawCode;
+      }
+    });
+    
+    rawCode = rawCode.replace(/import\s+{([^}]+)}\s+from\s+['"]lucide-react['"]/g, (match, p1) => {
+      const fixedImports = p1.split(',').map((i: string) => {
+        const trimmed = i.trim();
+        if (!trimmed) return "";
+        let baseName = trimmed.replace(/Icon$/, "");
+        let aliasName = trimmed;
+        if (trimmed.includes(" as ")) {
+          const parts = trimmed.split(" as ");
+          baseName = parts[0].trim();
+          aliasName = parts[1].trim();
+        }
+        if (iconRemap[baseName]) {
+          baseName = iconRemap[baseName];
+        }
+        return `${baseName} as ${aliasName}`;
+      }).filter(Boolean).join(', ');
+      return `import { ${fixedImports} } from 'lucide-react'`;
+    });
+
+    files[path].code = rawCode;
+  }
+}
 
 
       const doneImprovingTool = createTool({
@@ -222,6 +294,7 @@ export async function POST(request: NextRequest) {
           newSuggestions: z.array(z.string()).optional(),
         }),
         async execute({ summary, newSuggestions }) {
+          autoFixLucideIcons(patchedFiles);
           autoFixAbsoluteImports(patchedFiles);
           const missing = findMissingFiles(patchedFiles);
           if (missing.length > 0) {
@@ -274,6 +347,7 @@ CRITICAL RULES:
 11. **CRITICAL ROUTING & IMPORTS**: If you use routing, you MUST import ALL components (e.g. \`BrowserRouter\`, \`Routes\`, \`Route\`, \`Link\`, \`NavLink\`, \`useNavigate\`) from \`react-router-dom\`. DO NOT use \`<Link>\` or \`<NavLink>\` without importing them first! WARNING: If you use \`<NavLink>\`, do NOT use the \`isActive\` property inside its children unless you use the render prop pattern \`{({ isActive }) => (...)}\`. If you use icons, MUST import them from \`lucide-react\`.
 13. **COMPLEX TASK SPLITTING (MVP FIRST)**: No matter how complex the user's request is, YOU MUST BUILD A SIMPLE MINIMUM VIABLE PRODUCT (MVP) FIRST! NEVER attempt to generate thousands of lines of code or complex architectures in a single loop. Build the foundational core version 1 first. When Step 1 is complete, call \`done_improving\` and use the \`newSuggestions\` parameter to output: "Proceed to Step 2: [Description of next advanced feature]". The user will click it to trigger a fresh Agent loop for Step 2. Continue this until the full feature is built. STRICTLY PREVENT LONG CODE GENERATION IN ONE GO!
 14. **NO ORPHANED CSS**: Our boilerplate imports \`./styles.css\` globally. DO NOT import \`./index.css\` or \`./App.css\`.
+15. **ALMIGHTY ERROR RESOLUTION**: If the user provides a build error or crash trace, you MUST read the error carefully. Find the EXACT line causing the error. If it is a \`lucide-react\` icon error, it means you hallucinated an icon name that does not exist or forgot to import it. Replace it with a guaranteed common icon (e.g. \`Circle\`, \`Check\`, \`X\`, \`ChevronRight\`, \`User\`, \`Settings\`) AND ensure it is imported correctly. You are an almighty React debugger; you must permanently fix build errors and never repeat them!
 
 CRITICAL REMINDER: AESTHETICS ARE VERY IMPORTANT. If your web app looks simple and basic then you have FAILED! Do not just output standard HTML elements.`,
             tools: [listFilesTool, readFileTool, updateFileTool, patchFileTool, doneImprovingTool],
