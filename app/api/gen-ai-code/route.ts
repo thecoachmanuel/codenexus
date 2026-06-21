@@ -471,10 +471,10 @@ export async function POST(request: NextRequest) {
             // Fix completely missing imports for commonly used icons
             const commonIcons = ["Plus", "Minus", "Trash", "Trash2", "Edit", "Edit2", "Settings", "User", "Check", "X", "Search", "Menu", "Home", "ChevronLeft", "ChevronRight", "ChevronUp", "ChevronDown", "ArrowLeft", "ArrowRight", "LogOut", "Bell", "Heart", "Star", "Camera", "Image", "Upload", "Download", "Loader2", "Eye", "EyeOff", "MoreVertical", "MoreHorizontal", "Info", "AlertCircle", "AlertTriangle", "CheckCircle2", "Play", "Pause", "SkipForward", "SkipBack", "Volume2", "VolumeX", "Maximize", "Minimize", "Maximize2", "Minimize2", "RefreshCw", "Share2", "Link", "Copy", "Calendar", "Clock", "MapPin", "MessageCircle", "MessageSquare", "Send", "Paperclip", "File", "Folder", "ShoppingCart", "CreditCard", "Lock", "Unlock", "Shield", "Wifi", "WifiOff", "Battery", "BatteryCharging", "Smartphone", "Monitor", "Laptop", "Tv", "Headphones", "Mic", "MicOff", "Video", "VideoOff"];
             commonIcons.forEach(icon => {
-              const usesIcon = new RegExp(`<${icon}\\b`).test(rawCode);
+              const usesIcon = new RegExp(`<${icon}\\b`).test(rawCode as string);
               // Check if the identifier is already imported from anywhere, or declared locally
-              const isDeclared = new RegExp(`import\\s+.*\\b${icon}\\b.*\\s+from`).test(rawCode) || 
-                                 new RegExp(`(?:const|let|var|function|class)\\s+${icon}\\b`).test(rawCode);
+              const isDeclared = new RegExp(`import\\s+.*\\b${icon}\\b.*\\s+from`).test(rawCode as string) || 
+                                 new RegExp(`(?:const|let|var|function|class)\\s+${icon}\\b`).test(rawCode as string);
               if (usesIcon && !isDeclared) {
                 rawCode = `import { ${icon} } from 'lucide-react';\n` + rawCode;
               }
