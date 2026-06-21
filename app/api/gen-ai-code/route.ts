@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { workspaceId, userId, messages, fileData } = body as {
+  const { workspaceId, userId, messages, fileData, retryCount } = body as {
     workspaceId: string | null;
     userId: string;
     messages: Message[];
