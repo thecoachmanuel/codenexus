@@ -122,7 +122,7 @@ function safeParseJSON<T>(raw: string): T | null {
 
 // ─── System Prompts ───────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are an elite, Principal React Architect with over 20 years of industry experience. Generate a complete, working React frontend application. You possess deep wisdom in building scalable, production-grade architectures.
+const getSystemPrompt = (isExistingApp: boolean) => `You are an elite, Principal React Architect with over 20 years of industry experience. Generate a complete, working React frontend application. You possess deep wisdom in building scalable, production-grade architectures.
 
 OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra text.
 {
@@ -134,15 +134,17 @@ OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra t
     "Add sample data to the table"
   ],
   "files": {
-    "/App.js": { "code": "<full file content - ONLY FOR BRAND NEW FILES OR APPS>" },
-    "/components/ExistingComponent.js": { 
+    ${isExistingApp ? `"/components/ExistingComponent.js": { 
       "replacements": [
         {
           "target": "<exact string of existing code to replace (must match exactly)>",
           "replacement": "<new 1-2 lines of code to insert>"
         }
       ]
-    }
+    },
+    "/components/BrandNewComponent.js": {
+      "code": "<full file content - ONLY USE 'code' IF CREATING A COMPLETELY NEW FILE>"
+    }` : `"/App.js": { "code": "<full file content>" }`}
   }
 }
 
@@ -292,10 +294,11 @@ export async function POST(request: NextRequest) {
         while (!isComplete && loops < 3) {
           loops++;
           
+          const isExistingApp = !!(fileData?.files && Object.keys(fileData.files).length > 0);
           const chunk = await runGeminiPass(
             DEFAULT_MODEL,
             currentContents,
-            SYSTEM_PROMPT,
+            getSystemPrompt(isExistingApp),
             (label) => enqueue(sseEvent("status", { message: loops > 1 ? `Continuing generation (Part ${loops})...` : label }))
           );
           
