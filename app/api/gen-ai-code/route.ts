@@ -46,7 +46,7 @@ async function runGeminiPass(
     config: {
       systemInstruction,
       temperature: 0.7,
-      responseMimeType: "application/json",
+      responseMimeType: "text/plain",
     },
   });
 
@@ -82,8 +82,16 @@ async function runGeminiPass(
 // ─── Helper: safely parse JSON with truncation recovery ──────────────────────
 
 function safeParseJSON<T>(raw: string): T | null {
+  // Fast path: clean markdown fences immediately so JSON.parse succeeds on the first try
+  let cleaned = raw.trim();
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.replace(/^```json\s*/i, "").replace(/\s*```$/i, "");
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```[a-z]*\s*/i, "").replace(/\s*```$/i, "");
+  }
+
   try {
-    return JSON.parse(raw) as T;
+    return JSON.parse(cleaned) as T;
   } catch {
     // If standard parsing fails, try to extract just the JSON object
     let cleaned = raw;
