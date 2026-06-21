@@ -439,7 +439,26 @@ export async function POST(request: NextRequest) {
               "Add": "Plus",
               "Remove": "Minus",
               "Delete": "Trash2",
-              "Edit": "Edit2"
+              "Edit": "Edit2",
+              // Social & UI common hallucinations
+              "Explore": "Compass",
+              "Notifications": "Bell",
+              "Notification": "Bell",
+              "Messages": "Mail",
+              "Message": "MessageSquare",
+              "Bookmarks": "Bookmark",
+              "Profile": "User",
+              "Retweet": "Repeat",
+              "Like": "Heart",
+              "Reply": "MessageCircle",
+              "Gif": "FileImage",
+              "Poll": "BarChart2",
+              "Emoji": "Smile",
+              "Schedule": "Calendar",
+              "Location": "MapPin",
+              "More": "MoreHorizontal",
+              "Analytics": "BarChart2",
+              "Settings": "Settings"
             };
             
             rawCode = rawCode.replace(/import\s+{([^}]+)}\s+from\s+['"]lucide-react['"]/g, (match, p1) => {
