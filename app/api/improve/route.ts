@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
           if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
           if (normalizedPath === "/App.jsx" || normalizedPath === "/App.tsx") normalizedPath = "/App.js";
 
-          const existingCode = patchedFiles[normalizedPath]?.code || baseWorkspace[normalizedPath]?.code;
+          const existingCode = patchedFiles[normalizedPath]?.code;
           if (!existingCode) {
             throw new Error(`Cannot patch ${normalizedPath} because it does not exist.`);
           }
