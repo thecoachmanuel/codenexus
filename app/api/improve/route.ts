@@ -216,6 +216,7 @@ export async function POST(request: NextRequest) {
           let currentModelId = PRO_MODEL;
 
           const agent = new Agent({
+            providerId: "gemini",
             modelId: currentModelId,
             apiKey: getApiKey(),
             maxIterations: 30,
