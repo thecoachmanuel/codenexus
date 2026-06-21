@@ -18,6 +18,7 @@ export default function AdminProjectsPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const LIMIT = 20;
   const totalPages = Math.ceil(total / LIMIT);
@@ -52,11 +53,43 @@ export default function AdminProjectsPage() {
     }
   };
 
+  const deleteAllWorkspaces = async () => {
+    const confirmText = prompt("Are you sure you want to delete ALL projects? Type 'DELETE' to confirm. This action cannot be undone.");
+    if (confirmText !== "DELETE") return;
+    
+    setIsDeletingAll(true);
+    try {
+      await fetch("/api/admin/workspaces", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deleteAll: true }),
+      });
+      setWorkspaces([]);
+      setTotal(0);
+      setPage(1);
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Projects</h1>
-        <p className="text-white/40 text-sm mt-1">All generated app workspaces. ({total} total)</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Projects</h1>
+          <p className="text-white/40 text-sm mt-1">All generated app workspaces. ({total} total)</p>
+        </div>
+        
+        {total > 0 && (
+          <button
+            onClick={deleteAllWorkspaces}
+            disabled={isDeletingAll}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isDeletingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            Clear All Projects
+          </button>
+        )}
       </div>
 
       {/* Search */}

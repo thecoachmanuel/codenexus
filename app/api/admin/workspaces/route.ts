@@ -52,15 +52,22 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ workspaces, total, page, limit });
 }
 
-// DELETE - Delete a workspace by ID
+// DELETE - Delete a workspace by ID or all workspaces
 export async function DELETE(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { workspaceId } = await req.json();
-  if (!workspaceId) return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+  const { workspaceId, deleteAll } = await req.json();
 
   await connectDB();
+
+  if (deleteAll) {
+    await Workspace.deleteMany({});
+    return NextResponse.json({ success: true, deletedAll: true });
+  }
+
+  if (!workspaceId) return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+
   await Workspace.findByIdAndDelete(new mongoose.Types.ObjectId(workspaceId));
 
   return NextResponse.json({ success: true });
