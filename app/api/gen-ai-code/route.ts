@@ -645,13 +645,18 @@ Output strict JSON ONLY: { "code": "..." }`;
               return `import { ${fixedImports} } from 'lucide-react'`;
             });
 
+            // AUTO-HEALER: Fix named imports from local files
+            rawCode = rawCode.replace(/import\s+{\s*([a-zA-Z0-9_]+)\s*}\s+from\s+['"](\.[^'"]+)['"]/g, (match, p1, p2) => {
+              return `import ${p1} from '${p2}'`;
+            });
+
             // AUTO-HEALER: Fix missing export default
             if (!rawCode.includes("export default")) {
-              const funcMatch = rawCode.match(/function\s+([A-Z][a-zA-Z0-9_]*)\s*\(/);
+              const funcMatch = rawCode.match(/function\s+([a-zA-Z][a-zA-Z0-9_]*)\s*\(/);
               if (funcMatch) {
                 rawCode += `\nexport default ${funcMatch[1]};\n`;
               } else {
-                const arrowMatch = rawCode.match(/const\s+([A-Z][a-zA-Z0-9_]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9_]+)\s*=>/);
+                const arrowMatch = rawCode.match(/const\s+([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9_]+)\s*=>/);
                 if (arrowMatch) {
                   rawCode += `\nexport default ${arrowMatch[1]};\n`;
                 }
