@@ -498,6 +498,7 @@ Output strict JSON ONLY: { "code": "..." }`;
               const fileJson = safeParseJSON<{ code: string }>(fileText);
               
               if (fileJson?.code) {
+                 if (!files) files = {};
                  files[filepath] = { code: fileJson.code };
                  generatedSoFar[filepath] = fileJson.code;
                  
