@@ -289,6 +289,7 @@ export async function POST(request: NextRequest) {
       const enqueue = (chunk: string) =>
         controller.enqueue(encoder.encode(chunk));
 
+      let projectSpec: any = null;
       try {
         // ── GENERATION PASS ──────────────────────────────────────────────────
 
@@ -435,7 +436,7 @@ Output strict JSON ONLY: {
           }
           const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[], routingMap?: any, componentGraph?: any }>(architectText) || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
           
-          const projectSpec = {
+          projectSpec = {
             analyst: analystJson,
             architect: architectJson,
           };
