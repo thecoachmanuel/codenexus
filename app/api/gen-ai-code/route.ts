@@ -176,6 +176,7 @@ RULES:
 18. **CRITICAL EXPORTS & IMPORTS**: You MUST use \`export default\` for ALL your components, hooks, and utilities (e.g., \`export default function useTasks()\`). NEVER use named exports! When importing your own files, you MUST use default imports (e.g., \`import Sidebar from './components/Sidebar'\` or \`import useTasks from './hooks/useTasks'\`). If you see an error like \`(0, _useTasks.useTasks) is not a function\`, it means you incorrectly used a named import \`import { useTasks }\` for a default export! Fix it instantly by changing the import to \`import useTasks from\`.
 19. **PRECISION TARGETING**: When asked to fix or add a feature to an EXISTING app, understand exactly what component handles that feature, and ONLY output a \`replacements\` patch for that specific file. DO NOT output the full file contents. The rest of the app is safely preserved in memory.
 20. **ERROR CLASSIFIER**: If the user provides a compiler error, analyze it, determine the root cause (Syntax, Missing Import, Undefined Export, Hook Misuse), and provide a minimal surgical replacement to fix it.
+21. **REACT 18 STRICT**: You MUST write React 18 compatible code. If generating an entry point like index.js, you MUST use \`createRoot\` from \`react-dom/client\`. NEVER use \`ReactDOM.render\` or import \`render\` from \`react-dom/client\`.
 `;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
@@ -426,7 +427,7 @@ All Project Files (use EXACT paths for imports!): ${JSON.stringify(architectJson
 Other files generated so far: ${Object.keys(generatedSoFar).join(", ")}
 
 Constraints:
-1. ONLY React 18 browser-safe code. NO Next.js or Vite APIs.
+1. ONLY React 18 browser-safe code. Use \`createRoot\` from \`react-dom/client\` instead of \`ReactDOM.render\`. NO Next.js or Vite APIs.
 2. Use default exports for components.
 3. Apply premium UI/UX (framer-motion, tailwindcss, glassmorphism, rounded corners).
 4. Do NOT output placeholders! Write the FULL, working file.
