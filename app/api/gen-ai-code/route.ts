@@ -6,6 +6,7 @@ import Workspace from "@/lib/models/Workspace";
 import { generateContent, generateContentStream, DEFAULT_MODEL, PRO_MODEL } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
+import { validateAST } from "@/lib/validator";
 import { BASE_DEPENDENCIES, REACT_BOILERPLATE } from "@/lib/constants";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
@@ -413,16 +414,18 @@ Output strict JSON ONLY: { "requirements": "<Summary of what will be built NOW i
           const architectPrompt = `You are a Senior React Architect. Given these requirements:
 ${JSON.stringify(analystJson)}
 Design a Create-React-App project structure.
-Constraints: React 18 compatible, NO Vite syntax, NO Next.js APIs, NO server code. Use Tailwind CSS.
+Constraints: React 18.2.0 compatible, NO Vite syntax, NO Next.js APIs, NO server code. Use Tailwind CSS.
 Output strict JSON ONLY: { 
   "dependencies": ["lucide-react", "framer-motion", "clsx", "tailwind-merge"],
-  "folderStructure": ["/package.json", "/src/index.js", "/src/App.js", "/src/components/Header.js"]
+  "folderStructure": ["/package.json", "/src/index.js", "/src/App.js", "/src/components/Header.js"],
+  "routingMap": { "/": "App", "/dashboard": "Dashboard" },
+  "componentGraph": { "App": ["Header", "Dashboard"], "Dashboard": ["Chart"] }
 }`;
           
           let architectText = "";
           try {
             const architectRes = await generateContent({ 
-              model: PRO_MODEL, 
+              model: DEFAULT_MODEL, 
               contents: [{ role: "user", parts: [{ text: architectPrompt }] }],
               config: { responseMimeType: "application/json" }
             });
@@ -430,7 +433,12 @@ Output strict JSON ONLY: {
           } catch (err) {
             console.error("[Agent 2 Error] Project Architect failed:", err);
           }
-          const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[] }>(architectText) || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
+          const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[], routingMap?: any, componentGraph?: any }>(architectText) || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
+          
+          const projectSpec = {
+            analyst: analystJson,
+            architect: architectJson,
+          };
           
           let deps = architectJson.dependencies;
           if (deps && typeof deps === 'object' && !Array.isArray(deps)) {
@@ -484,13 +492,13 @@ All Project Files (use EXACT paths for imports!): ${JSON.stringify(architectJson
 Other files generated so far: ${Object.keys(generatedSoFar).join(", ")}
 
 Additional File-Specific Constraints:
-1. ONLY React 18 browser-safe code. NO Next.js or Vite APIs.
+1. ONLY React 18.2.0 browser-safe code. NO Next.js or Vite APIs.
 2. Use default exports for components.
 3. Apply premium UI/UX (framer-motion, tailwindcss, glassmorphism, rounded corners).
 4. Do NOT output placeholders! Write the FULL, working file.
-Output strict JSON ONLY: { "code": "..." }`;
+Output strict JSON ONLY: { "type": "file", "path": "${filepath}", "content": "..." }`;
               
-              let fileJson: { code: string } | null = null;
+              let fileJson: { type: string, path: string, content: string } | null = null;
               for (let attempt = 0; attempt < 3; attempt++) {
                 try {
                   const fileRes = await generateContent({ 
@@ -499,27 +507,36 @@ Output strict JSON ONLY: { "code": "..." }`;
                     config: { responseMimeType: "application/json" }
                   });
                   const fileText = fileRes?.text || "";
-                  fileJson = safeParseJSON<{ code: string }>(fileText);
-                  if (fileJson?.code) break; // Success
+                  fileJson = safeParseJSON<{ type: string, path: string, content: string }>(fileText);
+                  
+                  if (fileJson?.content) {
+                    const validation = validateAST(fileJson.content);
+                    if (!validation.isValid) {
+                      console.warn(`[Agent 4 Validator] AST validation failed for ${filepath} (Attempt ${attempt + 1}):`, validation.message);
+                      fileJson = null; // force retry
+                      continue;
+                    }
+                    break; // Success
+                  }
                 } catch (err) {
                   console.warn(`[Agent 3 Error] Attempt ${attempt + 1} failed for ${filepath}:`, err);
                 }
               }
               
-              if (!fileJson?.code) {
+              if (!fileJson?.content) {
                 console.error(`[Agent 3 Error] Gave up generating ${filepath} after 3 attempts.`);
                 // CRITICAL FALLBACK: If App.js fails, we must inject a dummy so the UI preview doesn't crash completely
                 if (filepath === "/App.js" || filepath === "/App.jsx") {
-                  fileJson = { code: REACT_BOILERPLATE["/App.js"].code };
+                  fileJson = { type: "file", path: "/App.js", content: REACT_BOILERPLATE["/App.js"].code };
                 } else {
                   return; // Skip non-critical file
                 }
               }
               
-              if (fileJson?.code) {
+              if (fileJson?.content) {
                  if (!files) files = {};
-                 files[filepath] = { code: fileJson.code };
-                 generatedSoFar[filepath] = fileJson.code;
+                 files[filepath] = { code: fileJson.content };
+                 generatedSoFar[filepath] = fileJson.content;
                  
                  // Normalize path for the UI stream so it matches the final backend merge
                  let normalizedPath = filepath;
@@ -530,7 +547,7 @@ Output strict JSON ONLY: { "code": "..." }`;
                  }
                  
                  // Stream intermediate files to the UI directly
-                 enqueue(sseEvent("file_patch", { path: normalizedPath, code: fileJson.code }));
+                 enqueue(sseEvent("file_patch", { path: normalizedPath, code: fileJson.content }));
               }
             }));
           }
@@ -811,12 +828,13 @@ Output strict JSON ONLY: { "code": "..." }`;
           }
         });
 
-        const newFileData: FileData = {
+        const newFileData: FileData & { projectSpec?: any } = {
           files: normalizedFiles,
           dependencies: finalDependencies,
           title: aiTitle ?? fileData?.title,
           suggestions,
           envVars: fileData?.envVars,
+          projectSpec: isExistingApp ? fileData?.projectSpec : projectSpec,
         };
 
         // ── Upsert workspace + deduct credit ──────────────────────────────────

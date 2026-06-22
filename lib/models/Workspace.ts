@@ -13,6 +13,10 @@ export interface IWorkspace extends Document {
     url?: string;
     deployedAt?: Date;
   };
+  errorHistory: unknown[];
+  patchHistory: unknown[];
+  lastSuccessfulBuild: unknown | null;
+  projectSpec: unknown | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +34,10 @@ const WorkspaceSchema = new Schema<IWorkspace>(
       url: { type: String },
       deployedAt: { type: Date }
     },
+    errorHistory: { type: [Schema.Types.Mixed], default: [] },
+    patchHistory: { type: [Schema.Types.Mixed], default: [] },
+    lastSuccessfulBuild: { type: Schema.Types.Mixed, default: null },
+    projectSpec: { type: Schema.Types.Mixed, default: null },
   },
   { timestamps: true }
 );
