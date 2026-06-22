@@ -389,9 +389,11 @@ export async function POST(request: NextRequest) {
           
           // Agent 1: Product Analyst
           enqueue(sseEvent("status", { message: "Product Analyst: Extracting requirements..." }));
-          const analystPrompt = `You are a Senior Product Analyst. Extract requirements from this prompt:
+          const analystPrompt = `You are a Senior Product Analyst. Analyze this prompt for a web application:
 ${lastUserMessage.content}
-Output strict JSON ONLY: { "requirements": "...", "pages": [...], "features": [...] }`;
+
+If the request is highly complex, break it down. Plan a solid "First Version" (MVP) that can be built immediately. Then, list the remaining complex features as "futureTasks" that can be built later.
+Output strict JSON ONLY: { "requirements": "<Summary of what will be built NOW in the MVP>", "pages": [...], "features": [...], "futureTasks": ["<List of 3-5 remaining complex features to build next>"] }`;
           
           let analystRes: any = null;
           try {
@@ -403,7 +405,7 @@ Output strict JSON ONLY: { "requirements": "...", "pages": [...], "features": [.
           } catch (err) {
             console.error("[Agent 1 Error] Product Analyst failed:", err);
           }
-          const analystJson = safeParseJSON<{ requirements: string, pages: string[], features: string[] }>(analystRes?.text || "") || { requirements: lastUserMessage.content, pages: [], features: [] };
+          const analystJson = safeParseJSON<{ requirements: string, pages: string[], features: string[], futureTasks?: string[] }>(analystRes?.text || "") || { requirements: lastUserMessage.content, pages: [], features: [], futureTasks: [] };
           
           // Agent 2: Project Architect
           enqueue(sseEvent("status", { message: "Project Architect: Designing architecture..." }));
@@ -497,9 +499,14 @@ Output strict JSON ONLY: { "code": "..." }`;
             }
           }
           
-          assistantMessage = "I have successfully architected and built your app file-by-file using the multi-agent pipeline!";
+          if (analystJson.futureTasks && analystJson.futureTasks.length > 0) {
+            assistantMessage = `I have architected and built the first version (MVP) of your app! Here is what I built:\n\n${analystJson.requirements}\n\nI have listed the remaining complex features as suggestions below. Click any of them to continue building!`;
+            suggestions = [...analystJson.futureTasks.slice(0, 3), "Deploy to Vercel"];
+          } else {
+            assistantMessage = "I have successfully architected and built your app file-by-file using the multi-agent pipeline!";
+            suggestions = ["Deploy to Vercel", "Add Authentication", "Add Dark Mode"];
+          }
           aiTitle = "Generated Application";
-          suggestions = ["Deploy to Vercel", "Add Authentication", "Add Dark Mode"];
         }
 
 
