@@ -661,6 +661,7 @@ Output strict JSON ONLY: { "code": "..." }`;
                   rawCode += `\nexport default ${arrowMatch[1]};\n`;
                 }
               }
+            }
             // AUTO-HEALER: Fix React 18 createRoot in index.js
             if (path === "/index.js" || path === "/src/index.js" || path === "index.js") {
               if (rawCode.includes("render(") || rawCode.includes("render ") || rawCode.includes("ReactDOM.render")) {
