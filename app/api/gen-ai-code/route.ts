@@ -395,17 +395,18 @@ ${lastUserMessage.content}
 If the request is highly complex, break it down. Plan a solid "First Version" (MVP) that can be built immediately. Then, list the remaining complex features as "futureTasks" that can be built later.
 Output strict JSON ONLY: { "requirements": "<Summary of what will be built NOW in the MVP>", "pages": [...], "features": [...], "futureTasks": ["<List of 3-5 remaining complex features to build next>"] }`;
           
-          let analystRes: any = null;
+          let analystText = "";
           try {
-            analystRes = await generateContent({ 
+            const analystRes = await generateContent({ 
               model: DEFAULT_MODEL, 
               contents: [{ role: "user", parts: [{ text: analystPrompt }] }],
               config: { responseMimeType: "application/json" }
             });
+            analystText = analystRes?.text || "";
           } catch (err) {
             console.error("[Agent 1 Error] Product Analyst failed:", err);
           }
-          const analystJson = safeParseJSON<{ requirements: string, pages: string[], features: string[], futureTasks?: string[] }>(analystRes?.text || "") || { requirements: lastUserMessage.content, pages: [], features: [], futureTasks: [] };
+          const analystJson = safeParseJSON<{ requirements: string, pages: string[], features: string[], futureTasks?: string[] }>(analystText) || { requirements: lastUserMessage.content, pages: [], features: [], futureTasks: [] };
           
           // Agent 2: Project Architect
           enqueue(sseEvent("status", { message: "Project Architect: Designing architecture..." }));
@@ -418,17 +419,18 @@ Output strict JSON ONLY: {
   "folderStructure": ["/package.json", "/src/index.js", "/src/App.js", "/src/components/Header.js"]
 }`;
           
-          let architectRes: any = null;
+          let architectText = "";
           try {
-            architectRes = await generateContent({ 
+            const architectRes = await generateContent({ 
               model: PRO_MODEL, 
               contents: [{ role: "user", parts: [{ text: architectPrompt }] }],
               config: { responseMimeType: "application/json" }
             });
+            architectText = architectRes?.text || "";
           } catch (err) {
             console.error("[Agent 2 Error] Project Architect failed:", err);
           }
-          const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[] }>(architectRes?.text || "") || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
+          const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[] }>(architectText) || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
           
           let deps = architectJson.dependencies;
           if (deps && typeof deps === 'object' && !Array.isArray(deps)) {
@@ -459,11 +461,15 @@ Output strict JSON ONLY: {
             filesToGenerate.push("/App.js");
           }
           
-          // Agent 3: Sequential File Generator
-          for (const filepath of filesToGenerate) {
-            enqueue(sseEvent("status", { message: `File Generator: Writing ${filepath}...` }));
+          // Agent 3: Concurrent File Generator (Batched to avoid rate limits)
+          enqueue(sseEvent("status", { message: `File Generator: Writing ${filesToGenerate.length} files...` }));
+          
+          const BATCH_SIZE = 5;
+          for (let i = 0; i < filesToGenerate.length; i += BATCH_SIZE) {
+            const batch = filesToGenerate.slice(i, i + BATCH_SIZE);
             
-            const generatorPrompt = `You are an elite File Generator. Write the COMPLETE code for ${filepath}.
+            await Promise.all(batch.map(async (filepath) => {
+              const generatorPrompt = `You are an elite File Generator. Write the COMPLETE code for ${filepath}.
 Project Requirements: ${JSON.stringify(analystJson)}
 Dependencies Available: ${JSON.stringify(architectJson.dependencies)}
 All Project Files (use EXACT paths for imports!): ${JSON.stringify(architectJson.folderStructure)}
@@ -475,28 +481,30 @@ Constraints:
 3. Apply premium UI/UX (framer-motion, tailwindcss, glassmorphism, rounded corners).
 4. Do NOT output placeholders! Write the FULL, working file.
 Output strict JSON ONLY: { "code": "..." }`;
-            
-            let fileRes;
-            try {
-              fileRes = await generateContent({ 
-                model: DEFAULT_MODEL, 
-                contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
-                config: { responseMimeType: "application/json" }
-              });
-            } catch (err) {
-              console.error(`[Agent 3 Error] Failed to generate ${filepath}:`, err);
-              continue; // Skip this file and try to generate the next one
-            }
-            
-            const fileJson = safeParseJSON<{ code: string }>(fileRes?.text || "");
-            
-            if (fileJson?.code) {
-               files[filepath] = { code: fileJson.code };
-               generatedSoFar[filepath] = fileJson.code;
-               
-               // Stream intermediate files to the UI directly
-               enqueue(sseEvent("file_patch", { path: filepath, code: fileJson.code }));
-            }
+              
+              let fileText = "";
+              try {
+                const fileRes = await generateContent({ 
+                  model: DEFAULT_MODEL, 
+                  contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
+                  config: { responseMimeType: "application/json" }
+                });
+                fileText = fileRes?.text || "";
+              } catch (err) {
+                console.error(`[Agent 3 Error] Failed to generate ${filepath}:`, err);
+                return; // Skip this file
+              }
+              
+              const fileJson = safeParseJSON<{ code: string }>(fileText);
+              
+              if (fileJson?.code) {
+                 files[filepath] = { code: fileJson.code };
+                 generatedSoFar[filepath] = fileJson.code;
+                 
+                 // Stream intermediate files to the UI directly
+                 enqueue(sseEvent("file_patch", { path: filepath, code: fileJson.code }));
+              }
+            }));
           }
           
           if (analystJson.futureTasks && analystJson.futureTasks.length > 0) {
