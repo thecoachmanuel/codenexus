@@ -319,12 +319,24 @@ export async function POST(request: NextRequest) {
               enqueue(sseEvent("status", { message: "Escalating to Deep Reasoning Mode..." }));
             }
             
-            const chunk = await runGeminiPass(
-              targetModel,
-              currentContents,
-              getSystemPrompt(isExistingApp),
-              (label) => enqueue(sseEvent("status", { message: loops > 1 ? "Writing massive codebase..." : label }))
-            );
+            let chunk = "";
+            try {
+              chunk = await runGeminiPass(
+                targetModel,
+                currentContents,
+                getSystemPrompt(isExistingApp),
+                (label) => enqueue(sseEvent("status", { message: loops > 1 ? "Writing massive codebase..." : label }))
+              );
+            } catch (err: any) {
+              console.error("[runGeminiPass error]:", err);
+              enqueue(sseEvent("status", { message: "AI API error. Attempting to recover generated code..." }));
+              break;
+            }
+
+            if (!chunk || chunk.trim().length === 0) {
+              console.error("[runGeminiPass error]: Empty chunk received.");
+              break;
+            }
             
             let newChunk = chunk;
             if (loops > 1) {
@@ -381,11 +393,16 @@ export async function POST(request: NextRequest) {
 ${lastUserMessage.content}
 Output strict JSON ONLY: { "requirements": "...", "pages": [...], "features": [...] }`;
           
-          const analystRes = await generateContent({ 
-            model: DEFAULT_MODEL, 
-            contents: [{ role: "user", parts: [{ text: analystPrompt }] }],
-            config: { responseMimeType: "application/json" }
-          });
+          let analystRes: any = null;
+          try {
+            analystRes = await generateContent({ 
+              model: DEFAULT_MODEL, 
+              contents: [{ role: "user", parts: [{ text: analystPrompt }] }],
+              config: { responseMimeType: "application/json" }
+            });
+          } catch (err) {
+            console.error("[Agent 1 Error] Product Analyst failed:", err);
+          }
           const analystJson = safeParseJSON<{ requirements: string, pages: string[], features: string[] }>(analystRes?.text || "") || { requirements: lastUserMessage.content, pages: [], features: [] };
           
           // Agent 2: Project Architect
@@ -399,12 +416,16 @@ Output strict JSON ONLY: {
   "folderStructure": ["/package.json", "/src/index.js", "/src/App.js", "/src/components/Header.js"]
 }`;
           
-          // Architect uses PRO_MODEL for deep reasoning
-          const architectRes = await generateContent({ 
-            model: PRO_MODEL, 
-            contents: [{ role: "user", parts: [{ text: architectPrompt }] }],
-            config: { responseMimeType: "application/json" }
-          });
+          let architectRes: any = null;
+          try {
+            architectRes = await generateContent({ 
+              model: PRO_MODEL, 
+              contents: [{ role: "user", parts: [{ text: architectPrompt }] }],
+              config: { responseMimeType: "application/json" }
+            });
+          } catch (err) {
+            console.error("[Agent 2 Error] Project Architect failed:", err);
+          }
           const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[] }>(architectRes?.text || "") || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
           
           let deps = architectJson.dependencies;
@@ -453,11 +474,18 @@ Constraints:
 4. Do NOT output placeholders! Write the FULL, working file.
 Output strict JSON ONLY: { "code": "..." }`;
             
-            const fileRes = await generateContent({ 
-              model: DEFAULT_MODEL, 
-              contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
-              config: { responseMimeType: "application/json" }
-            });
+            let fileRes;
+            try {
+              fileRes = await generateContent({ 
+                model: DEFAULT_MODEL, 
+                contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
+                config: { responseMimeType: "application/json" }
+              });
+            } catch (err) {
+              console.error(`[Agent 3 Error] Failed to generate ${filepath}:`, err);
+              continue; // Skip this file and try to generate the next one
+            }
+            
             const fileJson = safeParseJSON<{ code: string }>(fileRes?.text || "");
             
             if (fileJson?.code) {
