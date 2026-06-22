@@ -105,8 +105,10 @@ ${Object.entries(patchedFiles).map(([path, file]) => `--- ${path} ---\n${file.co
           const res = await generateContent({
             model: modelToUse,
             contents: [{ role: "user", parts: [{ text: `USER REQUEST:\n${userRequest}` }] }],
-            systemInstruction: systemPrompt,
-            config: { responseMimeType: "application/json" }
+            config: { 
+              systemInstruction: systemPrompt,
+              responseMimeType: "application/json" 
+            }
           });
           responseText = res?.text || "";
           if (responseText) break;
