@@ -407,8 +407,13 @@ Output strict JSON ONLY: {
           });
           const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[] }>(architectRes?.text || "") || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
           
-          // Set dependencies based on Architect
-          (architectJson.dependencies || []).forEach((dep: string) => { finalDependencies[dep] = "latest"; });
+          let deps = architectJson.dependencies;
+          if (deps && typeof deps === 'object' && !Array.isArray(deps)) {
+            deps = Object.keys(deps) as string[];
+          }
+          if (Array.isArray(deps)) {
+            deps.forEach((dep: string) => { finalDependencies[dep] = "latest"; });
+          }
           
           files = {};
           let generatedSoFar: Record<string, string> = {};
