@@ -490,20 +490,31 @@ Additional File-Specific Constraints:
 4. Do NOT output placeholders! Write the FULL, working file.
 Output strict JSON ONLY: { "code": "..." }`;
               
-              let fileText = "";
-              try {
-                const fileRes = await generateContent({ 
-                  model: DEFAULT_MODEL, 
-                  contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
-                  config: { responseMimeType: "application/json" }
-                });
-                fileText = fileRes?.text || "";
-              } catch (err) {
-                console.error(`[Agent 3 Error] Failed to generate ${filepath}:`, err);
-                return; // Skip this file
+              let fileJson: { code: string } | null = null;
+              for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                  const fileRes = await generateContent({ 
+                    model: DEFAULT_MODEL, 
+                    contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
+                    config: { responseMimeType: "application/json" }
+                  });
+                  const fileText = fileRes?.text || "";
+                  fileJson = safeParseJSON<{ code: string }>(fileText);
+                  if (fileJson?.code) break; // Success
+                } catch (err) {
+                  console.warn(`[Agent 3 Error] Attempt ${attempt + 1} failed for ${filepath}:`, err);
+                }
               }
               
-              const fileJson = safeParseJSON<{ code: string }>(fileText);
+              if (!fileJson?.code) {
+                console.error(`[Agent 3 Error] Gave up generating ${filepath} after 3 attempts.`);
+                // CRITICAL FALLBACK: If App.js fails, we must inject a dummy so the UI preview doesn't crash completely
+                if (filepath === "/App.js" || filepath === "/App.jsx") {
+                  fileJson = { code: REACT_BOILERPLATE["/App.js"].code };
+                } else {
+                  return; // Skip non-critical file
+                }
+              }
               
               if (fileJson?.code) {
                  if (!files) files = {};
