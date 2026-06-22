@@ -14,6 +14,7 @@ export interface FileData {
   title?: string;
   suggestions?: string[];
   envVars?: Record<string, string>;
+  projectSpec?: any;
 }
 
 export interface StatusStep {
