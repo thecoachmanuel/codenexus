@@ -369,7 +369,7 @@ export async function POST(request: NextRequest) {
 
           assistantMessage = parsed.assistantMessage;
           aiTitle = parsed.title;
-          suggestions = parsed.suggestions || [];
+          suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : (typeof parsed.suggestions === "string" ? [parsed.suggestions] : []);
           files = parsed.files;
           
         } else {
@@ -418,7 +418,18 @@ Output strict JSON ONLY: {
           files = {};
           let generatedSoFar: Record<string, string> = {};
           
-          const filesToGenerate = architectJson.folderStructure || ["/App.js"];
+          let filesToGenerate = architectJson.folderStructure;
+          if (filesToGenerate && !Array.isArray(filesToGenerate)) {
+            if (typeof filesToGenerate === "object") {
+              filesToGenerate = Object.keys(filesToGenerate) as string[];
+            } else if (typeof filesToGenerate === "string") {
+              filesToGenerate = [filesToGenerate];
+            } else {
+              filesToGenerate = ["/App.js"];
+            }
+          } else if (!filesToGenerate || filesToGenerate.length === 0) {
+            filesToGenerate = ["/App.js"];
+          }
           
           // Agent 3: Sequential File Generator
           for (const filepath of filesToGenerate) {
