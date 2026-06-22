@@ -661,6 +661,22 @@ Output strict JSON ONLY: { "code": "..." }`;
                   rawCode += `\nexport default ${arrowMatch[1]};\n`;
                 }
               }
+            // AUTO-HEALER: Fix React 18 createRoot in index.js
+            if (path === "/index.js" || path === "/src/index.js" || path === "index.js") {
+              if (rawCode.includes("render(") || rawCode.includes("render ") || rawCode.includes("ReactDOM.render")) {
+                rawCode = rawCode.replace(/import\s+{\s*render\s*}\s+from\s+['"]react-dom(?:\/client)?['"];?/g, 'import { createRoot } from "react-dom/client";');
+                rawCode = rawCode.replace(/import\s+ReactDOM\s+from\s+['"]react-dom(?:\/client)?['"];?/g, 'import { createRoot } from "react-dom/client";');
+                
+                const rootRegex = /(?:ReactDOM\.)?render\s*\(\s*([\s\S]+?)\s*,\s*(document\.getElementById\(['"][^'"]+['"]\))\s*\)/;
+                if (rootRegex.test(rawCode)) {
+                  rawCode = rawCode.replace(rootRegex, 'createRoot($2).render($1)');
+                } else {
+                  const varRegex = /(?:ReactDOM\.)?render\s*\(\s*([\s\S]+?)\s*,\s*([a-zA-Z0-9_]+)\s*\)/;
+                  if (varRegex.test(rawCode)) {
+                    rawCode = rawCode.replace(varRegex, 'createRoot($2).render($1)');
+                  }
+                }
+              }
             }
 
             normalizedFiles[path] = { ...value, code: rawCode };
