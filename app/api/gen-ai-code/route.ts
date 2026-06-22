@@ -581,6 +581,23 @@ Output strict JSON ONLY: { "code": "..." }`;
               }
             });
 
+            // AUTO-HEALER: Upgrade React Router v5 to v6
+            if (typeof rawCode === "string") {
+              // 1. Switch -> Routes
+              rawCode = rawCode.replace(/\bSwitch\b/g, "Routes");
+              // 2. Route component={Home} or element={Home} -> Route element={<Home />}
+              rawCode = rawCode.replace(/<Route([^>]+)(?:component|element)={([A-Z][a-zA-Z0-9_]*)}([^>]*)>/g, '<Route$1element={<$2 />}$3>');
+              // 3. Redirect -> Navigate
+              rawCode = rawCode.replace(/\bRedirect\b/g, "Navigate");
+              // 4. useHistory -> useNavigate
+              if (rawCode.includes("useHistory")) {
+                rawCode = rawCode.replace(/\buseHistory\b/g, "useNavigate");
+                rawCode = rawCode.replace(/\bhistory\.push\b/g, "navigate");
+                rawCode = rawCode.replace(/\bhistory\.replace\b/g, "navigate");
+                rawCode = rawCode.replace(/const\s+history\s*=\s*useNavigate\(\)/g, "const navigate = useNavigate()");
+              }
+            }
+
             // AUTO-HEALER: Fix Lucide Icon Hallucinations & Remap Non-existent Icons
             const iconRemap: Record<string, string> = {
               "Chat": "MessageCircle",
