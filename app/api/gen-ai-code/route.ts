@@ -431,6 +431,11 @@ Output strict JSON ONLY: {
             filesToGenerate = ["/App.js"];
           }
           
+          const hasApp = filesToGenerate.some(p => p.toLowerCase().includes("app.js") || p.toLowerCase().includes("app.jsx"));
+          if (!hasApp) {
+            filesToGenerate.push("/App.js");
+          }
+          
           // Agent 3: Sequential File Generator
           for (const filepath of filesToGenerate) {
             enqueue(sseEvent("status", { message: `File Generator: Writing ${filepath}...` }));
@@ -524,7 +529,9 @@ Output strict JSON ONLY: { "code": "..." }`;
               path = path.replace("/src", "");
             }
             
-            if (path === "/App.jsx") path = "/App.js";
+            if (path.toLowerCase() === "/app.js" || path.toLowerCase() === "/app.jsx") {
+              path = "/App.js";
+            }
             
             // Clean markdown fences if code is provided
             let rawCode = value.code;
