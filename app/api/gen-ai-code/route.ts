@@ -474,15 +474,11 @@ Output strict JSON ONLY: {
             filesToGenerate.push("/App.js");
           }
           
-          // Agent 3: Concurrent File Generator (Batched to avoid rate limits)
+          // Agent 3: Sequential File Generator (Prevents API rate limit bursts)
           enqueue(sseEvent("status", { message: `File Generator: Writing ${filesToGenerate.length} files...` }));
           
-          const BATCH_SIZE = 5;
-          for (let i = 0; i < filesToGenerate.length; i += BATCH_SIZE) {
-            const batch = filesToGenerate.slice(i, i + BATCH_SIZE);
-            
-            await Promise.all(batch.map(async (filepath) => {
-              const generatorPrompt = `You are an elite File Generator. Write the COMPLETE code for ${filepath}.
+          for (const filepath of filesToGenerate) {
+            const generatorPrompt = `You are an elite File Generator. Write the COMPLETE code for ${filepath}.
 
 CRITICAL SYSTEM RULES:
 ${getSystemPrompt(false)}
@@ -498,59 +494,58 @@ Additional File-Specific Constraints:
 3. Apply premium UI/UX (framer-motion, tailwindcss, glassmorphism, rounded corners).
 4. Do NOT output placeholders! Write the FULL, working file.
 Output strict JSON ONLY: { "type": "file", "path": "${filepath}", "content": "..." }`;
-              
-              let fileJson: { type: string, path: string, content: string } | null = null;
-              for (let attempt = 0; attempt < 3; attempt++) {
-                try {
-                  const fileRes = await generateContent({ 
-                    model: DEFAULT_MODEL, 
-                    contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
-                    config: { responseMimeType: "application/json" }
-                  });
-                  const fileText = fileRes?.text || "";
-                  fileJson = safeParseJSON<{ type: string, path: string, content: string }>(fileText);
-                  
-                  if (fileJson?.content) {
-                    const validation = validateAST(fileJson.content);
-                    if (!validation.isValid) {
-                      console.warn(`[Agent 4 Validator] AST validation failed for ${filepath} (Attempt ${attempt + 1}):`, validation.message);
-                      fileJson = null; // force retry
-                      continue;
-                    }
-                    break; // Success
+            
+            let fileJson: { type: string, path: string, content: string } | null = null;
+            for (let attempt = 0; attempt < 3; attempt++) {
+              try {
+                const fileRes = await generateContent({ 
+                  model: DEFAULT_MODEL, 
+                  contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
+                  config: { responseMimeType: "application/json" }
+                });
+                const fileText = fileRes?.text || "";
+                fileJson = safeParseJSON<{ type: string, path: string, content: string }>(fileText);
+                
+                if (fileJson?.content) {
+                  const validation = validateAST(fileJson.content);
+                  if (!validation.isValid) {
+                    console.warn(`[Agent 4 Validator] AST validation failed for ${filepath} (Attempt ${attempt + 1}):`, validation.message);
+                    fileJson = null; // force retry
+                    continue;
                   }
-                } catch (err) {
-                  console.warn(`[Agent 3 Error] Attempt ${attempt + 1} failed for ${filepath}:`, err);
+                  break; // Success
                 }
+              } catch (err) {
+                console.warn(`[Agent 3 Error] Attempt ${attempt + 1} failed for ${filepath}:`, err);
               }
-              
-              if (!fileJson?.content) {
-                console.error(`[Agent 3 Error] Gave up generating ${filepath} after 3 attempts.`);
-                // CRITICAL FALLBACK: If App.js fails, we must inject a dummy so the UI preview doesn't crash completely
-                if (filepath === "/App.js" || filepath === "/App.jsx") {
-                  fileJson = { type: "file", path: "/App.js", content: REACT_BOILERPLATE["/App.js"].code };
-                } else {
-                  return; // Skip non-critical file
-                }
+            }
+            
+            if (!fileJson?.content) {
+              console.error(`[Agent 3 Error] Gave up generating ${filepath} after 3 attempts.`);
+              // CRITICAL FALLBACK: If App.js fails, we must inject a dummy so the UI preview doesn't crash completely
+              if (filepath === "/App.js" || filepath === "/App.jsx") {
+                fileJson = { type: "file", path: "/App.js", content: REACT_BOILERPLATE["/App.js"].code };
+              } else {
+                continue; // Skip non-critical file
               }
-              
-              if (fileJson?.content) {
-                 if (!files) files = {};
-                 files[filepath] = { code: fileJson.content };
-                 generatedSoFar[filepath] = fileJson.content;
-                 
-                 // Normalize path for the UI stream so it matches the final backend merge
-                 let normalizedPath = filepath;
-                 if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-                 if (normalizedPath.startsWith("/src/")) normalizedPath = normalizedPath.replace("/src", "");
-                 if (normalizedPath.toLowerCase() === "/app.js" || normalizedPath.toLowerCase() === "/app.jsx") {
-                   normalizedPath = "/App.js";
-                 }
-                 
-                 // Stream intermediate files to the UI directly
-                 enqueue(sseEvent("file_patch", { path: normalizedPath, code: fileJson.content }));
-              }
-            }));
+            }
+            
+            if (fileJson?.content) {
+               if (!files) files = {};
+               files[filepath] = { code: fileJson.content };
+               generatedSoFar[filepath] = fileJson.content;
+               
+               // Normalize path for the UI stream so it matches the final backend merge
+               let normalizedPath = filepath;
+               if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+               if (normalizedPath.startsWith("/src/")) normalizedPath = normalizedPath.replace("/src", "");
+               if (normalizedPath.toLowerCase() === "/app.js" || normalizedPath.toLowerCase() === "/app.jsx") {
+                 normalizedPath = "/App.js";
+               }
+               
+               // Stream intermediate files to the UI directly
+               enqueue(sseEvent("file_patch", { path: normalizedPath, code: fileJson.content }));
+            }
           }
           
           if (analystJson.futureTasks && analystJson.futureTasks.length > 0) {
