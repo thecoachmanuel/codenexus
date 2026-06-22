@@ -456,7 +456,11 @@ Output strict JSON ONLY: {
             filesToGenerate = ["/App.js"];
           }
           
-          const hasApp = filesToGenerate.some(p => p.toLowerCase().includes("app.js") || p.toLowerCase().includes("app.jsx"));
+          const hasApp = filesToGenerate.some(p => {
+            const lower = p.toLowerCase();
+            return lower === "/app.js" || lower === "/src/app.js" || lower === "app.js" || lower === "src/app.js" ||
+                   lower === "/app.jsx" || lower === "/src/app.jsx" || lower === "app.jsx" || lower === "src/app.jsx";
+          });
           if (!hasApp) {
             filesToGenerate.push("/App.js");
           }
@@ -502,8 +506,16 @@ Output strict JSON ONLY: { "code": "..." }`;
                  files[filepath] = { code: fileJson.code };
                  generatedSoFar[filepath] = fileJson.code;
                  
+                 // Normalize path for the UI stream so it matches the final backend merge
+                 let normalizedPath = filepath;
+                 if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+                 if (normalizedPath.startsWith("/src/")) normalizedPath = normalizedPath.replace("/src", "");
+                 if (normalizedPath.toLowerCase() === "/app.js" || normalizedPath.toLowerCase() === "/app.jsx") {
+                   normalizedPath = "/App.js";
+                 }
+                 
                  // Stream intermediate files to the UI directly
-                 enqueue(sseEvent("file_patch", { path: filepath, code: fileJson.code }));
+                 enqueue(sseEvent("file_patch", { path: normalizedPath, code: fileJson.code }));
               }
             }));
           }

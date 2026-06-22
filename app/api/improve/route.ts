@@ -190,7 +190,12 @@ export async function POST(request: NextRequest) {
         async execute({ path, target, replacement, reason }) {
           let normalizedPath = path;
           if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-          if (normalizedPath === "/App.jsx" || normalizedPath === "/App.tsx") normalizedPath = "/App.js";
+          if (normalizedPath.startsWith("/src/")) {
+            normalizedPath = normalizedPath.replace("/src/", "/");
+          }
+          if (normalizedPath === "/App.jsx" || normalizedPath === "/App.tsx") {
+            normalizedPath = "/App.js";
+          }
 
           const existingCode = patchedFiles[normalizedPath]?.code;
           if (!existingCode) {
