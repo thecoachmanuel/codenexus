@@ -222,8 +222,8 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
         const MAX_CHARS = 25000; // Capped at ~6000 tokens
 
         for (const [path, fileObj] of fileEntries) {
-          const code = (fileObj as any).code;
-          const numberedCode = code.split("\n").map((line: string, i: number) => `${i + 1} | ${line}`).join("\n");
+          const code = (fileObj as any).code || "";
+          const numberedCode = typeof code === "string" ? code.split("\n").map((line: string, i: number) => `${i + 1} | ${line}`).join("\n") : "";
           const entry = `### ${path}\n\`\`\`\n${numberedCode}\n\`\`\`\n\n`;
           if (charCount + entry.length > MAX_CHARS) {
              fileSummary += `\n\n[System: Additional older files omitted from context to save tokens. Proceed with available files.]`;
