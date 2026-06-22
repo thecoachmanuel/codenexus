@@ -474,12 +474,16 @@ Output strict JSON ONLY: {
             
             await Promise.all(batch.map(async (filepath) => {
               const generatorPrompt = `You are an elite File Generator. Write the COMPLETE code for ${filepath}.
+
+CRITICAL SYSTEM RULES:
+${getSystemPrompt(false)}
+
 Project Requirements: ${JSON.stringify(analystJson)}
 Dependencies Available: ${JSON.stringify(architectJson.dependencies)}
 All Project Files (use EXACT paths for imports!): ${JSON.stringify(architectJson.folderStructure)}
 Other files generated so far: ${Object.keys(generatedSoFar).join(", ")}
 
-Constraints:
+Additional File-Specific Constraints:
 1. ONLY React 18 browser-safe code. NO Next.js or Vite APIs.
 2. Use default exports for components.
 3. Apply premium UI/UX (framer-motion, tailwindcss, glassmorphism, rounded corners).
