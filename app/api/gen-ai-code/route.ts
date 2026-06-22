@@ -417,6 +417,7 @@ Output strict JSON ONLY: {
             const generatorPrompt = `You are an elite File Generator. Write the COMPLETE code for ${filepath}.
 Project Requirements: ${JSON.stringify(analystJson)}
 Dependencies Available: ${JSON.stringify(architectJson.dependencies)}
+All Project Files (use EXACT paths for imports!): ${JSON.stringify(architectJson.folderStructure)}
 Other files generated so far: ${Object.keys(generatedSoFar).join(", ")}
 
 Constraints:
