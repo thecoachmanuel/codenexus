@@ -45,7 +45,7 @@ async function runGeminiPass(
     config: {
       systemInstruction,
       temperature: 0.7,
-      responseMimeType: "text/plain",
+      responseMimeType: "application/json",
     },
   });
 
@@ -137,8 +137,9 @@ OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra t
     ${isExistingApp ? `"/components/ExistingComponent.js": { 
       "replacements": [
         {
-          "target": "<exact string of existing code to replace (must match exactly)>",
-          "replacement": "<new 1-2 lines of code to insert>"
+          "startLine": 10,
+          "endLine": 15,
+          "replacement": "<new code to insert>"
         }
       ]
     },
@@ -147,6 +148,9 @@ OUTPUT: Respond with a valid JSON object only — no markdown fences, no extra t
     }` : `"/App.js": { "code": "<full file content>" }`}
   }
 }
+
+${isExistingApp ? `CRITICAL RULE FOR REPLACEMENTS:
+The 'startLine' and 'endLine' MUST match the exact line numbers in the provided file where the code should be replaced. Replace the exact block of lines requested. Do NOT include line numbers in the 'replacement' code itself.` : ``}
 
 RULES:
 1. Use React functional components + hooks. NO TypeScript in generated files.
@@ -219,7 +223,8 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
 
         for (const [path, fileObj] of fileEntries) {
           const code = (fileObj as any).code;
-          const entry = `### ${path}\n\`\`\`\n${code}\n\`\`\`\n\n`;
+          const numberedCode = code.split("\n").map((line: string, i: number) => `${i + 1} | ${line}`).join("\n");
+          const entry = `### ${path}\n\`\`\`\n${numberedCode}\n\`\`\`\n\n`;
           if (charCount + entry.length > MAX_CHARS) {
              fileSummary += `\n\n[System: Additional older files omitted from context to save tokens. Proceed with available files.]`;
              break;
