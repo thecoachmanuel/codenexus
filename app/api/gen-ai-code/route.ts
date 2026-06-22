@@ -300,7 +300,7 @@ export async function POST(request: NextRequest) {
         let assistantMessage = "";
         let aiTitle: string | undefined = undefined;
         let suggestions: string[] = [];
-        let files: Record<string, { code?: string; replacements?: Array<{ target: string; replacement: string }> }> | undefined = undefined;
+        let files: Record<string, { code?: string; replacements?: Array<{ target?: string; replacement: string; startLine?: number; endLine?: number }> }> | undefined = undefined;
         let finalDependencies: Record<string, string> = { ...(fileData?.dependencies ?? {}) };
         
         const isExistingApp = !!(fileData?.files && Object.keys(fileData.files).length > 0);
@@ -358,7 +358,7 @@ export async function POST(request: NextRequest) {
             assistantMessage: string;
             title?: string;
             suggestions?: string[];
-            files?: Record<string, { code?: string; replacements?: Array<{ target: string; replacement: string }> }>;
+            files?: Record<string, { code?: string; replacements?: Array<{ target?: string; replacement: string; startLine?: number; endLine?: number }> }>;
           }>(rawJson);
 
           if (!parsed) {
