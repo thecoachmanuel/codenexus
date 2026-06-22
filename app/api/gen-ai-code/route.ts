@@ -520,12 +520,28 @@ Output strict JSON ONLY: { "code": "..." }`;
             if (!rawCode && value.replacements && Array.isArray(value.replacements)) {
               let existingCode = baseWorkspace[path]?.code || "";
               if (existingCode) {
-                value.replacements.forEach(rep => {
-                  if (rep.target && typeof rep.replacement === "string") {
+                // sort replacements from bottom to top so line numbers don't shift!
+                const sortedReps = [...value.replacements].sort((a, b) => (b.startLine || 0) - (a.startLine || 0));
+                
+                let lines = existingCode.split("\n");
+                sortedReps.forEach(rep => {
+                  if (typeof rep.startLine === "number" && typeof rep.endLine === "number" && typeof rep.replacement === "string") {
+                    const startIdx = Math.max(0, rep.startLine - 1);
+                    const endIdx = Math.max(startIdx, Math.min(lines.length - 1, rep.endLine - 1));
+                    const deleteCount = endIdx - startIdx + 1;
+                    
+                    // clean replacement block of markdown fences if any
+                    let newCode = rep.replacement.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
+                    const newLines = newCode.split("\n");
+                    
+                    lines.splice(startIdx, deleteCount, ...newLines);
+                  } else if (rep.target && typeof rep.replacement === "string") {
+                    // Fallback for older models generating 'target' strings
                     existingCode = existingCode.replace(rep.target, rep.replacement);
+                    lines = existingCode.split("\n");
                   }
                 });
-                rawCode = existingCode;
+                rawCode = lines.join("\n");
               } else {
                 rawCode = ""; // Cannot apply replacements to non-existent files
               }
