@@ -512,12 +512,14 @@ export function CodePanel({
                   onClick={handleSaveEnvVars}
                   className="bg-violet-600 text-white hover:bg-violet-700"
                 >
+                  Save & Reload
                 </Button>
               </div>
             </div>
           </div>
           ) : null}
         </div>
+      </div>
 
       {/* Preview error banner */}
       {previewError &&
