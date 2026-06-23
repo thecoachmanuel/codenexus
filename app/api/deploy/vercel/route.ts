@@ -59,15 +59,36 @@ export async function POST(req: NextRequest) {
   const projectName = workspace?.vercel?.projectName || 
     (appTitle || "ai-app-deployment").toLowerCase().replace(/[^a-z0-9-]/g, "-").substring(0, 50);
 
-  // Vercel deployment payload (Vercel auto-detects the framework)
-  const deployPayload = {
+  // Detect framework from package.json to configure projectSettings correctly
+  let framework: string | null = null;
+  const pkgFile = vercelFiles.find(f => f.file === "package.json");
+  if (pkgFile) {
+    try {
+      const pkg = JSON.parse(pkgFile.data);
+      const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+      if (deps["next"]) framework = "nextjs";
+      else if (deps["vite"]) framework = "vite";
+      else if (deps["react-scripts"]) framework = "create-react-app";
+      else if (deps["@angular/core"]) framework = "angular";
+      else if (deps["nuxt"]) framework = "nuxtjs";
+      else if (deps["vue"]) framework = "vue";
+    } catch {}
+  }
+
+  // Vercel deployment payload
+  // Use skipAutoDetectionConfirmation=1 so Vercel doesn't require a full projectSettings object
+  const deployPayload: Record<string, any> = {
     name: projectName,
     files: vercelFiles,
-    projectSettings: {}
   };
 
+  // Only include projectSettings if we detected the framework
+  if (framework) {
+    deployPayload.projectSettings = { framework };
+  }
+
   try {
-    const response = await fetch("https://api.vercel.com/v13/deployments", {
+    const response = await fetch("https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${user.vercelToken}`,
