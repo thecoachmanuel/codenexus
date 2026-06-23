@@ -1,5 +1,4 @@
 import { getSession } from "@/lib/auth";
-import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";

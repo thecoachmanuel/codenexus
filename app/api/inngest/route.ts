@@ -52,7 +52,7 @@ const generateCodeFunction = inngest.createFunction(
           } else if (type === "file_patch") {
             await Workspace.updateOne(
               { _id: currentWorkspaceId },
-              { $set: { [\`fileData.files.\${payload.path}\`]: { code: payload.code } } }
+              { $set: { [`fileData.files.${payload.path}`]: { code: payload.code } } }
             );
           } else if (type === "done") {
             // "done" is mostly handled by generateWorkspaceTask saving the final doc,
