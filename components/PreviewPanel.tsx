@@ -80,7 +80,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
        const tree: any = {};
        
        // Convert fileData to WebContainer tree format
-       for (const [path, fileObj] of Object.entries(fileData.files)) {
+       for (const [path, fileObj] of Object.entries(fileData?.files || {})) {
           const parts = path.split("/").filter(Boolean);
           let currentLevel = tree;
           
