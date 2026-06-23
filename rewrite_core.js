@@ -1,4 +1,6 @@
-import { getSession } from "@/lib/auth";
+const fs = require('fs');
+
+const coreContent = `import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
@@ -24,7 +26,7 @@ function trimHistory(messages: Message[]): Message[] {
 
 // ─── System Prompts ───────────────────────────────────────────────────────────
 
-const getSystemPrompt = () => `You are an elite, Principal Fullstack Architect with over 20 years of industry experience. Generate a complete, working fullstack application. You possess deep wisdom in building scalable, production-grade architectures.
+const getSystemPrompt = () => \`You are an elite, Principal Fullstack Architect with over 20 years of industry experience. Generate a complete, working fullstack application. You possess deep wisdom in building scalable, production-grade architectures.
 
 OUTPUT: Respond using the EXACT XML artifact format below. Do not include any other markdown or conversational text outside of this artifact structure.
 
@@ -43,22 +45,22 @@ export default function App() { return <div>Hello</div>; }
 
 RULES:
 1. You may build fullstack applications (e.g., Next.js, Vite + Express, Node.js). Use JavaScript or TypeScript.
-2. IMPORTANT: You are generating code for a WebContainer (a real Node.js environment). You MUST generate a valid \`/package.json\` with all dependencies and a \`dev\` or \`start\` script that starts the app on a port (preferably 3000).
-3. Use modern, clean architecture. Put components in \`/components\`, pages in \`/pages\` (or \`/app\` for Next.js), hooks in \`/hooks\`, and utils in \`/lib\`.
-4. Use Tailwind CSS for styling. You must configure Tailwind properly in the files (e.g., \`tailwind.config.js\`, \`postcss.config.js\`, and the main CSS file).
-5. All imports must reference files you include or valid npm packages listed in your \`package.json\`.
+2. IMPORTANT: You are generating code for a WebContainer (a real Node.js environment). You MUST generate a valid \\\`/package.json\\\` with all dependencies and a \\\`dev\\\` or \\\`start\\\` script that starts the app on a port (preferably 3000).
+3. Use modern, clean architecture. Put components in \\\`/components\\\`, pages in \\\`/pages\\\` (or \\\`/app\\\` for Next.js), hooks in \\\`/hooks\\\`, and utils in \\\`/lib\\\`.
+4. Use Tailwind CSS for styling. You must configure Tailwind properly in the files (e.g., \\\`tailwind.config.js\\\`, \\\`postcss.config.js\\\`, and the main CSS file).
+5. All imports must reference files you include or valid npm packages listed in your \\\`package.json\\\`.
 6. For placeholders and images, dynamically fetch descriptive images using the pollinations.ai API (e.g. https://image.pollinations.ai/prompt/a%20beautiful%20landscape).
 7. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
 8. **DATABASE**: If the user requests a database, you may use MongoDB with Mongoose, PostgreSQL, or any Node.js compatible database, as this runs in a real Node backend.
 9. **DEPLOYMENT**: ALWAYS include a /README.md detailing exactly how to run the app.
 10. **SURGICAL REPLACEMENTS (CRITICAL)**: If the user is modifying an EXISTING app, you MUST output the ENTIRE modified file contents using the file action. We no longer use diffs. You must rewrite the file fully with the bug fixed.
-11. **NO STUBS OR PLACEHOLDERS**: When using the \`code\` format, you MUST output the ENTIRE, fully-featured file contents. NEVER use placeholders like \`// ... existing code\`. If you output a stub, you will delete the user's existing code and break the app!
+11. **NO STUBS OR PLACEHOLDERS**: When using the \\\`code\\\` format, you MUST output the ENTIRE, fully-featured file contents. NEVER use placeholders like \\\`// ... existing code\\\`. If you output a stub, you will delete the user's existing code and break the app!
 12. **COMPLEX TASK SPLITTING**: Build a simple Minimum Viable Product (MVP) first. Do not attempt to write 100 files at once.
 13. **MOBILE-FIRST & RESPONSIVE**: Design the application to be highly responsive.
 14. **LIGHT MODE DEFAULT**: Design the application in light mode by default unless requested.
 15. **SENIOR UI/UX DESIGNER**: Use premium, state-of-the-art designs. Use framer-motion heavily.
-16. **CRITICAL EXPORTS & IMPORTS**: You MUST use \`export default\` for ALL your components, hooks, and utilities. NEVER use named exports!
-`;
+16. **CRITICAL EXPORTS & IMPORTS**: You MUST use \\\`export default\\\` for ALL your components, hooks, and utilities. NEVER use named exports!
+\`;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
 
@@ -81,16 +83,16 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
 
         for (const [path, fileObj] of fileEntries) {
           const code = (fileObj as any).code || "";
-          const entry = `### ${path}\n\`\`\`\n${code}\n\`\`\`\n\n`;
+          const entry = \`### \${path}\\n\\\`\\\`\\\`\\n\${code}\\n\\\`\\\`\\\`\\n\\n\`;
           if (charCount + entry.length > MAX_CHARS) {
-             fileSummary += `\n\n[System: Additional older files omitted from context to save tokens.]`;
+             fileSummary += \`\\n\\n[System: Additional older files omitted from context to save tokens.]\`;
              break;
           }
           fileSummary += entry;
           charCount += entry.length;
         }
 
-        text += `\n\nCurrent project files:\n${fileSummary}\nDependencies: ${JSON.stringify(fileData.dependencies ?? {})}`;
+        text += \`\\n\\nCurrent project files:\\n\${fileSummary}\\nDependencies: \${JSON.stringify(fileData.dependencies ?? {})}\`;
       }
 
       parts.push({ text });
@@ -160,7 +162,7 @@ async function runGeminiArtifactStream(
           currentFileCode = "";
           // Clear everything before and including the opening tag
           accumulated = accumulated.substring(accumulated.indexOf(actionMatch[0]) + actionMatch[0].length);
-          enqueue(sseEvent("status", { message: `Writing ${currentFilePath}...` }));
+          enqueue(sseEvent("status", { message: \`Writing \${currentFilePath}...\` }));
         }
       }
 
@@ -171,9 +173,9 @@ async function runGeminiArtifactStream(
           currentFileCode += accumulated.substring(0, closeIdx);
           
           let code = currentFileCode.trim();
-          if (code.startsWith("```")) {
-             code = code.replace(/^```[a-z]*\n/i, "");
-             if (code.endsWith("```")) code = code.substring(0, code.length - 3).trim();
+          if (code.startsWith("\`\`\`")) {
+             code = code.replace(/^\`\`\`[a-z]*\\n/i, "");
+             if (code.endsWith("\`\`\`")) code = code.substring(0, code.length - 3).trim();
           }
 
           artifact.files[currentFilePath] = { code };
@@ -195,8 +197,8 @@ async function runGeminiArtifactStream(
             
             // emit partial file update for live UI typing
             let partialCode = currentFileCode;
-            if (partialCode.startsWith("```")) {
-               partialCode = partialCode.replace(/^```[a-z]*\n/i, "");
+            if (partialCode.startsWith("\`\`\`")) {
+               partialCode = partialCode.replace(/^\`\`\`[a-z]*\\n/i, "");
             }
             let normalizedPath = currentFilePath;
             if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
@@ -223,7 +225,7 @@ export async function generateWorkspaceTask(
     
   const cost = calculateGenerationCost(messages);
   if (user.credits < cost) {
-    throw new Error(`Insufficient credits. This complex task requires ${cost} credits, but you only have ${user.credits}.`);
+    throw new Error(\`Insufficient credits. This complex task requires \${cost} credits, but you only have \${user.credits}.\`);
   }
 
   const enqueue = (data: any) => {
@@ -340,3 +342,7 @@ export async function generateWorkspaceTask(
     enqueue(sseEvent("error", { message: error.message || "An error occurred during generation." }));
   }
 }
+`;
+
+fs.writeFileSync('/Users/admin/Desktop/ai-app-builder/lib/ai/core.ts', coreContent);
+console.log('Successfully wrote to core.ts');
