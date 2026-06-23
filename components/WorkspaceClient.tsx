@@ -434,10 +434,9 @@ export function WorkspaceClient({
         <div className="hidden md:block w-px shrink-0 bg-white/6" />
 
         {/* CodePanel Container */}
-        <div className="flex-1 min-w-0 h-full relative">
+        <div className="flex flex-col flex-1 min-w-0 h-full relative overflow-hidden">
           <ErrorBoundary>
             <CodePanel
-              key={workspaceId || "new"}
               fileData={fileData}
               isGenerating={isGenerating}
               statusLog={statusLog}

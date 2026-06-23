@@ -80,19 +80,32 @@ interface CodePanelProps {
 
 function NativeCodeViewer({ files }: { files: Record<string, { code: string }> }) {
   const filePaths = Object.keys(files).sort();
-  const [activeFile, setActiveFile] = useState(filePaths[0] || "");
+  const [activeFile, setActiveFile] = useState("");
 
+  // Whenever the file list changes, select first file if nothing is selected or if the selected file no longer exists
   useEffect(() => {
-    if (!activeFile && filePaths.length > 0) {
+    if (filePaths.length > 0 && (!activeFile || !files[activeFile])) {
       setActiveFile(filePaths[0]);
     }
-  }, [filePaths, activeFile]);
+  }, [filePaths.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getFileIcon = (path: string) => {
     if (path.endsWith('.json')) return <FileJson className="h-4 w-4 text-yellow-400" />;
     if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.ts') || path.endsWith('.tsx')) return <FileCode className="h-4 w-4 text-blue-400" />;
     return <FileText className="h-4 w-4 text-gray-400" />;
   };
+
+  if (filePaths.length === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-[#1e1e1e]">
+        <div className="text-center text-white/30">
+          <FileCode className="h-12 w-12 mx-auto mb-3 opacity-20" />
+          <p className="text-sm">No files generated yet.</p>
+          <p className="text-xs mt-1 opacity-60">Generate an app to see the code here.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full w-full bg-[#1e1e1e] text-[#d4d4d4]">
@@ -115,9 +128,9 @@ function NativeCodeViewer({ files }: { files: Record<string, { code: string }> }
         </div>
       </div>
       
-      {/* Editor Area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-[#1e1e1e]">
-        {activeFile ? (
+      {/* CodePanel Container */}
+      <div className="flex flex-col flex-1 min-w-0 h-full relative overflow-hidden bg-[#1e1e1e]">
+        {activeFile && files[activeFile] ? (
           <>
             <div className="flex items-center px-4 py-2 border-b border-white/10 bg-[#1e1e1e]">
               <span className="text-sm text-white/80 flex items-center gap-2">
@@ -126,14 +139,14 @@ function NativeCodeViewer({ files }: { files: Record<string, { code: string }> }
               </span>
             </div>
             <div className="flex-1 overflow-auto p-4">
-              <pre className="text-sm font-mono leading-relaxed" style={{ tabSize: 2 }}>
+              <pre className="text-sm font-mono leading-relaxed whitespace-pre-wrap break-words" style={{ tabSize: 2 }}>
                 <code>{files[activeFile]?.code || ""}</code>
               </pre>
             </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-white/30">
-             No file selected
+            Select a file to view its contents
           </div>
         )}
       </div>
@@ -259,7 +272,7 @@ export function CodePanel({
   const currentStepLabel = statusLog.length > 0 ? statusLog[statusLog.length - 1].label : "Building your app...";
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Top Navbar */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/5 bg-[#0a0a0a] px-2 sm:px-4">
         <div className="flex items-center gap-4">
