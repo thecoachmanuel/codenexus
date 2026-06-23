@@ -17,6 +17,7 @@ export interface IWorkspace extends Document {
   patchHistory: unknown[];
   lastSuccessfulBuild: unknown | null;
   projectSpec: unknown | null;
+  currentStatus: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +39,7 @@ const WorkspaceSchema = new Schema<IWorkspace>(
     patchHistory: { type: [Schema.Types.Mixed], default: [] },
     lastSuccessfulBuild: { type: Schema.Types.Mixed, default: null },
     projectSpec: { type: Schema.Types.Mixed, default: null },
+    currentStatus: { type: String, default: null },
   },
   { timestamps: true }
 );

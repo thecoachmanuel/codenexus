@@ -210,9 +210,25 @@ export function WorkspaceClient({
           setMessages((prev) => prev.slice(0, -1));
           return;
         }
-        if (!res.ok || !res.body) throw new Error("Generation failed");
+        if (!res.ok) throw new Error("Generation failed");
 
-        const reader = res.body.getReader();
+        let streamRes = res;
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+           const json = await res.json();
+           if (json.isAsync && json.workspaceId) {
+             setWorkspaceId(json.workspaceId);
+             window.history.replaceState(null, "", `/workspace?id=${json.workspaceId}`);
+             
+             // Connect to the Change Stream SSE endpoint
+             streamRes = await fetch(`/api/workspace/${json.workspaceId}/stream`, {
+               signal: abortController.signal
+             });
+           }
+        }
+
+        if (!streamRes.body) throw new Error("No stream body");
+        const reader = streamRes.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
 
@@ -273,6 +289,8 @@ export function WorkspaceClient({
                     },
                   };
                 });
+              } else if (event.type === "fileData_full") {
+                setFileData(event.fileData);
               } else if (event.type === "error") {
                 throw new Error(event.message);
               }

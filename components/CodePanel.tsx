@@ -37,6 +37,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PricingModal } from "@/components/PricingModal";
 import { GitHubExportModal } from "@/components/GitHubExportModal";
 import { VercelDeployModal } from "@/components/VercelDeployModal";
+import { PreviewPanel } from "@/components/PreviewPanel";
 import type { FileData, StatusStep, VercelInfo } from "@/types/workspace";
 
 // ─── Placeholder ──────────────────────────────────────────────────────────────
@@ -644,10 +645,11 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
                   ? "h-[1024px] w-[768px] shrink-0 overflow-hidden rounded-[2rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
                   : isFullscreen ? "h-full w-full" : "h-full w-full"
               }`}
+              style={{ height: (previewMode === "desktop" && !isFullscreen) ? "89%" : "100%" }}
             >
-              <SandpackPreview
-                style={{ height: (previewMode === "desktop" && !isFullscreen) ? "89%" : "100%" }}
-                showOpenInCodeSandbox={false}
+              <PreviewPanel 
+                fileData={fileData}
+                onError={(err) => setPreviewError(err)}
               />
             </div>
           </TabsContent>
