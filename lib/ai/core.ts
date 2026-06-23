@@ -234,17 +234,30 @@ async function runGeminiArtifactStream(
       if (!part.text) continue;
       accumulated += part.text;
 
-      // Extract Artifact Metadata (once)
+      // Extract Artifact Metadata
       if (!isInsideArtifact && accumulated.includes("<boltArtifact")) {
         isInsideArtifact = true;
-        const titleMatch = accumulated.match(/title="([^"]+)"/);
-        if (titleMatch) artifact.title = titleMatch[1];
-        
-        const suggMatch = accumulated.match(/suggestions="([^"]+)"/);
+        enqueue(sseEvent("status", { message: "Generating project structure..." }));
+      }
+
+      if (isInsideArtifact && !artifact.title) {
+        const titleMatch = accumulated.match(/<boltArtifact[^>]*title="([^"]+)"/);
+        if (titleMatch) {
+          const extractedTitle = titleMatch[1];
+          // Filter out the literal placeholder if the AI forgets to replace it
+          if (!extractedTitle.includes("<short") && !extractedTitle.includes("word title>")) {
+            artifact.title = extractedTitle;
+          } else {
+            artifact.title = "Generated App"; // Fallback to prevent placeholder text
+          }
+        }
+      }
+
+      if (isInsideArtifact && artifact.suggestions.length === 0) {
+        const suggMatch = accumulated.match(/<boltArtifact[^>]*suggestions="([^"]+)"/);
         if (suggMatch) {
            artifact.suggestions = suggMatch[1].split(',').map(s => s.trim()).filter(Boolean);
         }
-        enqueue(sseEvent("status", { message: "Generating project structure..." }));
       }
 
       // Check for action open
