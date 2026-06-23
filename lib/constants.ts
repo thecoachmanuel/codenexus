@@ -51,57 +51,27 @@ export const PRICING_PLANS = [
   },
 ] as const;
 
-export const REACT_BOILERPLATE = {
-  "/public/index.html": {
-    code: `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>React App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>`
+export const FULLSTACK_BOILERPLATE = {
+  "/package.json": {
+    code: `{
+  "name": "ai-app",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node index.js"
+  }
+}`
   },
   "/index.js": {
-    code: `import React, { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./styles.css";
+    code: `const http = require('http');
 
-import App from "./App";
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f9fafb;color:#9ca3af;font-family:sans-serif;"><div><div style="font-size:2rem;text-align:center;margin-bottom:1rem;">⚡</div><div style="font-size:0.875rem;font-weight:500;">Your fullstack app will appear here</div></div></body></html>');
+});
 
-const root = createRoot(document.getElementById("root"));
-root.render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);`
-  },
-  "/styles.css": {
-    code: `body {
-  font-family: sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-}`
-  },
-  "/App.js": {
-    code: `export default function App() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-400">
-      <div className="text-center">
-        <div className="text-4xl mb-4">⚡</div>
-        <p className="text-sm font-medium">Your React app will appear here</p>
-      </div>
-    </div>
-  );
-}`
+server.listen(3000, () => {
+  console.log('Server running at http://localhost:3000/');
+});`
   }
 };
 

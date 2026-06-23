@@ -59,10 +59,10 @@ const GithubIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-import { REACT_BOILERPLATE, BASE_DEPENDENCIES } from "@/lib/constants";
+import { FULLSTACK_BOILERPLATE, BASE_DEPENDENCIES } from "@/lib/constants";
 
 const PLACEHOLDER_FILES = {
-  ...REACT_BOILERPLATE,
+  ...FULLSTACK_BOILERPLATE,
 };
 
 // Base dependencies are imported from constants.ts
@@ -798,8 +798,8 @@ export function CodePanel({
   const files = useMemo(() => {
     if (!fileData || !fileData.files) return PLACEHOLDER_FILES;
     
-    // Inject the base React boilerplate
-    const f: Record<string, { code: string }> = { ...REACT_BOILERPLATE };
+    // Inject the base fullstack boilerplate
+    const f: Record<string, { code: string }> = { ...FULLSTACK_BOILERPLATE };
     
     // Override with AI-generated files, normalizing /src paths to root
     for (const [key, val] of Object.entries(fileData.files)) {

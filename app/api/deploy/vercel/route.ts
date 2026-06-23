@@ -4,7 +4,9 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
 import type { FileData } from "@/types/workspace";
-import { REACT_BOILERPLATE } from "@/lib/constants";
+import { FULLSTACK_BOILERPLATE } from "@/lib/constants";
+// ...
+  const baseFiles: Record<string, { code: string }> = { ...FULLSTACK_BOILERPLATE };
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -28,80 +30,40 @@ export async function POST(req: NextRequest) {
     workspace = await Workspace.findOne({ _id: workspaceId, userId: user._id });
   }
 
-  // 1. Prepare files for Vercel (Create React App structure)
+  // 1. Prepare files for Vercel
   const vercelFiles: { file: string; data: string }[] = [];
 
-  // Base boilerplate files
-  const baseFiles: Record<string, { code: string }> = { ...REACT_BOILERPLATE };
-  
   // Merge AI files
   for (const [path, val] of Object.entries(fileData.files)) {
-    baseFiles[path] = val;
+    if (!val || typeof val.code !== "string") continue;
+    
+    // Vercel deployment API expects paths without leading slash
+    const destPath = path.startsWith("/") ? path.slice(1) : path;
+    vercelFiles.push({ file: destPath, data: val.code });
   }
 
-  // Construct package.json with react-scripts
-  const dependencies = {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "^5.0.1",
-    "lucide-react": "^0.263.1",
-    "recharts": "^2.10.3",
-    "framer-motion": "^10.16.16",
-    "@emotion/is-prop-valid": "^1.2.2",
-    "clsx": "^2.1.0",
-    "tailwind-merge": "^2.2.0",
-    ...(fileData.dependencies ?? {})
-  };
-
-  const packageJson = {
-    name: (appTitle || "ai-app").toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-    version: "1.0.0",
-    private: true,
-    dependencies,
-    scripts: {
-      "start": "react-scripts start",
-      "build": "react-scripts build"
-    }
-  };
-
-  vercelFiles.push({
-    file: "package.json",
-    data: JSON.stringify(packageJson, null, 2)
-  });
-
-  // Map all files to CRA structure (src/ and public/)
-  for (const [path, val] of Object.entries(baseFiles)) {
-    if (path === "/package.json") continue; // already handled
-    
-    let destPath = path.startsWith("/") ? path.slice(1) : path;
-    
-    if (destPath === "public/index.html") {
-      vercelFiles.push({ file: destPath, data: val.code });
-    } else {
-      // Move everything else into src/
-      if (!destPath.startsWith("src/")) {
-        destPath = `src/${destPath}`;
-      }
-      vercelFiles.push({ file: destPath, data: val.code });
-    }
+  // If no package.json is provided by AI, add a minimal one so it deploys as Node.js or static
+  if (!vercelFiles.find(f => f.file === "package.json")) {
+    vercelFiles.push({
+      file: "package.json",
+      data: JSON.stringify({
+        name: (appTitle || "ai-app").toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+        version: "1.0.0",
+        private: true,
+        scripts: { start: "node index.js" }
+      }, null, 2)
+    });
   }
 
-  // Inject Tailwind config if not present, but wait, we use CDN in index.html!
-  // If we use CDN in index.html, CRA build will still work because it just injects the script.
-  // Actually, CRA requires tailwind config if we use local classes, but CDN is fine.
-  
   // Create deployment payload
-  // If we already have a deployed Vercel project for this workspace, use its name to push an update
   const projectName = workspace?.vercel?.projectName || 
     (appTitle || "ai-app-deployment").toLowerCase().replace(/[^a-z0-9-]/g, "-").substring(0, 50);
 
-  // Vercel deployment payload
+  // Vercel deployment payload (Vercel auto-detects the framework)
   const deployPayload = {
     name: projectName,
     files: vercelFiles,
-    projectSettings: {
-      framework: "create-react-app"
-    }
+    projectSettings: {}
   };
 
   try {

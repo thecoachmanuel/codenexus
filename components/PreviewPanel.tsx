@@ -112,17 +112,13 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
              }
           }
        }
-       
        // Inject package.json with the generated dependencies if it doesn't exist
-       if (!tree["package.json"]) {
+       if (!tree["package.json"] && !tree["/package.json"]) {
           tree["package.json"] = {
              file: {
                 contents: JSON.stringify({
                    name: "generated-app",
                    private: true,
-                   scripts: {
-                     start: "react-scripts start"
-                   },
                    dependencies: fileData?.dependencies || {}
                 }, null, 2)
              }
@@ -164,8 +160,22 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
           return;
        }
        
-       term.write("\r\nRunning npm run start...\r\n");
-       devProcess = await webcontainerInstance!.spawn("npm", ["run", "start"]);
+       // Determine start script
+       let startScript = "start";
+       const pkgJsonStr = fileData?.files?.["/package.json"]?.code || fileData?.files?.["package.json"]?.code;
+       if (pkgJsonStr) {
+          try {
+             const pkg = JSON.parse(pkgJsonStr);
+             if (pkg.scripts?.dev) {
+                startScript = "dev";
+             }
+          } catch (e) {
+             // Ignore parse errors
+          }
+       }
+       
+       term.write(`\r\nRunning npm run ${startScript}...\r\n`);
+       devProcess = await webcontainerInstance!.spawn("npm", ["run", startScript]);
        
        devProcess.output.pipeTo(new WritableStream({
           write(data) {

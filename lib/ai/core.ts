@@ -153,16 +153,15 @@ ${isExistingApp ? `CRITICAL RULE FOR REPLACEMENTS:
 The 'startLine' and 'endLine' MUST match the exact line numbers in the provided file where the code should be replaced. Replace the exact block of lines requested. Do NOT include line numbers in the 'replacement' code itself.` : ``}
 
 RULES:
-1. Use React functional components + hooks. NO TypeScript in generated files.
-2. Build specifically for a Create-React-App template. Do NOT use Vite structures. Place all files (including App.js and index.js) directly in the root directory (/). Do NOT create a /src/ directory.
-2. Use standard clean React architecture: put components in /components, pages in /pages, hooks in /hooks, and utils in /lib.
-3. Entry point MUST be /App.js with a default export.
-4. Use Tailwind CSS for all styling. Do NOT import "tailwindcss" or any CSS files directly. Tailwind is already loaded via CDN.
-5. All imports must reference files you include or valid npm packages.
+1. You may build fullstack applications (e.g., Next.js, Vite + Express, Node.js). Use JavaScript or TypeScript.
+2. IMPORTANT: You are generating code for a WebContainer (a real Node.js environment). You MUST generate a valid \`/package.json\` with all dependencies and a \`dev\` or \`start\` script that starts the app on a port (preferably 3000).
+3. Use modern, clean architecture. Put components in \`/components\`, pages in \`/pages\` (or \`/app\` for Next.js), hooks in \`/hooks\`, and utils in \`/lib\`.
+4. Use Tailwind CSS for styling. You must configure Tailwind properly in the files (e.g., \`tailwind.config.js\`, \`postcss.config.js\`, and the main CSS file).
+5. All imports must reference files you include or valid npm packages listed in your \`package.json\`.
 6. For placeholders and images, dynamically fetch descriptive images using the pollinations.ai API (e.g. https://image.pollinations.ai/prompt/a%20beautiful%20landscape).
 7. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-8. **DUAL-MODE DATABASE**: You must create a data abstraction layer (e.g. /lib/db.js). This layer MUST check if process.env.REACT_APP_MONGODB_DATA_API_KEY exists. If it does, use the MongoDB Atlas Data API (via fetch) to persist data to the user's real database. If it does NOT exist, fall back to simulating data with localStorage. Do NOT attempt to use mongoose or direct TCP MongoDB connections, as this is a purely browser-based React app.
-9. **DEPLOYMENT**: ALWAYS include a /README.md detailing exactly how to run the app, AND a dedicated section on how to deploy this app to Vercel, including instructions on where to configure the REACT_APP_MONGODB_DATA_API_URL, REACT_APP_MONGODB_DATA_API_KEY, and REACT_APP_MONGODB_DATA_API_CLUSTER environment variables in the Vercel dashboard.
+8. **DATABASE**: If the user requests a database, you may use MongoDB with Mongoose, PostgreSQL, or any Node.js compatible database, as this runs in a real Node backend.
+9. **DEPLOYMENT**: ALWAYS include a /README.md detailing exactly how to run the app.
 10. If the user is just chatting or asking a question, you can omit the "files" field entirely and just respond with "assistantMessage" and "suggestions".
 11. **SURGICAL REPLACEMENTS (CRITICAL)**: If the user is modifying an EXISTING app, you MUST be surgically precise: use the \`replacements\` array format to output ONLY the exact 1-2 lines of code that need to change! DO NOT output the full file \`code\` unless you are creating a BRAND NEW file. \`target\` MUST exactly match existing code character-for-character. If you rewrite massive files using the \`code\` format for a minor fix, YOU HAVE FAILED AND WILL CRASH THE APP. HOWEVER, if the user asks you to build a BRAND NEW app from scratch, you MUST output ALL necessary files using the \`code\` format.
 12. **NO STUBS OR PLACEHOLDERS**: When using the \`code\` format, you MUST output the ENTIRE, fully-featured file contents. NEVER use placeholders like \`// ... existing code\`. If you output a stub using the \`code\` format, you will delete the user's existing code and break the app! Always prefer \`replacements\` for minor tweaks!
@@ -389,10 +388,10 @@ Output strict JSON ONLY: { "requirements": "<Summary of what will be built NOW i
           
           // Agent 2: Project Architect
           enqueue(sseEvent("status", { message: "Project Architect: Designing architecture..." }));
-          const architectPrompt = `You are a Senior React Architect. Given these requirements:
+          const architectPrompt = `You are a Senior Fullstack Architect. Given these requirements:
 ${JSON.stringify(analystJson)}
-Design a Create-React-App project structure.
-Constraints: React 18.2.0 compatible, NO Vite syntax, NO Next.js APIs, NO server code. Use Tailwind CSS.
+Design a fullstack project structure (e.g. Next.js, Vite, or Express).
+Constraints: You MUST include a /package.json with a 'dev' or 'start' script. Use Tailwind CSS.
 Output strict JSON ONLY: { 
   "dependencies": ["lucide-react", "framer-motion", "clsx", "tailwind-merge"],
   "folderStructure": ["/package.json", "/src/index.js", "/src/App.js", "/src/components/Header.js"],
@@ -543,40 +542,7 @@ Output strict JSON ONLY: { "type": "file", "path": "${filepath}", "content": "..
           ...(fileData?.files ?? {}) 
         };
         
-        // Clean up Vite /src/ directories and force them back to root for CRA
-        for (const key of Object.keys(baseWorkspace)) {
-          if (key.startsWith("/src/")) {
-            const rootKey = key.replace("/src", "");
-            // Prioritize existing root files, otherwise move the src file to root
-            if (!baseWorkspace[rootKey]) {
-              baseWorkspace[rootKey] = baseWorkspace[key];
-            }
-            delete baseWorkspace[key];
-          }
-        }
-        
-        // CRITICAL: Sandpack's vite-react template crashes if we override /package.json
-        // Delete any legacy package.json so Sandpack relies on customSetup.dependencies safely
-        delete baseWorkspace["/package.json"];
-        
-        // Force Vite configs
-        // Force CRA configs
-        if (REACT_BOILERPLATE["/index.js"]) {
-          if (!baseWorkspace["/index.js"]) {
-            baseWorkspace["/index.js"] = REACT_BOILERPLATE["/index.js"];
-          }
-          delete baseWorkspace["/src/index.jsx"];
-        }
-        if (REACT_BOILERPLATE["/styles.css"]) {
-          if (!baseWorkspace["/styles.css"]) {
-            baseWorkspace["/styles.css"] = REACT_BOILERPLATE["/styles.css"];
-          }
-          delete baseWorkspace["/src/styles.css"];
-        }
-        if (REACT_BOILERPLATE["/public/index.html"]) {
-          baseWorkspace["/public/index.html"] = REACT_BOILERPLATE["/public/index.html"];
-          delete baseWorkspace["/index.html"];
-        }
+        // We no longer strip /src/ or package.json since WebContainers support full Node.js structures
 
         const normalizedFiles: Record<string, { code: string }> = { ...baseWorkspace };
         
@@ -585,14 +551,7 @@ Output strict JSON ONLY: { "type": "file", "path": "${filepath}", "content": "..
             let path = key;
             if (!path.startsWith("/")) path = "/" + path;
             
-            // Force files out of /src/ so they align with Sandpack CRA root structure
-            if (path.startsWith("/src/")) {
-              path = path.replace("/src", "");
-            }
-            
-            if (path.toLowerCase() === "/app.js" || path.toLowerCase() === "/app.jsx") {
-              path = "/App.js";
-            }
+            // No longer forcing files out of /src/ or renaming to /App.js
             
             // Clean markdown fences if code is provided
             let rawCode = value.code;
