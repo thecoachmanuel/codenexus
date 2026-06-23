@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
@@ -9,6 +10,12 @@ import { validateAST } from "@/lib/validator";
 import { BASE_DEPENDENCIES, REACT_BOILERPLATE } from "@/lib/constants";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
+
+// ─── SSE helper ───────────────────────────────────────────────────────────────
+
+function sseEvent(type: string, payload: unknown) {
+  return { type, ...(payload as object) };
+}
 
 // ─── Extract short label from a Gemini thought chunk ─────────────────────────
 
@@ -242,12 +249,13 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
 
 export async function generateWorkspaceTask(
   { workspaceId, userId, messages, fileData, retryCount }: { workspaceId: string | null; userId: string; messages: Message[]; fileData: FileData | null; retryCount?: number },
-  enqueue: (type: string, payload: unknown) => void
+  externalEnqueue: (type: string, payload: any) => void
 ) {
   await connectDB();
 
   const user = await User.findById(userId).select("_id credits");
-  if (!user) throw new Error("User not found");
+  if (!user)
+    throw new Error("User not found");
     
   const cost = calculateGenerationCost(messages);
   
@@ -255,12 +263,16 @@ export async function generateWorkspaceTask(
     throw new Error(`Insufficient credits. This complex task requires ${cost} credits, but you only have ${user.credits}.`);
   }
 
+  const enqueue = (data: any) => {
+    const { type, ...payload } = data;
+    externalEnqueue(type, payload);
+  };
+
   let projectSpec: any = null;
   try {
-
         // ── GENERATION PASS ──────────────────────────────────────────────────
 
-        enqueue("status", { message: "Thinking…" });
+        enqueue(sseEvent("status", { message: "Thinking…" }));
 
         const initialContents = buildFrontendContents(messages, fileData);
         let currentContents = [...initialContents];
@@ -285,7 +297,7 @@ export async function generateWorkspaceTask(
             loops++;
             const targetModel = (retryCount ?? 0) >= 3 ? PRO_MODEL : DEFAULT_MODEL;
             if ((retryCount ?? 0) >= 3 && loops === 1) {
-              enqueue("status", { message: "Escalating to Deep Reasoning Mode..." });
+              enqueue(sseEvent("status", { message: "Escalating to Deep Reasoning Mode..." }));
             }
             
             let chunk = "";
@@ -294,11 +306,11 @@ export async function generateWorkspaceTask(
                 targetModel,
                 currentContents,
                 getSystemPrompt(isExistingApp),
-                (label) => enqueue("status", { message: loops > 1 ? "Writing massive codebase..." : label })
+                (label) => enqueue(sseEvent("status", { message: loops > 1 ? "Writing massive codebase..." : label }))
               );
             } catch (err: any) {
               console.error("[runGeminiPass error]:", err);
-              enqueue("status", { message: "AI API error. Attempting to recover generated code..." });
+              enqueue(sseEvent("status", { message: "AI API error. Attempting to recover generated code..." }));
               break;
             }
 
@@ -329,7 +341,7 @@ export async function generateWorkspaceTask(
             }
 
             if (!isComplete) {
-              enqueue("status", { message: "Writing massive codebase..." });
+              enqueue(sseEvent("status", { message: "Writing massive codebase..." }));
               currentContents.push({ role: "model", parts: [{ text: chunk }] });
               currentContents.push({ role: "user", parts: [{ text: "Continue exactly where you left off." }] });
             }
@@ -343,7 +355,7 @@ export async function generateWorkspaceTask(
           }>(rawJson);
 
           if (!parsed) {
-            enqueue("error", { message: "Generation failed. Please try again." });
+            enqueue(sseEvent("error", { message: "Generation failed. Please try again." }));
             controller.close();
             return;
           }
@@ -357,7 +369,7 @@ export async function generateWorkspaceTask(
           // --- NEW APP: MULTI-AGENT SEQUENTIAL PIPELINE ---
           
           // Agent 1: Product Analyst
-          enqueue("status", { message: "Product Analyst: Extracting requirements..." });
+          enqueue(sseEvent("status", { message: "Product Analyst: Extracting requirements..." }));
           const analystPrompt = `You are a Senior Product Analyst. Analyze this prompt for a web application:
 ${lastUserMessage.content}
 
@@ -373,10 +385,490 @@ Output strict JSON ONLY: { "requirements": "<Summary of what will be built NOW i
             });
             analystText = analystRes?.text || "";
           } catch (err) {
-    console.error("[generateWorkspaceTask] error:", err);
-    enqueue("error", {
-      message: err instanceof Error ? err.message : "Something went wrong. Please try again.",
-    });
-    throw err;
-  }
+            console.error("[Agent 1 Error] Product Analyst failed:", err);
+          }
+          const analystJson = safeParseJSON<{ requirements: string, pages: string[], features: string[], futureTasks?: string[] }>(analystText) || { requirements: lastUserMessage.content, pages: [], features: [], futureTasks: [] };
+          
+          // Agent 2: Project Architect
+          enqueue(sseEvent("status", { message: "Project Architect: Designing architecture..." }));
+          const architectPrompt = `You are a Senior React Architect. Given these requirements:
+${JSON.stringify(analystJson)}
+Design a Create-React-App project structure.
+Constraints: React 18.2.0 compatible, NO Vite syntax, NO Next.js APIs, NO server code. Use Tailwind CSS.
+Output strict JSON ONLY: { 
+  "dependencies": ["lucide-react", "framer-motion", "clsx", "tailwind-merge"],
+  "folderStructure": ["/package.json", "/src/index.js", "/src/App.js", "/src/components/Header.js"],
+  "routingMap": { "/": "App", "/dashboard": "Dashboard" },
+  "componentGraph": { "App": ["Header", "Dashboard"], "Dashboard": ["Chart"] }
+}`;
+          
+          let architectText = "";
+          try {
+            const architectRes = await generateContent({ 
+              model: DEFAULT_MODEL, 
+              contents: [{ role: "user", parts: [{ text: architectPrompt }] }],
+              config: { responseMimeType: "application/json" }
+            });
+            architectText = architectRes?.text || "";
+          } catch (err) {
+            console.error("[Agent 2 Error] Project Architect failed:", err);
+          }
+          const architectJson = safeParseJSON<{ dependencies: string[], folderStructure: string[], routingMap?: any, componentGraph?: any }>(architectText) || { folderStructure: ["/package.json", "/src/index.js", "/src/App.js"], dependencies: ["lucide-react"] };
+          
+          projectSpec = {
+            analyst: analystJson,
+            architect: architectJson,
+          };
+          
+          let deps = architectJson.dependencies;
+          if (deps && typeof deps === 'object' && !Array.isArray(deps)) {
+            deps = Object.keys(deps) as string[];
+          }
+          if (Array.isArray(deps)) {
+            deps.forEach((dep: string) => { finalDependencies[dep] = "latest"; });
+          }
+          
+          files = {};
+          let generatedSoFar: Record<string, string> = {};
+          
+          let filesToGenerate = architectJson.folderStructure;
+          if (filesToGenerate && !Array.isArray(filesToGenerate)) {
+            if (typeof filesToGenerate === "object") {
+              filesToGenerate = Object.keys(filesToGenerate) as string[];
+            } else if (typeof filesToGenerate === "string") {
+              filesToGenerate = [filesToGenerate];
+            } else {
+              filesToGenerate = ["/App.js"];
+            }
+          } else if (!filesToGenerate || filesToGenerate.length === 0) {
+            filesToGenerate = ["/App.js"];
+          }
+          
+          const hasApp = filesToGenerate.some(p => {
+            const lower = p.toLowerCase();
+            return lower === "/app.js" || lower === "/src/app.js" || lower === "app.js" || lower === "src/app.js" ||
+                   lower === "/app.jsx" || lower === "/src/app.jsx" || lower === "app.jsx" || lower === "src/app.jsx";
+          });
+          if (!hasApp) {
+            filesToGenerate.push("/App.js");
+          }
+          
+          // Agent 3: Sequential File Generator (Prevents API rate limit bursts)
+          enqueue(sseEvent("status", { message: `File Generator: Writing ${filesToGenerate.length} files...` }));
+          
+          for (const filepath of filesToGenerate) {
+            const generatorPrompt = `You are an elite File Generator. Write the COMPLETE code for ${filepath}.
+
+CRITICAL SYSTEM RULES:
+${getSystemPrompt(false)}
+
+Project Requirements: ${JSON.stringify(analystJson)}
+Dependencies Available: ${JSON.stringify(architectJson.dependencies)}
+All Project Files (use EXACT paths for imports!): ${JSON.stringify(architectJson.folderStructure)}
+Other files generated so far: ${Object.keys(generatedSoFar).join(", ")}
+
+Additional File-Specific Constraints:
+1. ONLY React 18.2.0 browser-safe code. NO Next.js or Vite APIs.
+2. Use default exports for components.
+3. Apply premium UI/UX (framer-motion, tailwindcss, glassmorphism, rounded corners).
+4. Do NOT output placeholders! Write the FULL, working file.
+Output strict JSON ONLY: { "type": "file", "path": "${filepath}", "content": "..." }`;
+            
+            let fileJson: { type: string, path: string, content: string } | null = null;
+            for (let attempt = 0; attempt < 3; attempt++) {
+              try {
+                const fileRes = await generateContent({ 
+                  model: DEFAULT_MODEL, 
+                  contents: [{ role: "user", parts: [{ text: generatorPrompt }] }],
+                  config: { responseMimeType: "application/json" }
+                });
+                const fileText = fileRes?.text || "";
+                fileJson = safeParseJSON<{ type: string, path: string, content: string }>(fileText);
+                
+                if (fileJson?.content) {
+                  const validation = validateAST(fileJson.content);
+                  if (!validation.isValid) {
+                    console.warn(`[Agent 4 Validator] AST validation failed for ${filepath} (Attempt ${attempt + 1}):`, validation.message);
+                    fileJson = null; // force retry
+                    continue;
+                  }
+                  break; // Success
+                }
+              } catch (err) {
+                console.warn(`[Agent 3 Error] Attempt ${attempt + 1} failed for ${filepath}:`, err);
+              }
+            }
+            
+            if (!fileJson?.content) {
+              console.error(`[Agent 3 Error] Gave up generating ${filepath} after 3 attempts.`);
+              // CRITICAL FALLBACK: If App.js fails, we must inject a dummy so the UI preview doesn't crash completely
+              if (filepath === "/App.js" || filepath === "/App.jsx") {
+                fileJson = { type: "file", path: "/App.js", content: REACT_BOILERPLATE["/App.js"].code };
+              } else {
+                continue; // Skip non-critical file
+              }
+            }
+            
+            if (fileJson?.content) {
+               if (!files) files = {};
+               files[filepath] = { code: fileJson.content };
+               generatedSoFar[filepath] = fileJson.content;
+               
+               // Normalize path for the UI stream so it matches the final backend merge
+               let normalizedPath = filepath;
+               if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+               if (normalizedPath.startsWith("/src/")) normalizedPath = normalizedPath.replace("/src", "");
+               if (normalizedPath.toLowerCase() === "/app.js" || normalizedPath.toLowerCase() === "/app.jsx") {
+                 normalizedPath = "/App.js";
+               }
+               
+               // Stream intermediate files to the UI directly
+               enqueue(sseEvent("file_patch", { path: normalizedPath, code: fileJson.content }));
+            }
+          }
+          
+          if (analystJson.futureTasks && analystJson.futureTasks.length > 0) {
+            assistantMessage = `I have architected and built the first version (MVP) of your app! Here is what I built:\n\n${analystJson.requirements}\n\nI have listed the remaining complex features as suggestions below. Click any of them to continue building!`;
+            suggestions = [...analystJson.futureTasks.slice(0, 3), "Deploy to Vercel"];
+          } else {
+            assistantMessage = "I have successfully architected and built your app file-by-file using the multi-agent pipeline!";
+            suggestions = ["Deploy to Vercel", "Add Authentication", "Add Dark Mode"];
+          }
+          aiTitle = "Generated Application";
+        }
+
+
+        // ── Merge existing files with new files ────────────────────────────────
+
+        // Automatically upgrade older workspaces by ensuring Vite core files are present
+        const baseWorkspace: Record<string, { code: string }> = { 
+          ...(fileData?.files ?? {}) 
+        };
+        
+        // Clean up Vite /src/ directories and force them back to root for CRA
+        for (const key of Object.keys(baseWorkspace)) {
+          if (key.startsWith("/src/")) {
+            const rootKey = key.replace("/src", "");
+            // Prioritize existing root files, otherwise move the src file to root
+            if (!baseWorkspace[rootKey]) {
+              baseWorkspace[rootKey] = baseWorkspace[key];
+            }
+            delete baseWorkspace[key];
+          }
+        }
+        
+        // CRITICAL: Sandpack's vite-react template crashes if we override /package.json
+        // Delete any legacy package.json so Sandpack relies on customSetup.dependencies safely
+        delete baseWorkspace["/package.json"];
+        
+        // Force Vite configs
+        // Force CRA configs
+        if (REACT_BOILERPLATE["/index.js"]) {
+          if (!baseWorkspace["/index.js"]) {
+            baseWorkspace["/index.js"] = REACT_BOILERPLATE["/index.js"];
+          }
+          delete baseWorkspace["/src/index.jsx"];
+        }
+        if (REACT_BOILERPLATE["/styles.css"]) {
+          if (!baseWorkspace["/styles.css"]) {
+            baseWorkspace["/styles.css"] = REACT_BOILERPLATE["/styles.css"];
+          }
+          delete baseWorkspace["/src/styles.css"];
+        }
+        if (REACT_BOILERPLATE["/public/index.html"]) {
+          baseWorkspace["/public/index.html"] = REACT_BOILERPLATE["/public/index.html"];
+          delete baseWorkspace["/index.html"];
+        }
+
+        const normalizedFiles: Record<string, { code: string }> = { ...baseWorkspace };
+        
+        if (files) {
+          for (const [key, value] of Object.entries(files)) {
+            let path = key;
+            if (!path.startsWith("/")) path = "/" + path;
+            
+            // Force files out of /src/ so they align with Sandpack CRA root structure
+            if (path.startsWith("/src/")) {
+              path = path.replace("/src", "");
+            }
+            
+            if (path.toLowerCase() === "/app.js" || path.toLowerCase() === "/app.jsx") {
+              path = "/App.js";
+            }
+            
+            // Clean markdown fences if code is provided
+            let rawCode = value.code;
+            if (typeof rawCode === "string") {
+              rawCode = rawCode.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
+            }
+
+            // If replacements are provided instead of full code, apply them surgically
+            if (!rawCode && value.replacements && Array.isArray(value.replacements)) {
+              let existingCode = baseWorkspace[path]?.code || "";
+              if (existingCode) {
+                // sort replacements from bottom to top so line numbers don't shift!
+                const sortedReps = [...value.replacements].sort((a, b) => (b.startLine || 0) - (a.startLine || 0));
+                
+                let lines = existingCode.split("\n");
+                sortedReps.forEach(rep => {
+                  if (typeof rep.startLine === "number" && typeof rep.endLine === "number" && typeof rep.replacement === "string") {
+                    const startIdx = Math.max(0, rep.startLine - 1);
+                    const endIdx = Math.max(startIdx, Math.min(lines.length - 1, rep.endLine - 1));
+                    const deleteCount = endIdx - startIdx + 1;
+                    
+                    // clean replacement block of markdown fences if any
+                    let newCode = rep.replacement.replace(/^```[a-z]*\n/i, "").replace(/\n```$/i, "");
+                    const newLines = newCode.split("\n");
+                    
+                    lines.splice(startIdx, deleteCount, ...newLines);
+                  } else if (rep.target && typeof rep.replacement === "string") {
+                    // Fallback for older models generating 'target' strings
+                    existingCode = existingCode.replace(rep.target, rep.replacement);
+                    lines = existingCode.split("\n");
+                  }
+                });
+                rawCode = lines.join("\n");
+              } else {
+                rawCode = ""; // Cannot apply replacements to non-existent files
+              }
+            }
+
+            // AUTO-HEALER: Prevent "ReferenceError: X is not defined" for React Router
+            rawCode = rawCode ?? "";
+            const routerTokens = ["BrowserRouter", "Routes", "Route", "Link", "useNavigate", "useParams", "useLocation", "Navigate"];
+            routerTokens.forEach(token => {
+              const usesToken = new RegExp(`\\b${token}\\b`).test(rawCode as string);
+              const importsToken = new RegExp(`import\\s+.*\\b${token}\\b.*\\s+from\\s+['"]react-router-dom['"]`).test(rawCode as string);
+              if (usesToken && !importsToken) {
+                rawCode = `import { ${token} } from 'react-router-dom';\n` + rawCode;
+              }
+            });
+
+            // AUTO-HEALER: Upgrade React Router v5 to v6
+            if (typeof rawCode === "string") {
+              // 1. Switch -> Routes
+              rawCode = rawCode.replace(/\bSwitch\b/g, "Routes");
+              // 2. Route component={Home} or element={Home} -> Route element={<Home />}
+              rawCode = rawCode.replace(/<Route([^>]+)(?:component|element)={([A-Z][a-zA-Z0-9_]*)}([^>]*)>/g, '<Route$1element={<$2 />}$3>');
+              // 3. Redirect -> Navigate
+              rawCode = rawCode.replace(/\bRedirect\b/g, "Navigate");
+              // 4. useHistory -> useNavigate
+              if (rawCode.includes("useHistory")) {
+                rawCode = rawCode.replace(/\buseHistory\b/g, "useNavigate");
+                rawCode = rawCode.replace(/\bhistory\.push\b/g, "navigate");
+                rawCode = rawCode.replace(/\bhistory\.replace\b/g, "navigate");
+                rawCode = rawCode.replace(/const\s+history\s*=\s*useNavigate\(\)/g, "const navigate = useNavigate()");
+              }
+            }
+
+            // AUTO-HEALER: Fix Lucide Icon Hallucinations & Remap Non-existent Icons
+            const iconRemap: Record<string, string> = {
+              "Chat": "MessageCircle",
+              "Comment": "MessageSquare",
+              "ThumbUp": "ThumbsUp",
+              "ThumbDown": "ThumbsDown",
+              "DotsVertical": "MoreVertical",
+              "DotsHorizontal": "MoreHorizontal",
+              "Cross": "X",
+              "Close": "X",
+              "Error": "AlertCircle",
+              "Warning": "AlertTriangle",
+              "Success": "CheckCircle2",
+              "Add": "Plus",
+              "Remove": "Minus",
+              "Delete": "Trash2",
+              "Edit": "Edit2",
+              // Social & UI common hallucinations
+              "Explore": "Compass",
+              "Notifications": "Bell",
+              "Notification": "Bell",
+              "Messages": "Mail",
+              "Message": "MessageSquare",
+              "Bookmarks": "Bookmark",
+              "Profile": "User",
+              "Retweet": "Repeat",
+              "Like": "Heart",
+              "Reply": "MessageCircle",
+              "Gif": "FileImage",
+              "Poll": "BarChart2",
+              "Emoji": "Smile",
+              "Schedule": "Calendar",
+              "Location": "MapPin",
+              "More": "MoreHorizontal",
+              "Analytics": "BarChart2",
+              "Settings": "Settings",
+              "Facebook": "Share2",
+              "Twitter": "MessageSquare",
+              "Instagram": "Camera",
+              "Linkedin": "Briefcase",
+              "Youtube": "Video",
+              "Github": "Code",
+              "Gitlab": "Code",
+              "Discord": "MessageSquare",
+              "Twitch": "Video",
+              "Slack": "Hash",
+              "Figma": "PenTool"
+            };
+            
+            // Fix completely missing imports for commonly used icons
+            const commonIcons = ["Plus", "Minus", "Trash", "Trash2", "Edit", "Edit2", "Settings", "User", "Check", "X", "Search", "Menu", "Home", "ChevronLeft", "ChevronRight", "ChevronUp", "ChevronDown", "ArrowLeft", "ArrowRight", "LogOut", "Bell", "Heart", "Star", "Camera", "Image", "Upload", "Download", "Loader2", "Eye", "EyeOff", "MoreVertical", "MoreHorizontal", "Info", "AlertCircle", "AlertTriangle", "CheckCircle2", "Play", "Pause", "SkipForward", "SkipBack", "Volume2", "VolumeX", "Maximize", "Minimize", "Maximize2", "Minimize2", "RefreshCw", "Share2", "Link", "Copy", "Calendar", "Clock", "MapPin", "MessageCircle", "MessageSquare", "Send", "Paperclip", "File", "Folder", "ShoppingCart", "CreditCard", "Lock", "Unlock", "Shield", "Wifi", "WifiOff", "Battery", "BatteryCharging", "Smartphone", "Monitor", "Laptop", "Tv", "Headphones", "Mic", "MicOff", "Video", "VideoOff", "Facebook", "Twitter", "Instagram", "Linkedin", "Youtube", "Github", "Gitlab", "Discord", "Twitch", "Slack", "Figma"];
+            commonIcons.forEach(icon => {
+              const usesIcon = new RegExp(`<${icon}\\b`).test(rawCode as string);
+              // Check if the identifier is already imported from anywhere, or declared locally
+              const isDeclared = new RegExp(`import\\s+.*\\b${icon}\\b.*\\s+from`).test(rawCode as string) || 
+                                 new RegExp(`(?:const|let|var|function|class)\\s+${icon}\\b`).test(rawCode as string);
+              if (usesIcon && !isDeclared) {
+                rawCode = `import { ${icon} } from 'lucide-react';\n` + rawCode;
+              }
+            });
+            
+            rawCode = rawCode.replace(/import\s+{([^}]+)}\s+from\s+['"]lucide-react['"]/g, (match, p1) => {
+              const fixedImports = p1.split(',').map((i: string) => {
+                const trimmed = i.trim();
+                if (!trimmed) return "";
+                
+                let baseName = trimmed.replace(/Icon$/, "");
+                let aliasName = trimmed;
+                
+                // If it already has an alias " as ", extract the base
+                if (trimmed.includes(" as ")) {
+                  const parts = trimmed.split(" as ");
+                  baseName = parts[0].trim();
+                  aliasName = parts[1].trim();
+                }
+                
+                // Remap hallucinated base name if it exists in our map
+                if (iconRemap[baseName]) {
+                  baseName = iconRemap[baseName];
+                }
+                
+                // Always alias it back to what the AI's JSX expects
+                return `${baseName} as ${aliasName}`;
+              }).filter(Boolean).join(', ');
+              return `import { ${fixedImports} } from 'lucide-react'`;
+            });
+
+            // AUTO-HEALER: Fix named imports from local files
+            rawCode = rawCode.replace(/import\s+{\s*([a-zA-Z0-9_]+)\s*}\s+from\s+['"](\.[^'"]+)['"]/g, (match, p1, p2) => {
+              return `import ${p1} from '${p2}'`;
+            });
+
+            // AUTO-HEALER: Fix missing export default
+            if (!rawCode.includes("export default")) {
+              const funcMatch = rawCode.match(/function\s+([a-zA-Z][a-zA-Z0-9_]*)\s*\(/);
+              if (funcMatch) {
+                rawCode += `\nexport default ${funcMatch[1]};\n`;
+              } else {
+                const arrowMatch = rawCode.match(/const\s+([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*(?:\([^)]*\)|[a-zA-Z0-9_]+)\s*=>/);
+                if (arrowMatch) {
+                  rawCode += `\nexport default ${arrowMatch[1]};\n`;
+                }
+              }
+            }
+            // AUTO-HEALER: Fix React 18 createRoot in index.js
+            if (path === "/index.js" || path === "/src/index.js" || path === "index.js") {
+              if (rawCode.includes("render(") || rawCode.includes("render ") || rawCode.includes("ReactDOM.render")) {
+                rawCode = rawCode.replace(/import\s+{\s*render\s*}\s+from\s+['"]react-dom(?:\/client)?['"];?/g, 'import { createRoot } from "react-dom/client";');
+                rawCode = rawCode.replace(/import\s+ReactDOM\s+from\s+['"]react-dom(?:\/client)?['"];?/g, 'import { createRoot } from "react-dom/client";');
+                
+                const rootRegex = /(?:ReactDOM\.)?render\s*\(\s*([\s\S]+?)\s*,\s*(document\.getElementById\(['"][^'"]+['"]\))\s*\)/;
+                if (rootRegex.test(rawCode)) {
+                  rawCode = rawCode.replace(rootRegex, 'createRoot($2).render($1)');
+                } else {
+                  const varRegex = /(?:ReactDOM\.)?render\s*\(\s*([\s\S]+?)\s*,\s*([a-zA-Z0-9_]+)\s*\)/;
+                  if (varRegex.test(rawCode)) {
+                    rawCode = rawCode.replace(varRegex, 'createRoot($2).render($1)');
+                  }
+                }
+              }
+            }
+
+            normalizedFiles[path] = { ...value, code: rawCode };
+          }
+        }
+        
+        // Ensure robustness with AST extraction and auto stubbing
+        autoFixAbsoluteImports(normalizedFiles);
+        const missing = findMissingFiles(normalizedFiles);
+        if (missing.length > 0) {
+          autoStubMissingFiles(normalizedFiles, missing);
+        }
+
+        enqueue(sseEvent("status", { message: "Extracting packages…" }));
+        const extracted = extractDependencies(normalizedFiles);
+        // finalDependencies initialized earlier
+        extracted.forEach(pkg => {
+          if (!finalDependencies[pkg] && !BASE_DEPENDENCIES[pkg]) {
+            finalDependencies[pkg] = "latest";
+          }
+        });
+
+        const newFileData: FileData & { projectSpec?: any } = {
+          files: normalizedFiles,
+          dependencies: finalDependencies,
+          title: aiTitle ?? fileData?.title,
+          suggestions,
+          envVars: fileData?.envVars,
+          projectSpec: isExistingApp ? fileData?.projectSpec : projectSpec,
+        };
+
+        // ── Upsert workspace + deduct credit ──────────────────────────────────
+
+        enqueue(sseEvent("status", { message: "Saving…" }));
+
+        const updatedMessages: Message[] = [
+          ...messages,
+          { role: "assistant", content: assistantMessage },
+        ];
+
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
+        let workspace;
+        if (workspaceId) {
+          workspace = await Workspace.findOneAndUpdate(
+            { _id: workspaceId, userId: userObjectId },
+            { messages: updatedMessages, fileData: newFileData },
+            { new: true }
+          );
+        } else {
+          // Generate a unique, readable subdomain (e.g. app-xxxxx)
+          const subdomain = "app-" + Math.random().toString(36).substring(2, 9);
+          
+          workspace = await Workspace.create({
+            userId: userObjectId,
+            title: aiTitle ?? lastUserMessage.content.slice(0, 80),
+            subdomain,
+            messages: updatedMessages,
+            fileData: newFileData,
+          });
+        }
+
+        await User.findByIdAndUpdate(userId, {
+          $inc: { credits: -cost },
+        });
+
+        const updatedUser = await User.findById(userId).select("credits");
+
+        enqueue(
+          sseEvent("done", {
+            workspaceId: workspace!._id.toString(),
+            subdomain: workspace!.subdomain,
+            assistantMessage,
+            fileData: newFileData,
+            creditsRemaining:
+              updatedUser?.credits ?? user.credits - cost,
+          })
+        );
+      } catch (err) {
+        console.error("[generateWorkspaceTask] error:", err);
+        enqueue(
+          sseEvent("error", {
+            message: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+          })
+        );
+        throw err;
+      }
 }
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
