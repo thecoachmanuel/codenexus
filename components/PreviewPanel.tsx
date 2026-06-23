@@ -30,6 +30,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
   const fitAddonRef = useRef<FitAddon | null>(null);
   const devProcessRef = useRef<any>(null);
   const errorBufferRef = useRef<string[]>([]);
+  const lastDepsStringRef = useRef<string | null>(null);
 
   const [url, setUrl] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -69,13 +70,23 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     const term = xtermRef.current;
     if (!term || !data?.files || Object.keys(data.files).length === 0) return;
 
-    // Kill any existing dev process
-    if (devProcessRef.current) {
-      try { devProcessRef.current.kill(); } catch {}
-      devProcessRef.current = null;
+    const depsString = JSON.stringify({
+      pkg: data.files["/package.json"]?.code || data.files["package.json"]?.code || "",
+      vite: data.files["/vite.config.js"]?.code || data.files["vite.config.js"]?.code || "",
+      next: data.files["/next.config.js"]?.code || data.files["next.config.js"]?.code || ""
+    });
+
+    const needsRestart = lastDepsStringRef.current !== depsString || !devProcessRef.current || !window.__wc_instance;
+
+    // Kill any existing dev process if we need a hard restart
+    if (needsRestart) {
+      if (devProcessRef.current) {
+        try { devProcessRef.current.kill(); } catch {}
+        devProcessRef.current = null;
+      }
+      setUrl(null);
+      errorBufferRef.current = [];
     }
-    setUrl(null);
-    errorBufferRef.current = [];
 
     // Helper to capture errors from output
     const captureErrors = (chunk: string) => {
@@ -143,7 +154,13 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       await wc.mount(tree);
       term.writeln(`\x1b[32m✓ ${Object.keys(data.files).length} files mounted\x1b[0m`);
 
-
+      // If configuration hasn't changed and dev server is running, Vite HMR will automatically pick up the mounted files!
+      if (!needsRestart) {
+        term.writeln("\x1b[33m⚡ Fast Refresh (HMR) applied\x1b[0m");
+        return; 
+      }
+      
+      lastDepsStringRef.current = depsString;
 
       // 4. npm install (fast flags)
       setPhase("installing");
