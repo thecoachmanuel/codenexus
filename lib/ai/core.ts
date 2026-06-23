@@ -113,7 +113,7 @@ async function runGeminiArtifactStream(
   model: string,
   contents: object[],
   systemInstruction: string,
-  enqueue: (type: string, payload: any) => void
+  enqueue: (data: any) => void
 ): Promise<ParsedArtifact> {
   const geminiStream = await generateContentStream({
     model: model,
