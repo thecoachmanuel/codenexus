@@ -422,6 +422,7 @@ export function CodePanel({
           {/* THE PERSISTENT PANEL GROUP */}
           <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === "env" ? "opacity-0 pointer-events-none z-0" : "opacity-100 z-10"}`}>
             <PanelGroup orientation="horizontal" className="h-full w-full">
+              {/* @ts-ignore */}
               <Panel ref={codePanelRef} collapsible defaultSize={0} minSize={20} className="h-full bg-[#1e1e1e]">
                 <NativeCodeViewer files={files} />
               </Panel>
@@ -430,6 +431,7 @@ export function CodePanel({
                  <div className="w-0.5 h-8 bg-white/20 rounded-full" />
               </PanelResizeHandle>
               
+              {/* @ts-ignore */}
               <Panel ref={previewPanelRef} collapsible defaultSize={100} minSize={20} className="h-full relative bg-white">
                 <div className={`h-full w-full relative ${isFullscreen && activeTab === "preview" ? "fixed inset-0 z-50 bg-black" : ""}`}>
                   {/* Viewport Toggles */}
