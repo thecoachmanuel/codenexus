@@ -203,6 +203,7 @@ interface ParsedArtifact {
   title?: string;
   suggestions: string[];
   files: Record<string, { code: string }>;
+  assistantMessage?: string;
 }
 
 async function runGeminiArtifactStream(
@@ -221,6 +222,7 @@ async function runGeminiArtifactStream(
   });
 
   let accumulated = "";
+  let fullResponse = "";
   let artifact: ParsedArtifact = { files: {}, suggestions: [] };
   
   let isInsideArtifact = false;
@@ -233,6 +235,7 @@ async function runGeminiArtifactStream(
     for (const part of parts) {
       if (!part.text) continue;
       accumulated += part.text;
+      fullResponse += part.text;
 
       // Extract Artifact Metadata
       if (!isInsideArtifact && accumulated.includes("<boltArtifact")) {
@@ -316,6 +319,8 @@ async function runGeminiArtifactStream(
     }
   }
 
+  artifact.assistantMessage = fullResponse.replace(/<boltArtifact[\s\S]*?<\/boltArtifact>/g, '').trim();
+
   return artifact;
 }
 
@@ -361,7 +366,9 @@ export async function generateWorkspaceTask(
 
     const aiTitle = artifact.title || "Generated App";
     const suggestions = artifact.suggestions.length > 0 ? artifact.suggestions : ["Deploy to Vercel", "Add Authentication"];
-    const assistantMessage = "I have successfully built your application using the robust single-shot artifact stream!";
+    const assistantMessage = artifact.assistantMessage && artifact.assistantMessage.length > 5
+      ? artifact.assistantMessage
+      : "I have successfully built your application using the robust single-shot artifact stream!";
 
     // ── Merge existing files with new files ────────────────────────────────
     const baseWorkspace: Record<string, { code: string }> = { ...(fileData?.files ?? {}) };
