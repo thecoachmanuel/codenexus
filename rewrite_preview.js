@@ -1,4 +1,6 @@
-"use client";
+const fs = require('fs');
+
+const fileContent = `"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { WebContainer } from "@webcontainer/api";
@@ -53,7 +55,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       
       try {
         if (!webcontainerInstance) {
-          term.write("Booting WebContainer...\r\n");
+          term.write("Booting WebContainer...\\r\\n");
           // Avoid double booting during strict mode
           if (!window.webcontainerBootPromise) {
              window.webcontainerBootPromise = WebContainer.boot();
@@ -63,14 +65,14 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
           webcontainerInstance.on("server-ready", (port, url) => {
              if (mounted) {
                 setUrl(url);
-                term.write(`\r\nServer is ready at ${url}\r\n`);
+                term.write(\`\\r\\nServer is ready at \${url}\\r\\n\`);
              }
           });
         }
         
         setIsBooting(false);
       } catch (err) {
-        term.write(`\r\nError booting WebContainer: ${err}\r\n`);
+        term.write(\`\\r\\nError booting WebContainer: \${err}\\r\\n\`);
         onError(String(err));
       }
     }
@@ -196,7 +198,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
        const term = xtermRef.current!;
        if (isStale) return;
        
-       term.write("\r\nRunning npm install...\r\n");
+       term.write("\\r\\nRunning npm install...\\r\\n");
        installProcess = await webcontainerInstance!.spawn("npm", ["install"]);
        
        installProcess.output.pipeTo(new WritableStream({
@@ -209,12 +211,12 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
        if (isStale) return;
        
        if (installExitCode !== 0) {
-          term.write(`\r\nnpm install failed with code ${installExitCode}\r\n`);
+          term.write(\`\\r\\nnpm install failed with code \${installExitCode}\\r\\n\`);
           return;
        }
        
        if (isStale) return;
-       term.write(`\r\nRunning npm run ${startScript}...\r\n`);
+       term.write(\`\\r\\nRunning npm run \${startScript}...\\r\\n\`);
        devProcess = await webcontainerInstance!.spawn("npm", ["run", startScript]);
        
        devProcess.output.pipeTo(new WritableStream({
@@ -266,3 +268,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('/Users/admin/Desktop/ai-app-builder/components/PreviewPanel.tsx', fileContent);
+console.log('Successfully wrote to PreviewPanel.tsx');
