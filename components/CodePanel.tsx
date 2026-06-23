@@ -213,7 +213,7 @@ export function CodePanel({
     setIsExporting(true);
     try {
       const zip = new JSZip();
-      for (const [path, obj] of Object.entries(fileData.files)) {
+      for (const [path, obj] of Object.entries(fileData.files || {})) {
         let code = obj.code;
         if (typeof code === "string") {
           code = code.replace(/^\s*\`\`\`[a-z]*\n/i, "").replace(/\n\`\`\`\s*$/i, "");
