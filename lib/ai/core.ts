@@ -421,7 +421,7 @@ export async function generateWorkspaceTask(
     if (workspace) {
       workspace.messages = updatedMessages;
       workspace.fileData = newFileData;
-      if (aiTitle && !workspace.title) {
+      if (aiTitle && (!workspace.title || workspace.title === "Generating...")) {
         workspace.title = aiTitle;
       }
       await workspace.save();
