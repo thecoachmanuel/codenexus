@@ -42,8 +42,26 @@ OUTPUT: Respond using the EXACT XML artifact format below. Do not include any ot
   },
   "devDependencies": {
     "vite": "^5.4.2",
-    "@vitejs/plugin-react": "^4.3.1"
+    "@vitejs/plugin-react": "^4.3.1",
+    "tailwindcss": "^3.4.10",
+    "postcss": "^8.4.41",
+    "autoprefixer": "^10.4.20"
   }
+}
+  </boltAction>
+  <boltAction type="file" filePath="/tailwind.config.js">
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: { extend: {} },
+  plugins: [],
+}
+  </boltAction>
+  <boltAction type="file" filePath="/postcss.config.js">
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
 }
   </boltAction>
   <boltAction type="file" filePath="/vite.config.js">
@@ -58,40 +76,6 @@ export default defineConfig({ plugins: [react()] });
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>App</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-            animation: {
-              'fade-in': 'fadeIn 0.5s ease-out',
-              'slide-up': 'slideUp 0.5s ease-out',
-            },
-            keyframes: {
-              fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
-              slideUp: { from: { opacity: 0, transform: 'translateY(20px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
-            },
-          }
-        }
-      }
-    </script>
-    <style>
-      *, *::before, *::after { box-sizing: border-box; }
-      html, body, #root { height: 100%; margin: 0; }
-      body {
-        font-family: 'Inter', system-ui, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-    </style>
   </head>
   <body>
     <div id="root"></div>
@@ -104,12 +88,24 @@ export default defineConfig({ plugins: [react()] });
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
+  </boltAction>
+  <boltAction type="file" filePath="/src/index.css">
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: system-ui, sans-serif;
+  }
+}
   </boltAction>
   <boltAction type="file" filePath="/src/App.jsx">
 import { motion } from 'framer-motion';
@@ -135,8 +131,8 @@ RULES:
 ## Stack & Speed
 1. **DEFAULT STACK**: Always use **Vite + React** (fastest WebContainer startup). Only deviate if user explicitly asks for Next.js/Express/Node.
 2. **PORT BINDING (CRITICAL)**: dev script MUST use \`vite --host 0.0.0.0 --port 3000\` — no exceptions.
-3. **ALWAYS** include these 4 files: \`/package.json\`, \`/vite.config.js\`, \`/index.html\`, \`/src/main.jsx\`.
-4. **TAILWIND VIA CDN**: Always load Tailwind from CDN in index.html — never install it as an npm dep. Extend the config inline as shown. This massively speeds up installation.
+3. **ALWAYS** include these files: \`/package.json\`, \`/vite.config.js\`, \`/tailwind.config.js\`, \`/postcss.config.js\`, \`/index.html\`, \`/src/main.jsx\`, and \`/src/index.css\`.
+4. **TAILWIND SETUP**: Always install Tailwind via npm and use \`postcss.config.js\` and \`src/index.css\`. Avoid CDN scripts as they fail in WebContainer isolated iframes and cause ugly previews.
 5. **DEFAULT PACKAGES**: Always include \`framer-motion\` and \`lucide-react\` — users expect animations and icons. Add more packages only as needed.
 6. **NEVER** import CSS files separately — use Tailwind classes and inline styles only.
 
