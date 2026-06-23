@@ -257,7 +257,15 @@ export function WorkspaceClient({
                   setFileHistory((prev) => [...prev, currentSnapshot]);
                 }
                 
-                setFileData(event.fileData);
+                if (event.fileData) {
+                  setFileData((prev: any) => ({
+                    ...prev,
+                    ...event.fileData,
+                    files: Object.keys(event.fileData.files || {}).length > 0 
+                      ? event.fileData.files 
+                      : prev?.files,
+                  }));
+                }
                 setCredits(event.creditsRemaining);
                 setMessages((prev) => [
                   ...prev,
@@ -290,7 +298,15 @@ export function WorkspaceClient({
                   };
                 });
               } else if (event.type === "fileData_full") {
-                setFileData(event.fileData);
+                if (event.fileData) {
+                  setFileData((prev: any) => ({
+                    ...prev,
+                    ...event.fileData,
+                    files: Object.keys(event.fileData.files || {}).length > 0 
+                      ? event.fileData.files 
+                      : prev?.files,
+                  }));
+                }
               } else if (event.type === "error") {
                 throw new Error(event.message);
               }
