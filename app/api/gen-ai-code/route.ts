@@ -3,6 +3,8 @@ import { NextRequest } from "next/server";
 import { inngest } from "@/lib/inngest/client";
 import { generateWorkspaceTask } from "@/lib/ai/core";
 import mongoose from "mongoose";
+import { connectDB } from "@/lib/mongodb";
+import Workspace from "@/lib/models/Workspace";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -27,7 +29,17 @@ export async function POST(request: NextRequest) {
   let targetWorkspaceId = workspaceId;
 
   if (!targetWorkspaceId) {
-    targetWorkspaceId = new mongoose.Types.ObjectId().toString();
+    await connectDB();
+    const subdomain = "app-" + Math.random().toString(36).substring(2, 9);
+    const newWorkspace = await Workspace.create({
+      userId,
+      title: "Generating...",
+      subdomain,
+      messages: [],
+      fileData: { files: {}, dependencies: {} },
+      currentStatus: "Starting generation..."
+    });
+    targetWorkspaceId = newWorkspace._id.toString();
   }
 
   // If Inngest is configured, dispatch the job and return 202

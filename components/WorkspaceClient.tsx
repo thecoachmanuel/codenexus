@@ -434,32 +434,34 @@ export function WorkspaceClient({
 
         {/* CodePanel Container */}
         <div className="flex-1 min-w-0 h-full relative">
-          <CodePanel
-            key={workspaceId || "new"}
-            fileData={fileData}
-            isGenerating={isGenerating}
-            statusLog={statusLog}
-            onImprove={handleGenerate}
-            onFixError={async (error) => {
-              const newCount = fixRetryCount + 1;
-              setFixRetryCount(newCount);
-              await handleGenerate(
-                `[COMPILER ERROR]\nThere is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`,
-                undefined,
-                newCount
-              );
-            }}
-            onFilePatch={handleFilePatch}
-            appTitle={fileData?.title ?? workspace?.title ?? null}
-            subdomain={subdomain}
-            isImproving={false}
-            isProUser={userPlan === "pro"}
-            onEnvVarsChange={handleEnvVarsChange}
-            vercelInfo={workspace?.vercel}
-            workspaceId={workspaceId}
-            previewError={previewError}
-            setPreviewError={setPreviewError}
-          />
+          <ErrorBoundary>
+            <CodePanel
+              key={workspaceId || "new"}
+              fileData={fileData}
+              isGenerating={isGenerating}
+              statusLog={statusLog}
+              onImprove={handleGenerate}
+              onFixError={async (error) => {
+                const newCount = fixRetryCount + 1;
+                setFixRetryCount(newCount);
+                await handleGenerate(
+                  `[COMPILER ERROR]\nThere is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`,
+                  undefined,
+                  newCount
+                );
+              }}
+              onFilePatch={handleFilePatch}
+              appTitle={fileData?.title ?? workspace?.title ?? null}
+              subdomain={subdomain}
+              isImproving={false}
+              isProUser={userPlan === "pro"}
+              onEnvVarsChange={handleEnvVarsChange}
+              vercelInfo={workspace?.vercel}
+              workspaceId={workspaceId}
+              previewError={previewError}
+              setPreviewError={setPreviewError}
+            />
+          </ErrorBoundary>
           
           {/* Mobile Floating Action Button */}
           <button 
