@@ -355,8 +355,7 @@ export async function generateWorkspaceTask(
 
           if (!parsed) {
             enqueue(sseEvent("error", { message: "Generation failed. Please try again." }));
-            controller.close();
-            return;
+            throw new Error("Generation failed.");
           }
 
           assistantMessage = parsed.assistantMessage;
