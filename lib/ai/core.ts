@@ -318,14 +318,20 @@ export async function generateWorkspaceTask(
 
     let workspace;
     if (workspaceId) {
-      workspace = await Workspace.findOneAndUpdate(
-        { _id: workspaceId, userId: userObjectId },
-        { messages: updatedMessages, fileData: newFileData },
-        { new: true }
-      );
+      workspace = await Workspace.findOne({ _id: workspaceId, userId: userObjectId });
+    }
+
+    if (workspace) {
+      workspace.messages = updatedMessages;
+      workspace.fileData = newFileData;
+      if (aiTitle && !workspace.title) {
+        workspace.title = aiTitle;
+      }
+      await workspace.save();
     } else {
       const subdomain = "app-" + Math.random().toString(36).substring(2, 9);
       workspace = await Workspace.create({
+        _id: workspaceId ? new mongoose.Types.ObjectId(workspaceId) : new mongoose.Types.ObjectId(),
         userId: userObjectId,
         title: aiTitle,
         subdomain,
