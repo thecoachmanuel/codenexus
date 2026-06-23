@@ -290,7 +290,17 @@ export function CodePanel({
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
-          {!isProUser && <PricingModal />}
+          {!isProUser && (
+            <PricingModal reason="upgrade">
+              <span className="group relative flex h-7 cursor-pointer items-center gap-1.5 overflow-hidden rounded-md border border-white/25 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-cyan-500/10 px-2.5 text-sm font-medium text-white/90 transition-all duration-300 hover:border-white/20 hover:from-violet-500/20 hover:via-fuchsia-500/20 hover:to-cyan-500/20 hover:text-white/90 hover:shadow-[0_0_12px_rgba(139,92,246,0.3)]">
+                <span className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <Bot className="h-3.5 w-3.5 text-violet-400 transition-colors group-hover:text-violet-300" />
+                <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
+                  Upgrade to PRO
+                </span>
+              </span>
+            </PricingModal>
+          )}
 
           <VercelDeployModal
             fileData={fileData}
