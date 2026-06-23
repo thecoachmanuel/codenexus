@@ -5,7 +5,7 @@ import { WebContainer } from "@webcontainer/api";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
-import { Loader2, Terminal as TerminalIcon, RefreshCw } from "lucide-react";
+import { Loader2, Terminal as TerminalIcon, RefreshCw, AlertTriangle, Zap } from "lucide-react";
 import type { FileData } from "@/types/workspace";
 
 declare global {
@@ -22,11 +22,33 @@ interface PreviewPanelProps {
 
 type Phase = "idle" | "booting" | "installing" | "starting" | "ready" | "error";
 
+// Detect if the app is static (just HTML/CSS/JS with no npm build step needed)
+function isStaticApp(files: Record<string, { code: string }>): boolean {
+  const paths = Object.keys(files);
+  const hasPackageJson = paths.some(p => p === "/package.json" || p === "package.json");
+  if (!hasPackageJson) return true;
+
+  const pkgPath = paths.find(p => p === "/package.json" || p === "package.json");
+  if (!pkgPath) return true;
+
+  try {
+    const pkg = JSON.parse(files[pkgPath].code);
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    const hasBuildDeps = Object.keys(deps).some(d =>
+      ["vite", "webpack", "parcel", "react-scripts", "next", "nuxt", "esbuild"].includes(d)
+    );
+    return !hasBuildDeps;
+  } catch {
+    return false;
+  }
+}
+
 export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
-  const terminalRef = useRef<HTMLDivElement>(null);
+  const terminalContainerRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const devProcessRef = useRef<any>(null);
+  const errorBufferRef = useRef<string[]>([]);
 
   const [url, setUrl] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -34,22 +56,30 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
 
   // Boot the terminal UI (xterm.js) as soon as the component mounts
   useEffect(() => {
-    if (!terminalRef.current || xtermRef.current) return;
+    if (!terminalContainerRef.current || xtermRef.current) return;
     const term = new Terminal({
       convertEol: true,
-      theme: { background: "#0a0a0a", foreground: "#d4d4d4" },
+      theme: {
+        background: "#0d0d0d",
+        foreground: "#d4d4d4",
+        cursor: "#60a5fa",
+        selectionBackground: "#60a5fa33",
+      },
       fontSize: 12,
       fontFamily: "Menlo, Monaco, 'Courier New', monospace",
+      scrollback: 500,
     });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
-    term.open(terminalRef.current);
+    term.open(terminalContainerRef.current);
     fitAddon.fit();
     xtermRef.current = term;
     fitAddonRef.current = fitAddon;
 
-    const ro = new ResizeObserver(() => fitAddon.fit());
-    ro.observe(terminalRef.current);
+    const ro = new ResizeObserver(() => {
+      try { fitAddon.fit(); } catch {}
+    });
+    ro.observe(terminalContainerRef.current);
 
     return () => ro.disconnect();
   }, []);
@@ -64,9 +94,35 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       devProcessRef.current = null;
     }
     setUrl(null);
+    errorBufferRef.current = [];
+
+    // Helper to capture errors from output
+    const captureErrors = (chunk: string) => {
+      const errorPatterns = [
+        /error:/i,
+        /failed to compile/i,
+        /cannot find module/i,
+        /syntaxerror/i,
+        /typeerror/i,
+        /referenceerror/i,
+        /uncaught exception/i,
+        /error\[e\d+\]/i, // Rust/Vite error codes
+      ];
+      if (errorPatterns.some(p => p.test(chunk))) {
+        errorBufferRef.current.push(chunk.replace(/\x1b\[[0-9;]*m/g, "").trim());
+        // Debounce error reporting — only fire after 2s of no new errors
+        const snapshot = [...errorBufferRef.current];
+        setTimeout(() => {
+          if (JSON.stringify(errorBufferRef.current) === JSON.stringify(snapshot)) {
+            const errorMsg = snapshot.slice(-5).join("\n").substring(0, 600);
+            onError(errorMsg);
+          }
+        }, 2000);
+      }
+    };
 
     try {
-      // 1. Boot WebContainer (singleton)
+      // 1. Boot WebContainer (singleton — only boots once per page load)
       if (!window.__wc_instance) {
         setPhase("booting");
         term.writeln("\x1b[36m◆ Booting WebContainer...\x1b[0m");
@@ -74,14 +130,17 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
           window.__wc_boot_promise = WebContainer.boot();
         }
         window.__wc_instance = await window.__wc_boot_promise;
-
-        window.__wc_instance.on("server-ready", (port, serverUrl) => {
-          term.writeln(`\x1b[32m✓ Server ready at ${serverUrl}\x1b[0m`);
-          setUrl(serverUrl);
-          setPhase("ready");
-        });
+        term.writeln("\x1b[32m✓ WebContainer ready\x1b[0m");
       }
       const wc = window.__wc_instance;
+
+      // Register server-ready listener (re-registers each time we call runApp)
+      const serverReadyHandler = (port: number, serverUrl: string) => {
+        term.writeln(`\x1b[32m✓ Server ready → ${serverUrl}\x1b[0m`);
+        setUrl(serverUrl);
+        setPhase("ready");
+      };
+      wc.on("server-ready", serverReadyHandler);
 
       // 2. Build file tree for WebContainer
       term.writeln("\x1b[36m◆ Mounting files...\x1b[0m");
@@ -103,40 +162,81 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       await wc.mount(tree);
       term.writeln(`\x1b[32m✓ ${Object.keys(data.files).length} files mounted\x1b[0m`);
 
-      // 3. npm install
+      // 3. Check if static app — if so, skip npm install and serve directly
+      const staticApp = isStaticApp(data.files);
+      if (staticApp) {
+        const hasIndex = Object.keys(data.files).some(
+          p => p === "/index.html" || p === "index.html"
+        );
+        if (hasIndex) {
+          setPhase("starting");
+          term.writeln("\x1b[36m◆ Serving static files with npx serve...\x1b[0m");
+          const serve = await wc.spawn("npx", ["--yes", "serve", "-l", "3000", "-s", "."]);
+          devProcessRef.current = serve;
+          serve.output.pipeTo(
+            new WritableStream({
+              write(chunk) {
+                term.write(chunk);
+                captureErrors(chunk);
+              },
+            })
+          );
+          return; // server-ready listener will fire
+        }
+      }
+
+      // 4. npm install (fast flags)
       setPhase("installing");
-      term.writeln("\x1b[36m◆ Running npm install...\x1b[0m");
-      const install = await wc.spawn("npm", ["install"]);
+      term.writeln("\x1b[36m◆ Installing dependencies (this takes ~30s)...\x1b[0m");
+      const install = await wc.spawn("npm", [
+        "install",
+        "--prefer-offline",
+        "--no-audit",
+        "--no-fund",
+        "--legacy-peer-deps",
+      ]);
       install.output.pipeTo(
-        new WritableStream({ write(chunk) { term.write(chunk); } })
+        new WritableStream({
+          write(chunk) {
+            term.write(chunk);
+          },
+        })
       );
       const exitCode = await install.exit;
       if (exitCode !== 0) {
-        term.writeln(`\x1b[31m✗ npm install failed (exit ${exitCode})\x1b[0m`);
+        const msg = `npm install failed (exit ${exitCode}). Check the terminal for details.`;
+        term.writeln(`\x1b[31m✗ ${msg}\x1b[0m`);
         setPhase("error");
-        onError(`npm install failed with exit code ${exitCode}`);
+        onError(msg);
         return;
       }
       term.writeln("\x1b[32m✓ Dependencies installed\x1b[0m");
 
-      // 4. Determine start script
+      // 5. Determine start script from package.json
       let startScript = "dev";
-      const pkgRaw = data.files["/package.json"]?.code || data.files["package.json"]?.code;
+      const pkgRaw =
+        data.files["/package.json"]?.code || data.files["package.json"]?.code;
       if (pkgRaw) {
         try {
           const pkg = JSON.parse(pkgRaw);
           if (pkg.scripts?.dev) startScript = "dev";
           else if (pkg.scripts?.start) startScript = "start";
+          else if (pkg.scripts?.serve) startScript = "serve";
         } catch {}
       }
 
-      // 5. Start dev server
+      // 6. Start dev server
       setPhase("starting");
-      term.writeln(`\x1b[36m◆ Running npm run ${startScript}...\x1b[0m`);
+      term.writeln(`\x1b[36m◆ Starting: npm run ${startScript}...\x1b[0m`);
       const dev = await wc.spawn("npm", ["run", startScript]);
       devProcessRef.current = dev;
       dev.output.pipeTo(
-        new WritableStream({ write(chunk) { term.write(chunk); } })
+        new WritableStream({
+          write(chunk) {
+            term.write(chunk);
+            captureErrors(chunk);
+          },
+        })
       );
     } catch (err: any) {
       const msg = err?.message || String(err);
@@ -146,39 +246,38 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     }
   }, [onError]);
 
-  // Debounce fileData changes – only re-run when files change significantly
+  // Run app when fileData changes (debounced to wait for streaming to finish)
   const fileDataRef = useRef<FileData | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
     if (!fileData?.files) return;
     const fileCount = Object.keys(fileData.files).length;
     if (fileCount === 0) return;
 
-    // Only run if files actually changed
-    const prevCount = Object.keys(fileDataRef.current?.files || {}).length;
     fileDataRef.current = fileData;
 
-    // Clear previous debounce
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    // Debounce by 2s to wait for streaming to finish
+    // Wait 2.5s after last file change before running — avoids running during streaming
     debounceRef.current = setTimeout(() => {
+      hasRunRef.current = true;
       runApp(fileData);
-    }, 2000);
+    }, 2500);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [fileData, runApp]);
 
-  const statusLabel: Record<Phase, string> = {
+  const phaseLabel: Record<Phase, string> = {
     idle: "Waiting for generated files...",
     booting: "Booting WebContainer...",
     installing: "Installing dependencies...",
     starting: "Starting dev server...",
     ready: "Running",
-    error: "Error",
+    error: "Build failed",
   };
 
   return (
@@ -186,19 +285,24 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       {/* Status bar */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/5 bg-[#111] shrink-0">
         <div className="flex items-center gap-2 text-xs text-white/50">
-          <div className={`h-2 w-2 rounded-full ${
-            phase === "ready" ? "bg-green-400 animate-pulse" :
-            phase === "error" ? "bg-red-400" :
-            phase === "idle" ? "bg-white/20" :
-            "bg-yellow-400 animate-pulse"
-          }`} />
-          <span>{statusLabel[phase]}</span>
+          <div
+            className={`h-2 w-2 rounded-full ${
+              phase === "ready"
+                ? "bg-green-400 animate-pulse"
+                : phase === "error"
+                ? "bg-red-400"
+                : phase === "idle"
+                ? "bg-white/20"
+                : "bg-yellow-400 animate-pulse"
+            }`}
+          />
+          <span>{phaseLabel[phase]}</span>
           {phase !== "idle" && phase !== "ready" && phase !== "error" && (
             <Loader2 className="h-3 w-3 animate-spin" />
           )}
         </div>
         <div className="flex items-center gap-2">
-          {url && (
+          {(phase === "ready" || phase === "error") && fileDataRef.current && (
             <button
               onClick={() => runApp(fileDataRef.current!)}
               className="text-white/30 hover:text-white/70 transition-colors"
@@ -209,7 +313,9 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
           )}
           <button
             onClick={() => setShowTerminal((v) => !v)}
-            className={`text-white/30 hover:text-white/70 transition-colors ${showTerminal ? "text-white/70" : ""}`}
+            className={`transition-colors ${
+              showTerminal ? "text-white/70" : "text-white/30 hover:text-white/70"
+            }`}
             title="Toggle terminal"
           >
             <TerminalIcon className="h-3.5 w-3.5" />
@@ -218,7 +324,11 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       </div>
 
       {/* Preview iframe */}
-      <div className={`flex-1 relative bg-white overflow-hidden transition-all ${showTerminal ? "flex-[3]" : "flex-1"}`}>
+      <div
+        className={`relative bg-white overflow-hidden transition-all duration-200 ${
+          showTerminal ? "flex-[2]" : "flex-1"
+        }`}
+      >
         {url ? (
           <iframe
             src={url}
@@ -227,43 +337,77 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
             allow="cross-origin-isolated"
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0a0a0a]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0a0a0a]">
             {phase === "idle" ? (
               <>
-                <div className="text-white/20 text-4xl">⚡</div>
-                <p className="text-sm text-white/30">Generate an app to see the live preview</p>
+                <Zap className="h-10 w-10 text-white/10" />
+                <div className="text-center">
+                  <p className="text-sm text-white/30">Live preview will appear here</p>
+                  <p className="text-xs text-white/15 mt-1">Generate an app to get started</p>
+                </div>
               </>
             ) : phase === "error" ? (
               <>
-                <div className="text-red-400 text-3xl">✗</div>
-                <p className="text-sm text-red-400/70">Preview failed — check the terminal</p>
+                <AlertTriangle className="h-8 w-8 text-red-400/50" />
+                <div className="text-center">
+                  <p className="text-sm text-red-400/70 font-medium">Build failed</p>
+                  <p className="text-xs text-white/30 mt-1">
+                    Open the terminal ↗ to see details, or use{" "}
+                    <span className="text-blue-400/70">Fix with AI</span>
+                  </p>
+                </div>
                 <button
                   onClick={() => runApp(fileDataRef.current!)}
-                  className="mt-2 text-xs text-white/50 border border-white/10 rounded px-3 py-1.5 hover:bg-white/5 transition-colors"
+                  className="text-xs text-white/40 border border-white/10 rounded-md px-3 py-1.5 hover:bg-white/5 transition-colors"
                 >
-                  Retry
+                  ↺ Retry
                 </button>
               </>
             ) : (
               <>
-                <Loader2 className="h-8 w-8 animate-spin text-blue-400/60" />
-                <p className="text-sm text-white/40">{statusLabel[phase]}</p>
-                <p className="text-xs text-white/20">This usually takes 20-60 seconds</p>
+                <div className="relative">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-400/50" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-white/50 font-medium">{phaseLabel[phase]}</p>
+                  {phase === "installing" && (
+                    <p className="text-xs text-white/25 mt-1">
+                      First build takes ~30–60s · Subsequent builds are faster
+                    </p>
+                  )}
+                  {phase === "starting" && (
+                    <p className="text-xs text-white/25 mt-1">Starting dev server...</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowTerminal(true)}
+                  className="text-xs text-white/25 border border-white/5 rounded-md px-3 py-1.5 hover:bg-white/5 transition-colors"
+                >
+                  View terminal output
+                </button>
               </>
             )}
           </div>
         )}
       </div>
 
-      {/* Terminal */}
+      {/* Terminal panel */}
       {showTerminal && (
-        <div className="flex-1 border-t border-white/5 bg-[#0a0a0a] overflow-hidden" style={{ minHeight: 160, maxHeight: 300 }}>
-          <div ref={terminalRef} className="h-full w-full p-1" />
+        <div
+          className="border-t border-white/5 bg-[#0d0d0d] overflow-hidden shrink-0"
+          style={{ height: 220 }}
+        >
+          <div ref={terminalContainerRef} className="h-full w-full p-1" />
         </div>
       )}
-      {/* Always mount the terminal div for xterm, but hide it visually when not shown */}
+
+      {/* Hidden terminal mount when collapsed — keeps xterm.js alive */}
       {!showTerminal && (
-        <div ref={terminalRef} className="h-0 w-0 overflow-hidden" />
+        <div
+          ref={terminalContainerRef}
+          className="h-0 overflow-hidden"
+          aria-hidden="true"
+        />
       )}
     </div>
   );

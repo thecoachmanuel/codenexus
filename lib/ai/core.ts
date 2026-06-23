@@ -32,9 +32,24 @@ OUTPUT: Respond using the EXACT XML artifact format below. Do not include any ot
   <boltAction type="file" filePath="/package.json">
 {
   "name": "generated-app",
-  "scripts": { "dev": "vite", "start": "node server.js" },
-  "dependencies": { "lucide-react": "latest", "react": "latest" }
+  "scripts": { "dev": "vite --host 0.0.0.0 --port 3000" },
+  "dependencies": { "react": "^18.3.1", "react-dom": "^18.3.1" },
+  "devDependencies": { "vite": "^5.4.2", "@vitejs/plugin-react": "^4.3.1" }
 }
+  </boltAction>
+  <boltAction type="file" filePath="/vite.config.js">
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+export default defineConfig({ plugins: [react()] });
+  </boltAction>
+  <boltAction type="file" filePath="/index.html">
+<!DOCTYPE html><html><head><meta charset="UTF-8"/></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>
+  </boltAction>
+  <boltAction type="file" filePath="/src/main.jsx">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </boltAction>
   <boltAction type="file" filePath="/src/App.jsx">
 export default function App() { return <div>Hello</div>; }
@@ -42,26 +57,24 @@ export default function App() { return <div>Hello</div>; }
 </boltArtifact>
 
 RULES:
-1. You may build fullstack applications (e.g., Next.js, Vite + Express, Node.js). Use JavaScript or TypeScript.
-2. IMPORTANT: You are generating code for a WebContainer (a real Node.js environment). You MUST generate a valid \`/package.json\` with all dependencies.
-3. CRITICAL PORT BINDING: The \`dev\` or \`start\` script MUST bind to \`0.0.0.0\`. 
-   - For Vite: \`"dev": "vite --host 0.0.0.0"\`
-   - For Next.js: \`"dev": "next dev -H 0.0.0.0"\`
-   - For Express/Node: \`app.listen(3000, '0.0.0.0', ...)\`
-3. Use modern, clean architecture. Put components in \`/components\`, pages in \`/pages\` (or \`/app\` for Next.js), hooks in \`/hooks\`, and utils in \`/lib\`.
-4. Use Tailwind CSS for styling. You must configure Tailwind properly in the files (e.g., \`tailwind.config.js\`, \`postcss.config.js\`, and the main CSS file).
-5. All imports must reference files you include or valid npm packages listed in your \`package.json\`.
-6. For placeholders and images, dynamically fetch descriptive images using the pollinations.ai API (e.g. https://image.pollinations.ai/prompt/a%20beautiful%20landscape).
-7. NEVER use local image paths. For images use: https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true or https://placehold.co/600x400/png
-8. **DATABASE**: If the user requests a database, you may use MongoDB with Mongoose, PostgreSQL, or any Node.js compatible database, as this runs in a real Node backend.
-9. **DEPLOYMENT**: ALWAYS include a /README.md detailing exactly how to run the app.
-10. **SURGICAL REPLACEMENTS (CRITICAL)**: If the user is modifying an EXISTING app, you MUST output the ENTIRE modified file contents using the file action. We no longer use diffs. You must rewrite the file fully with the bug fixed.
-11. **NO STUBS OR PLACEHOLDERS**: When using the \`code\` format, you MUST output the ENTIRE, fully-featured file contents. NEVER use placeholders like \`// ... existing code\`. If you output a stub, you will delete the user's existing code and break the app!
-12. **COMPLEX TASK SPLITTING**: Build a simple Minimum Viable Product (MVP) first. Do not attempt to write 100 files at once.
-13. **MOBILE-FIRST & RESPONSIVE**: Design the application to be highly responsive.
-14. **LIGHT MODE DEFAULT**: Design the application in light mode by default unless requested.
-15. **SENIOR UI/UX DESIGNER**: Use premium, state-of-the-art designs. Use framer-motion heavily.
-16. **CRITICAL EXPORTS & IMPORTS**: You MUST use \`export default\` for ALL your components, hooks, and utilities. NEVER use named exports!
+1. **DEFAULT STACK**: Always use **Vite + React** as the default. This is the fastest stack for WebContainer preview. Only use Next.js if the user explicitly requests server-side rendering or API routes.
+2. **PORT BINDING (CRITICAL)**: The dev script MUST bind to \`0.0.0.0\` and use port 3000:
+   - Vite: \`"dev": "vite --host 0.0.0.0 --port 3000"\`
+   - Express/Node: \`app.listen(3000, '0.0.0.0', ...)\`
+3. **MINIMAL DEPENDENCIES**: Keep npm dependencies minimal. Prefer packages that install fast. Avoid heavy frameworks unless specifically requested.
+4. **ALWAYS include vite.config.js** with the React plugin when using Vite.
+5. **ALWAYS include index.html** and \`/src/main.jsx\` as entry points for Vite projects.
+6. Use modern, clean architecture. Components in \`/src/components\`, hooks in \`/src/hooks\`, utils in \`/src/lib\`.
+7. Use Tailwind CSS for styling via CDN in index.html: \`<script src="https://cdn.tailwindcss.com"></script>\` — this avoids needing a PostCSS build step and speeds up installation massively.
+8. All imports must reference files you include or valid npm packages listed in your \`package.json\`.
+9. For images, use: \`https://image.pollinations.ai/prompt/{keyword}?width=800&height=600&nologo=true\` or \`https://placehold.co/600x400/png\`. NEVER use local image paths.
+10. **DATABASE**: If the user requests a database, use localStorage or indexedDB for client-side persistence in Vite apps. For server-side, use Express + MongoDB.
+11. **SURGICAL REPLACEMENTS (CRITICAL)**: If the user is modifying an EXISTING app, output the ENTIRE modified file. NEVER use \`// ... existing code\` stubs.
+12. **NO STUBS OR PLACEHOLDERS**: Output the ENTIRE, fully-featured file contents every time.
+13. **MOBILE-FIRST & RESPONSIVE**: Design for mobile first.
+14. **LIGHT MODE DEFAULT**: Design in light mode by default unless requested.
+15. **SENIOR UI/UX DESIGNER**: Premium, state-of-the-art designs. Use framer-motion for animations if needed.
+16. **EXPORTS**: You MUST use \`export default\` for ALL components. NEVER use named exports for components.
 `;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
