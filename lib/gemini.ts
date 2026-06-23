@@ -111,7 +111,7 @@ export async function generateContentStream(options: GenerateOptions) {
     return null;
   };
 
-  let stream = await tryModel(model);
+  let stream = await tryModel(model as string);
   if (stream) return stream;
 
 
@@ -171,7 +171,7 @@ export async function generateContent(options: GenerateOptions) {
     return null;
   };
 
-  let response = await tryModel(model);
+  let response = await tryModel(model as string);
   if (response) return response;
 
 
