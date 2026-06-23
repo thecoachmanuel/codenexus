@@ -1,4 +1,6 @@
-"use client";
+const fs = require('fs');
+
+const code = `"use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import {
@@ -103,7 +105,7 @@ function NativeCodeViewer({ files }: { files: Record<string, { code: string }> }
             <button
               key={path}
               onClick={() => setActiveFile(path)}
-              className={`flex items-center gap-2 px-3 py-1.5 text-sm transition-colors text-left truncate ${activeFile === path ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
+              className={\`flex items-center gap-2 px-3 py-1.5 text-sm transition-colors text-left truncate \${activeFile === path ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white"}\`}
             >
               {getFileIcon(path)}
               <span className="truncate">{path.startsWith('/') ? path.slice(1) : path}</span>
@@ -169,7 +171,7 @@ export function CodePanel({
 
   useEffect(() => {
     if (subdomain) {
-      setLiveUrl(`${window.location.protocol}//${subdomain}.${window.location.host}`);
+      setLiveUrl(\`\${window.location.protocol}//\${subdomain}.\${window.location.host}\`);
     } else {
       setLiveUrl(null);
     }
@@ -216,7 +218,7 @@ export function CodePanel({
       for (const [path, obj] of Object.entries(fileData.files)) {
         let code = obj.code;
         if (typeof code === "string") {
-          code = code.replace(/^\s*\`\`\`[a-z]*\n/i, "").replace(/\n\`\`\`\s*$/i, "");
+          code = code.replace(/^\\s*\\\`\\\`\\\`[a-z]*\\n/i, "").replace(/\\n\\\`\\\`\\\`\\s*$/i, "");
         }
         zip.file(path.startsWith("/") ? path.slice(1) : path, code);
       }
@@ -225,7 +227,7 @@ export function CodePanel({
       const url = URL.createObjectURL(content);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${appTitle || "generated-app"}.zip`;
+      a.download = \`\${appTitle || "generated-app"}.zip\`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -245,7 +247,7 @@ export function CodePanel({
         let normalizedKey = key.startsWith("/") ? key : "/" + key;
         let rawCode = val.code;
         if (typeof rawCode === "string") {
-          rawCode = rawCode.replace(/^\`\`\`[a-z]*\n/i, "").replace(/\n\`\`\`$/i, "");
+          rawCode = rawCode.replace(/^\\\`\\\`\\\`[a-z]*\\n/i, "").replace(/\\n\\\`\\\`\\\`$/i, "");
         }
         f[normalizedKey] = { code: rawCode };
       }
@@ -367,26 +369,26 @@ export function CodePanel({
         )}
 
         {/* PREVIEW TAB */}
-        <div className={`absolute inset-0 ${activeTab === "preview" ? "block" : "hidden"} ${isFullscreen ? "fixed z-50" : ""}`}>
+        <div className={\`absolute inset-0 \${activeTab === "preview" ? "block" : "hidden"} \${isFullscreen ? "fixed z-50" : ""}\`}>
             {/* Viewport Toggles */}
             <div className="hidden md:flex absolute top-4 right-4 z-10 items-center gap-1 rounded-lg border border-black/10 bg-white/50 p-1 backdrop-blur-md shadow-lg opacity-60 hover:opacity-100">
               <button
                 onClick={() => setPreviewMode("mobile")}
-                className={`rounded-md p-1.5 transition-colors ${previewMode === "mobile" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}`}
+                className={\`rounded-md p-1.5 transition-colors \${previewMode === "mobile" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}\`}
                 title="Mobile Preview"
               >
                 <Smartphone className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setPreviewMode("tablet")}
-                className={`rounded-md p-1.5 transition-colors ${previewMode === "tablet" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}`}
+                className={\`rounded-md p-1.5 transition-colors \${previewMode === "tablet" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}\`}
                 title="Tablet Preview"
               >
                 <Tablet className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setPreviewMode("desktop")}
-                className={`rounded-md p-1.5 transition-colors ${previewMode === "desktop" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}`}
+                className={\`rounded-md p-1.5 transition-colors \${previewMode === "desktop" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}\`}
                 title="Desktop Preview"
               >
                 <Monitor className="h-4 w-4" />
@@ -402,13 +404,13 @@ export function CodePanel({
             </div>
 
             <div
-              className={`transition-all duration-500 ease-in-out mx-auto h-full ${
+              className={\`transition-all duration-500 ease-in-out mx-auto h-full \${
                 previewMode === "mobile"
                   ? "h-[812px] w-[375px] shrink-0 overflow-hidden rounded-[2.5rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
                   : previewMode === "tablet"
                   ? "h-[1024px] w-[768px] shrink-0 overflow-hidden rounded-[2rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
                   : "w-full"
-              }`}
+              }\`}
               style={{ height: (previewMode === "desktop" && !isFullscreen) ? "100%" : undefined }}
             >
               <PreviewPanel 
@@ -420,12 +422,12 @@ export function CodePanel({
         </div>
 
         {/* CODE TAB */}
-        <div className={`absolute inset-0 ${activeTab === "code" ? "block" : "hidden"}`}>
+        <div className={\`absolute inset-0 \${activeTab === "code" ? "block" : "hidden"}\`}>
            <NativeCodeViewer files={files} />
         </div>
 
         {/* ENV TAB */}
-        <div className={`absolute inset-0 ${activeTab === "env" ? "block" : "hidden"} overflow-y-auto p-6 text-white`}>
+        <div className={\`absolute inset-0 \${activeTab === "env" ? "block" : "hidden"} overflow-y-auto p-6 text-white\`}>
             <div className="mx-auto max-w-2xl space-y-6">
               <div>
                 <h3 className="text-lg font-medium text-white/90">Environment Variables</h3>
@@ -513,3 +515,7 @@ export function CodePanel({
     </div>
   );
 }
+`;
+
+fs.writeFileSync('/Users/admin/Desktop/ai-app-builder/components/CodePanel.tsx', code);
+console.log("Successfully wrote to CodePanel.tsx");

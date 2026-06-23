@@ -12,8 +12,6 @@
     "@arcjet/next": "^1.4.0",
     "@base-ui/react": "^1.4.1",
     "@cline/sdk": "^0.0.42",
-    "@codesandbox/sandpack-react": "^2.20.0",
-    "@codesandbox/sandpack-themes": "^2.0.21",
     "@google/genai": "^2.4.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
