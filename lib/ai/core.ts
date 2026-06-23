@@ -343,10 +343,16 @@ export async function generateWorkspaceTask(
     if (!workspace) throw new Error("Failed to save workspace");
 
     // Deduct credits
-    await User.updateOne({ _id: userObjectId }, { $inc: { credits: -cost } });
+    const updatedUser = await User.findOneAndUpdate({ _id: userObjectId }, { $inc: { credits: -cost } }, { new: true });
 
     enqueue(sseEvent("status", { message: "Complete!" }));
-    enqueue(sseEvent("done", { workspaceId: workspace._id.toString() }));
+    enqueue(sseEvent("done", { 
+      workspaceId: workspace._id.toString(),
+      subdomain: workspace.subdomain,
+      fileData: newFileData,
+      assistantMessage: assistantMessage,
+      creditsRemaining: updatedUser?.credits || 0
+    }));
 
   } catch (error: any) {
     console.error("Workspace generation error:", error);
