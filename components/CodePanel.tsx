@@ -26,7 +26,7 @@ import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { Columns } from "lucide-react";
 import { PricingModal } from "@/components/PricingModal";
 import { GitHubExportModal } from "@/components/GitHubExportModal";
