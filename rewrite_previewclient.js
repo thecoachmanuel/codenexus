@@ -1,4 +1,6 @@
-"use client";
+const fs = require('fs');
+
+const code = `"use client";
 
 import { useEffect, useState } from "react";
 import { PreviewPanel } from "@/components/PreviewPanel";
@@ -42,3 +44,7 @@ export function PreviewClient({ fileData, title, isProUser = false }: PreviewCli
     </div>
   );
 }
+`;
+
+fs.writeFileSync('/Users/admin/Desktop/ai-app-builder/components/PreviewClient.tsx', code);
+console.log("Successfully wrote to PreviewClient.tsx");
