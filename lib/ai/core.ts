@@ -43,7 +43,11 @@ export default function App() { return <div>Hello</div>; }
 
 RULES:
 1. You may build fullstack applications (e.g., Next.js, Vite + Express, Node.js). Use JavaScript or TypeScript.
-2. IMPORTANT: You are generating code for a WebContainer (a real Node.js environment). You MUST generate a valid \`/package.json\` with all dependencies and a \`dev\` or \`start\` script that starts the app on a port (preferably 3000).
+2. IMPORTANT: You are generating code for a WebContainer (a real Node.js environment). You MUST generate a valid \`/package.json\` with all dependencies.
+3. CRITICAL PORT BINDING: The \`dev\` or \`start\` script MUST bind to \`0.0.0.0\`. 
+   - For Vite: \`"dev": "vite --host 0.0.0.0"\`
+   - For Next.js: \`"dev": "next dev -H 0.0.0.0"\`
+   - For Express/Node: \`app.listen(3000, '0.0.0.0', ...)\`
 3. Use modern, clean architecture. Put components in \`/components\`, pages in \`/pages\` (or \`/app\` for Next.js), hooks in \`/hooks\`, and utils in \`/lib\`.
 4. Use Tailwind CSS for styling. You must configure Tailwind properly in the files (e.g., \`tailwind.config.js\`, \`postcss.config.js\`, and the main CSS file).
 5. All imports must reference files you include or valid npm packages listed in your \`package.json\`.
@@ -280,6 +284,9 @@ export async function generateWorkspaceTask(
           const pkg = JSON.parse(pkgJsonStr);
           if (pkg.dependencies) {
              finalDependencies = { ...finalDependencies, ...pkg.dependencies };
+          }
+          if (pkg.devDependencies) {
+             finalDependencies = { ...finalDependencies, ...pkg.devDependencies };
           }
        } catch(e) {}
     }

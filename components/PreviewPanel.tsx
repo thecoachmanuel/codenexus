@@ -137,11 +137,17 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
   }, [fileData, isBooting]);
 
   // Run install and dev
+  // Extract package.json string to use as a dependency so we restart when it changes
+  const pkgJsonStr = fileData?.files?.["/package.json"]?.code || fileData?.files?.["package.json"]?.code || "";
+
   useEffect(() => {
     if (isBooting || !webcontainerInstance || !filesMounted) return;
     let installProcess: any = null;
     let devProcess: any = null;
     
+    // Clear URL to show loader while installing/restarting
+    setUrl(null);
+
     const run = async () => {
        const term = xtermRef.current!;
        
@@ -162,7 +168,6 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
        
        // Determine start script
        let startScript = "start";
-       const pkgJsonStr = fileData?.files?.["/package.json"]?.code || fileData?.files?.["package.json"]?.code;
        if (pkgJsonStr) {
           try {
              const pkg = JSON.parse(pkgJsonStr);
@@ -190,7 +195,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
        if (devProcess) devProcess.kill();
        if (installProcess) installProcess.kill();
     };
-  }, [isBooting, filesMounted]);
+  }, [isBooting, filesMounted, pkgJsonStr]);
 
   return (
     <div className="flex flex-col h-full w-full bg-black">
