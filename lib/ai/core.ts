@@ -42,10 +42,7 @@ OUTPUT: Respond using the EXACT XML artifact format below. Do not include any ot
   },
   "devDependencies": {
     "vite": "^5.4.2",
-    "@vitejs/plugin-react": "^4.3.1",
-    "tailwindcss": "^3.4.10",
-    "postcss": "^8.4.41",
-    "autoprefixer": "^10.4.20"
+    "@vitejs/plugin-react": "^4.3.1"
   }
 }
   </boltAction>
@@ -54,27 +51,6 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 export default defineConfig({ plugins: [react()] });
   </boltAction>
-  <boltAction type="file" filePath="/tailwind.config.js">
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  theme: { extend: {} },
-  plugins: [],
-};
-  </boltAction>
-  <boltAction type="file" filePath="/postcss.config.js">
-export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-};
-  </boltAction>
-  <boltAction type="file" filePath="/src/index.css">
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-  </boltAction>
   <boltAction type="file" filePath="/index.html">
 <!DOCTYPE html>
 <html lang="en">
@@ -82,6 +58,40 @@ export default {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-out',
+              'slide-up': 'slideUp 0.5s ease-out',
+            },
+            keyframes: {
+              fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+              slideUp: { from: { opacity: 0, transform: 'translateY(20px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+            },
+          }
+        }
+      }
+    </script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body, #root { height: 100%; margin: 0; }
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
@@ -89,11 +99,11 @@ export default {
   </body>
 </html>
   </boltAction>
+
   <boltAction type="file" filePath="/src/main.jsx">
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -106,7 +116,7 @@ import { motion } from 'framer-motion';
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -123,12 +133,12 @@ export default function App() {
 RULES:
 
 ## Stack & Speed
-1. **DEFAULT STACK**: Always use **Vite + React**. Only deviate if user explicitly asks for Next.js/Express/Node.
+1. **DEFAULT STACK**: Always use **Vite + React** (fastest WebContainer startup). Only deviate if user explicitly asks for Next.js/Express/Node.
 2. **PORT BINDING (CRITICAL)**: dev script MUST use \`vite --host 0.0.0.0 --port 3000\` — no exceptions.
-3. **ALWAYS** include these files: \`/package.json\`, \`/vite.config.js\`, \`/tailwind.config.js\`, \`/postcss.config.js\`, \`/index.html\`, \`/src/main.jsx\`, \`/src/index.css\`, \`/src/App.jsx\`.
-4. **STANDARD TAILWIND**: Always configure Tailwind properly via \`postcss.config.js\` and \`tailwind.config.js\`. Do NOT use a CDN. Ensure \`/src/index.css\` is imported in \`/src/main.jsx\`.
+3. **ALWAYS** include these 4 files: \`/package.json\`, \`/vite.config.js\`, \`/index.html\`, \`/src/main.jsx\`.
+4. **TAILWIND VIA CDN**: Always load Tailwind from CDN in index.html — never install it as an npm dep. Extend the config inline as shown. This massively speeds up installation.
 5. **DEFAULT PACKAGES**: Always include \`framer-motion\` and \`lucide-react\` — users expect animations and icons. Add more packages only as needed.
-6. **NEVER** import external CSS files directly unless it's \`/src/index.css\` — use Tailwind classes.
+6. **NEVER** import CSS files separately — use Tailwind classes and inline styles only.
 
 ## Design Quality (CRITICAL — this is your most important job)
 7. **STUNNING VISUALS ARE NON-NEGOTIABLE**: Every app you generate must look like it was designed by a world-class agency. Bland, minimal, or ugly UIs are FAILURES.
