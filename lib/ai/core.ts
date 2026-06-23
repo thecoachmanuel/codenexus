@@ -6,7 +6,7 @@ import { generateContent, generateContentStream, DEFAULT_MODEL, PRO_MODEL } from
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
 import { validateAST } from "@/lib/validator";
-import { BASE_DEPENDENCIES, REACT_BOILERPLATE } from "@/lib/constants";
+import { BASE_DEPENDENCIES, FULLSTACK_BOILERPLATE } from "@/lib/constants";
 import type { Message, FileData } from "@/types/workspace";
 import mongoose from "mongoose";
 
@@ -498,9 +498,9 @@ Output strict JSON ONLY: { "type": "file", "path": "${filepath}", "content": "..
             
             if (!fileJson?.content) {
               console.error(`[Agent 3 Error] Gave up generating ${filepath} after 3 attempts.`);
-              // CRITICAL FALLBACK: If App.js fails, we must inject a dummy so the UI preview doesn't crash completely
-              if (filepath === "/App.js" || filepath === "/App.jsx") {
-                fileJson = { type: "file", path: "/App.js", content: REACT_BOILERPLATE["/App.js"].code };
+              // CRITICAL FALLBACK: If a core file fails, we inject a dummy so the UI preview doesn't crash completely
+              if (filepath === "/index.js" || filepath === "/index.tsx" || filepath === "/App.js") {
+                fileJson = { type: "file", path: "/index.js", content: FULLSTACK_BOILERPLATE["/index.js"].code };
               } else {
                 continue; // Skip non-critical file
               }
