@@ -82,6 +82,8 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     };
   }, [onError]);
 
+  const [filesMounted, setFilesMounted] = useState(false);
+
   // Mount files when fileData changes
   useEffect(() => {
     if (isBooting || !webcontainerInstance || !fileData?.files) return;
@@ -129,6 +131,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
        
        try {
           await webcontainerInstance!.mount(tree);
+          setFilesMounted(true);
        } catch (err) {
           console.error("Failed to mount files", err);
        }
@@ -139,7 +142,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
 
   // Run install and dev
   useEffect(() => {
-    if (isBooting || !webcontainerInstance) return;
+    if (isBooting || !webcontainerInstance || !filesMounted) return;
     let installProcess: any = null;
     let devProcess: any = null;
     
@@ -177,7 +180,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
        if (devProcess) devProcess.kill();
        if (installProcess) installProcess.kill();
     };
-  }, [isBooting]);
+  }, [isBooting, filesMounted]);
 
   return (
     <div className="flex flex-col h-full w-full bg-black">

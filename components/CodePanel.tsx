@@ -648,6 +648,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`
               style={{ height: (previewMode === "desktop" && !isFullscreen) ? "89%" : "100%" }}
             >
               <PreviewPanel 
+                key={fileData ? "loaded" : "empty"}
                 fileData={fileData}
                 onError={(err) => setPreviewError(err)}
               />
