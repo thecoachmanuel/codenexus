@@ -26,6 +26,8 @@ import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Columns } from "lucide-react";
 import { PricingModal } from "@/components/PricingModal";
 import { GitHubExportModal } from "@/components/GitHubExportModal";
 import { VercelDeployModal } from "@/components/VercelDeployModal";
@@ -53,7 +55,7 @@ const GithubIcon = ({ className }: { className?: string }) => (
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ActiveTab = "preview" | "code" | "env";
+type ActiveTab = "preview" | "code" | "split" | "env";
 type PreviewMode = "desktop" | "mobile" | "tablet";
 
 interface CodePanelProps {
@@ -278,6 +280,13 @@ export function CodePanel({
                 Code
               </TabsTrigger>
               <TabsTrigger
+                value="split"
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white hidden md:flex"
+              >
+                <Columns className="mr-2 h-4 w-4" />
+                Split
+              </TabsTrigger>
+              <TabsTrigger
                 value="env"
                 className="data-[state=active]:bg-white/10 data-[state=active]:text-white"
               >
@@ -377,66 +386,82 @@ export function CodePanel({
           </div>
         )}
 
-        {/* PREVIEW TAB */}
-        <div className={`absolute inset-0 ${activeTab === "preview" ? "block" : "hidden"} ${isFullscreen ? "fixed z-50" : ""}`}>
-            {/* Viewport Toggles */}
-            <div className="hidden md:flex absolute top-4 right-4 z-10 items-center gap-1 rounded-lg border border-black/10 bg-white/50 p-1 backdrop-blur-md shadow-lg opacity-60 hover:opacity-100">
-              <button
-                onClick={() => setPreviewMode("mobile")}
-                className={`rounded-md p-1.5 transition-colors ${previewMode === "mobile" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}`}
-                title="Mobile Preview"
-              >
-                <Smartphone className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setPreviewMode("tablet")}
-                className={`rounded-md p-1.5 transition-colors ${previewMode === "tablet" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}`}
-                title="Tablet Preview"
-              >
-                <Tablet className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setPreviewMode("desktop")}
-                className={`rounded-md p-1.5 transition-colors ${previewMode === "desktop" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}`}
-                title="Desktop Preview"
-              >
-                <Monitor className="h-4 w-4" />
-              </button>
-              <div className="w-px h-4 bg-black/10 mx-1" />
-              <button
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-black/5 hover:text-black"
-                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-              >
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </button>
+        {/* DYNAMIC CONTENT AREA */}
+        <div className="absolute inset-0 flex">
+          {activeTab === "split" ? (
+            <PanelGroup direction="horizontal" className="h-full w-full">
+              <Panel defaultSize={50} minSize={20} className="h-full bg-[#1e1e1e]">
+                <NativeCodeViewer files={files} />
+              </Panel>
+              <PanelResizeHandle className="w-1.5 bg-black/40 hover:bg-white/20 transition-colors cursor-col-resize flex flex-col justify-center items-center">
+                 <div className="w-0.5 h-8 bg-white/20 rounded-full" />
+              </PanelResizeHandle>
+              <Panel defaultSize={50} minSize={20} className="h-full relative bg-white">
+                <PreviewPanel 
+                  key={fileData ? "loaded" : "empty"}
+                  fileData={fileData}
+                  onError={(err) => setPreviewError(err)}
+                />
+              </Panel>
+            </PanelGroup>
+          ) : activeTab === "code" ? (
+            <div className="h-full w-full">
+               <NativeCodeViewer files={files} />
             </div>
+          ) : activeTab === "preview" ? (
+            <div className={`h-full w-full relative ${isFullscreen ? "fixed inset-0 z-50 bg-black" : ""}`}>
+              {/* Viewport Toggles */}
+              <div className="hidden md:flex absolute top-4 right-4 z-10 items-center gap-1 rounded-lg border border-black/10 bg-white/50 p-1 backdrop-blur-md shadow-lg opacity-60 hover:opacity-100">
+                <button
+                  onClick={() => setPreviewMode("mobile")}
+                  className={`rounded-md p-1.5 transition-colors ${previewMode === "mobile" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}`}
+                  title="Mobile Preview"
+                >
+                  <Smartphone className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPreviewMode("tablet")}
+                  className={`rounded-md p-1.5 transition-colors ${previewMode === "tablet" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}`}
+                  title="Tablet Preview"
+                >
+                  <Tablet className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPreviewMode("desktop")}
+                  className={`rounded-md p-1.5 transition-colors ${previewMode === "desktop" ? "bg-black/10 text-black shadow-sm" : "text-gray-600 hover:bg-black/5 hover:text-black"}`}
+                  title="Desktop Preview"
+                >
+                  <Monitor className="h-4 w-4" />
+                </button>
+                <div className="w-px h-4 bg-black/10 mx-1" />
+                <button
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-black/5 hover:text-black"
+                  title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                >
+                  {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </button>
+              </div>
 
-            <div
-              className={`transition-all duration-500 ease-in-out mx-auto h-full ${
-                previewMode === "mobile"
-                  ? "h-[812px] w-[375px] shrink-0 overflow-hidden rounded-[2.5rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
-                  : previewMode === "tablet"
-                  ? "h-[1024px] w-[768px] shrink-0 overflow-hidden rounded-[2rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
-                  : "w-full"
-              }`}
-              style={{ height: (previewMode === "desktop" && !isFullscreen) ? "100%" : undefined }}
-            >
-              <PreviewPanel 
-                key={fileData ? "loaded" : "empty"}
-                fileData={fileData}
-                onError={(err) => setPreviewError(err)}
-              />
+              <div
+                className={`transition-all duration-500 ease-in-out mx-auto h-full ${
+                  previewMode === "mobile"
+                    ? "h-[812px] w-[375px] shrink-0 overflow-hidden rounded-[2.5rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
+                    : previewMode === "tablet"
+                    ? "h-[1024px] w-[768px] shrink-0 overflow-hidden rounded-[2rem] border-[8px] border-black ring-4 ring-white/10 shadow-2xl my-8"
+                    : "w-full"
+                }`}
+                style={{ height: (previewMode === "desktop" && !isFullscreen) ? "100%" : undefined }}
+              >
+                <PreviewPanel 
+                  key={fileData ? "loaded" : "empty"}
+                  fileData={fileData}
+                  onError={(err) => setPreviewError(err)}
+                />
+              </div>
             </div>
-        </div>
-
-        {/* CODE TAB */}
-        <div className={`absolute inset-0 ${activeTab === "code" ? "block" : "hidden"}`}>
-           <NativeCodeViewer files={files} />
-        </div>
-
-        {/* ENV TAB */}
-        <div className={`absolute inset-0 ${activeTab === "env" ? "block" : "hidden"} overflow-y-auto p-6 text-white`}>
+          ) : activeTab === "env" ? (
+            <div className="h-full w-full overflow-y-auto p-6 text-white absolute inset-0 z-10 bg-[#0a0a0a]">
             <div className="mx-auto max-w-2xl space-y-6">
               <div>
                 <h3 className="text-lg font-medium text-white/90">Environment Variables</h3>
@@ -487,12 +512,12 @@ export function CodePanel({
                   onClick={handleSaveEnvVars}
                   className="bg-violet-600 text-white hover:bg-violet-700"
                 >
-                  Save & Reload
                 </Button>
               </div>
             </div>
+          </div>
+          ) : null}
         </div>
-      </div>
 
       {/* Preview error banner */}
       {previewError &&
