@@ -22,26 +22,7 @@ interface PreviewPanelProps {
 
 type Phase = "idle" | "booting" | "installing" | "starting" | "ready" | "error";
 
-// Detect if the app is static (just HTML/CSS/JS with no npm build step needed)
-function isStaticApp(files: Record<string, { code: string }>): boolean {
-  const paths = Object.keys(files);
-  const hasPackageJson = paths.some(p => p === "/package.json" || p === "package.json");
-  if (!hasPackageJson) return true;
-
-  const pkgPath = paths.find(p => p === "/package.json" || p === "package.json");
-  if (!pkgPath) return true;
-
-  try {
-    const pkg = JSON.parse(files[pkgPath].code);
-    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-    const hasBuildDeps = Object.keys(deps).some(d =>
-      ["vite", "webpack", "parcel", "react-scripts", "next", "nuxt", "esbuild"].includes(d)
-    );
-    return !hasBuildDeps;
-  } catch {
-    return false;
-  }
-}
+// Removed isStaticApp function to ensure npm install always runs for generated apps
 
 export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
   const terminalContainerRef = useRef<HTMLDivElement>(null);
@@ -162,28 +143,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       await wc.mount(tree);
       term.writeln(`\x1b[32m✓ ${Object.keys(data.files).length} files mounted\x1b[0m`);
 
-      // 3. Check if static app — if so, skip npm install and serve directly
-      const staticApp = isStaticApp(data.files);
-      if (staticApp) {
-        const hasIndex = Object.keys(data.files).some(
-          p => p === "/index.html" || p === "index.html"
-        );
-        if (hasIndex) {
-          setPhase("starting");
-          term.writeln("\x1b[36m◆ Serving static files with npx serve...\x1b[0m");
-          const serve = await wc.spawn("npx", ["--yes", "serve", "-l", "3000", "-s", "."]);
-          devProcessRef.current = serve;
-          serve.output.pipeTo(
-            new WritableStream({
-              write(chunk) {
-                term.write(chunk);
-                captureErrors(chunk);
-              },
-            })
-          );
-          return; // server-ready listener will fire
-        }
-      }
+
 
       // 4. npm install (fast flags)
       setPhase("installing");
