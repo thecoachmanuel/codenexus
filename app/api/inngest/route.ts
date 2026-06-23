@@ -6,8 +6,10 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 
 const generateCodeFunction = inngest.createFunction(
-  { id: "generate-code-background" },
-  { event: "app/generate-code" },
+  { 
+    id: "generate-code-background",
+    triggers: [{ event: "app/generate-code" }]
+  },
   async ({ event, step }) => {
     const { workspaceId, userId, messages, fileData, retryCount } = event.data;
 
