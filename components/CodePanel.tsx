@@ -389,7 +389,7 @@ export function CodePanel({
         {/* DYNAMIC CONTENT AREA */}
         <div className="absolute inset-0 flex">
           {activeTab === "split" ? (
-            <PanelGroup direction="horizontal" className="h-full w-full">
+            <PanelGroup orientation="horizontal" className="h-full w-full">
               <Panel defaultSize={50} minSize={20} className="h-full bg-[#1e1e1e]">
                 <NativeCodeViewer files={files} />
               </Panel>
