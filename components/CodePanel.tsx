@@ -509,7 +509,6 @@ export function CodePanel({
               </div>
             </div>
           </div>
-          ) : null}
         </div>
       </div>
 
