@@ -8,6 +8,12 @@ import "@xterm/xterm/css/xterm.css";
 import { Loader2 } from "lucide-react";
 import type { FileData } from "@/types/workspace";
 
+declare global {
+  interface Window {
+    webcontainerBootPromise?: Promise<WebContainer>;
+  }
+}
+
 interface PreviewPanelProps {
   fileData: FileData | null;
   onError: (error: string) => void;
@@ -48,7 +54,11 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       try {
         if (!webcontainerInstance) {
           term.write("Booting WebContainer...\r\n");
-          webcontainerInstance = await WebContainer.boot();
+          // Avoid double booting during strict mode
+          if (!window.webcontainerBootPromise) {
+             window.webcontainerBootPromise = WebContainer.boot();
+          }
+          webcontainerInstance = await window.webcontainerBootPromise;
           
           webcontainerInstance.on("server-ready", (port, url) => {
              if (mounted) {
@@ -108,7 +118,10 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
                 contents: JSON.stringify({
                    name: "generated-app",
                    private: true,
-                   dependencies: fileData.dependencies || {}
+                   scripts: {
+                     start: "react-scripts start"
+                   },
+                   dependencies: fileData?.dependencies || {}
                 }, null, 2)
              }
           };
