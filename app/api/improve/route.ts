@@ -6,7 +6,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
 import { calculateImprovementCost } from "@/lib/credit-calculator";
-import { PRO_MODEL, DEFAULT_MODEL, generateContent, rotateApiKey } from "@/lib/gemini";
+import { generateContent, rotateApiKey, getModels } from "@/lib/gemini";
 import { classifyError, validateAST } from "@/lib/validator";
 import type { FileData } from "@/types/workspace";
 import mongoose from "mongoose";
@@ -68,8 +68,9 @@ export async function POST(request: NextRequest) {
   }
 
   // Escalate to Pro if retryCount >= 2 or complex error
+  const models = await getModels();
   const isProRequired = (isError && retryCount >= 2) || errorType === "build_failure" || errorType === "dependency_error";
-  const modelToUse = isProRequired ? PRO_MODEL : DEFAULT_MODEL;
+  const modelToUse = isProRequired ? models.proModel : models.defaultModel;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -140,7 +141,7 @@ ${Object.entries(patchedFiles).map(([path, file]) => `--- ${path} ---\n${file.co
           
           // AST Validation before saving
           const validation = validateAST(change.content);
-          if (!validation.isValid && modelToUse === DEFAULT_MODEL) {
+          if (!validation.isValid && modelToUse === models.defaultModel) {
             console.warn(`[Agent 5 Validator] Flash patch failed AST check: ${validation.message}`);
             // Let the UI know, it will loop if retryCount < 2
           }

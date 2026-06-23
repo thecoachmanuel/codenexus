@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { generateContentStream, DEFAULT_MODEL, PRO_MODEL } from "@/lib/gemini";
+import { generateContentStream, getModels } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
 import { BASE_DEPENDENCIES, FULLSTACK_BOILERPLATE } from "@/lib/constants";
@@ -325,7 +325,8 @@ export async function generateWorkspaceTask(
     enqueue(sseEvent("status", { message: "Thinking…" }));
 
     const contents = buildFrontendContents(messages, fileData);
-    const targetModel = (retryCount ?? 0) >= 3 ? PRO_MODEL : DEFAULT_MODEL;
+    const models = await getModels();
+    const targetModel = (retryCount ?? 0) >= 3 ? models.proModel : models.defaultModel;
 
     // Run Single-Shot Artifact Generation
     const artifact = await runGeminiArtifactStream(

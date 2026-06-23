@@ -32,6 +32,15 @@ export async function PUT(request: NextRequest) {
 
   const settings = await getOrCreateSettings();
   settings.exchangeRate = body.exchangeRate;
+  
+  if (typeof body.defaultModel === "string" && body.defaultModel.trim() !== "") {
+    settings.defaultModel = body.defaultModel.trim();
+  }
+  
+  if (typeof body.proModel === "string" && body.proModel.trim() !== "") {
+    settings.proModel = body.proModel.trim();
+  }
+  
   await settings.save();
 
   return NextResponse.json({ settings });

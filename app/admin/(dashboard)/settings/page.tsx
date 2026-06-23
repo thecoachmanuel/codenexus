@@ -5,6 +5,8 @@ import { Loader2, Save } from "lucide-react";
 
 export default function AdminSettingsPage() {
   const [exchangeRate, setExchangeRate] = useState<number | "">("");
+  const [defaultModel, setDefaultModel] = useState("");
+  const [proModel, setProModel] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -15,6 +17,12 @@ export default function AdminSettingsPage() {
       .then((data) => {
         if (data.settings?.exchangeRate) {
           setExchangeRate(data.settings.exchangeRate);
+        }
+        if (data.settings?.defaultModel) {
+          setDefaultModel(data.settings.defaultModel);
+        }
+        if (data.settings?.proModel) {
+          setProModel(data.settings.proModel);
         }
       })
       .finally(() => setLoading(false));
@@ -33,7 +41,11 @@ export default function AdminSettingsPage() {
       const res = await fetch("/api/admin/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ exchangeRate: Number(exchangeRate) }),
+        body: JSON.stringify({ 
+          exchangeRate: Number(exchangeRate),
+          defaultModel,
+          proModel
+        }),
       });
       const data = await res.json();
       
@@ -90,6 +102,51 @@ export default function AdminSettingsPage() {
                   />
                 </div>
                 <span className="text-sm text-white/40">per 1 USD</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-4 pt-6 border-t border-white/10">
+          <div>
+            <h2 className="text-base font-medium text-white">AI Models</h2>
+            <p className="text-xs text-white/40 mt-1">
+              Configure which Gemini models power the application. Ensure the models are supported by your API key.
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="flex py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-white/30" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white/70">
+                  Default Model (Fast)
+                </label>
+                <input
+                  type="text"
+                  value={defaultModel}
+                  onChange={(e) => setDefaultModel(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                  placeholder="e.g. gemini-2.5-flash"
+                />
+                <p className="text-[11px] text-white/30">Used for initial generation and basic edits.</p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white/70">
+                  Pro Model (Smart)
+                </label>
+                <input
+                  type="text"
+                  value={proModel}
+                  onChange={(e) => setProModel(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                  placeholder="e.g. gemini-2.5-pro"
+                />
+                <p className="text-[11px] text-white/30">Used for complex tasks and Pro users.</p>
               </div>
             </div>
           )}

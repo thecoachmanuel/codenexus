@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { generateContent, DEFAULT_MODEL } from "@/lib/gemini";
+import { generateContent, getModels } from "@/lib/gemini";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,8 +17,10 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = `You are an expert prompt engineer for an AI app builder. The user has provided a short, basic idea for a web application. Your task is to enhance it into a detailed, comprehensive prompt that describes the app's features, layout, and UI/UX. Do not output anything except the enhanced prompt text itself. Make it exciting and highly descriptive, specifying things like "modern design", "Tailwind CSS", animations, layout structure, responsive design, etc. Limit it to 3-4 concise sentences. Do not include quotes around the output.`;
 
+    const models = await getModels();
+
     const response = await generateContent({
-      model: DEFAULT_MODEL,
+      model: models.defaultModel,
       contents: [
         { role: "user", parts: [{ text: systemPrompt + "\n\nUser idea: " + prompt }] }
       ]

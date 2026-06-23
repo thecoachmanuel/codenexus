@@ -27,8 +27,21 @@ if (typeof globalForGemini.geminiKeyIndex === "undefined") {
 
 const API_KEYS = collectApiKeys();
 
-export const DEFAULT_MODEL = "gemini-2.5-flash";
-export const PRO_MODEL = "gemini-2.5-pro";
+import { connectDB } from "@/lib/mongodb";
+import Setting from "@/lib/models/Setting";
+
+export async function getModels() {
+  try {
+    await connectDB();
+    const settings = await Setting.findOne();
+    if (settings && settings.defaultModel && settings.proModel) {
+      return { defaultModel: settings.defaultModel, proModel: settings.proModel };
+    }
+  } catch (err) {
+    console.error("Error fetching models from settings:", err);
+  }
+  return { defaultModel: "gemini-2.5-flash", proModel: "gemini-2.5-pro" };
+}
 
 // ─── Get current client (sticky) ──────────────────────────────────────────────────
 
@@ -46,7 +59,14 @@ interface GenerateOptions {
 }
 
 export async function generateContentStream(options: GenerateOptions) {
-  const { model = DEFAULT_MODEL, contents, config } = options;
+  const { contents, config } = options;
+  let model = options.model;
+  
+  if (!model) {
+    const models = await getModels();
+    model = models.defaultModel;
+  }
+  
   // Loop multiple times to allow token buckets to refill and to survive long 503 spikes
   const maxAttempts = Math.max(API_KEYS.length * 4, 10);
 
@@ -102,7 +122,14 @@ export async function generateContentStream(options: GenerateOptions) {
 // ─── For non-streaming (agent / cline SDK) ────────────────────────────────────
 
 export async function generateContent(options: GenerateOptions) {
-  const { model = DEFAULT_MODEL, contents, config } = options;
+  const { contents, config } = options;
+  let model = options.model;
+  
+  if (!model) {
+    const models = await getModels();
+    model = models.defaultModel;
+  }
+  
   const maxAttempts = Math.max(API_KEYS.length * 4, 10);
 
   let lastError: unknown;
