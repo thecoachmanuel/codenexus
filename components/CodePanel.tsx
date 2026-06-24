@@ -18,7 +18,8 @@ import {
   FileJson,
   FileText,
   Folder,
-  Settings2
+  Settings2,
+  X
 } from "lucide-react";
 import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
