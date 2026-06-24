@@ -373,6 +373,7 @@ async function runGeminiArtifactStream(
         rotateApiKey();
         enqueue(sseEvent("status", { message: "Gracefully rotating key..." }));
         await new Promise(r => setTimeout(r, 2000));
+        enqueue(sseEvent("status", { message: "Resuming generation..." }));
         continue;
       }
       
