@@ -15,6 +15,7 @@ declare global {
     __wc_dev_process?: any;
     __wc_last_deps?: string;
     __wc_server_url?: string;
+    __wc_is_installing?: boolean;
   }
 }
 
@@ -40,6 +41,11 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const errorBufferRef = useRef<string[]>([]);
+  
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   // Boot the terminal UI (xterm.js) as soon as the component mounts
   useEffect(() => {
@@ -81,24 +87,6 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       next: data.files["/next.config.js"]?.code || data.files["next.config.js"]?.code || ""
     });
 
-    const needsRestart = window.__wc_last_deps !== depsString || !window.__wc_dev_process || !window.__wc_instance;
-
-    // Kill any existing dev process if we need a hard restart
-    if (needsRestart) {
-      if (window.__wc_dev_process) {
-        try { window.__wc_dev_process.kill(); } catch {}
-        window.__wc_dev_process = undefined;
-      }
-      if (window.__wc_instance) {
-        try { window.__wc_instance.teardown(); } catch {}
-        window.__wc_instance = undefined as any;
-        window.__wc_boot_promise = undefined as any;
-      }
-      window.__wc_server_url = undefined;
-      setUrl(null);
-      errorBufferRef.current = [];
-    }
-
     // Helper to capture errors from output
     const captureErrors = (chunk: string) => {
       const errorPatterns = [
@@ -118,7 +106,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         setTimeout(() => {
           if (JSON.stringify(errorBufferRef.current) === JSON.stringify(snapshot)) {
             const errorMsg = snapshot.slice(-5).join("\n").substring(0, 600);
-            onError(errorMsg);
+            onErrorRef.current(errorMsg);
           }
         }, 2000);
       }
@@ -144,7 +132,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         setUrl(serverUrl);
         setPhase("ready");
         errorBufferRef.current = [];
-        onError(null);
+        onErrorRef.current(null);
       };
       wc.on("server-ready", serverReadyHandler);
 
@@ -168,19 +156,38 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       await wc.mount(tree);
       term.writeln(`\x1b[32m✓ ${Object.keys(data.files).length} files mounted\x1b[0m`);
 
+      if (window.__wc_is_installing) {
+        term.writeln("\x1b[33m⚡ Files updated while installing. Continuing install...\x1b[0m");
+        return;
+      }
+
+      const needsInstall = window.__wc_last_deps !== depsString;
+      const needsStart = !window.__wc_dev_process;
+
       // If configuration hasn't changed and dev server is running, Vite HMR will automatically pick up the mounted files!
-      if (!needsRestart) {
+      if (!needsInstall && !needsStart) {
         term.writeln("\x1b[33m⚡ Fast Refresh (HMR) applied\x1b[0m");
         errorBufferRef.current = [];
-        onError(null);
+        onErrorRef.current(null);
         return; 
       }
       
-      window.__wc_last_deps = depsString;
+      // If we need to restart server or install, kill existing dev process
+      if (window.__wc_dev_process) {
+        try { window.__wc_dev_process.kill(); } catch {}
+        window.__wc_dev_process = undefined;
+        window.__wc_server_url = undefined;
+        setUrl(null);
+        errorBufferRef.current = [];
+      }
 
-      // 4. pnpm install (much faster than npm in WebContainers)
-      setPhase("installing");
-      term.writeln("\x1b[36m◆ Installing dependencies with pnpm (fast)...\x1b[0m");
+      if (needsInstall) {
+        window.__wc_last_deps = depsString;
+        window.__wc_is_installing = true;
+
+        // 4. pnpm install (much faster than npm in WebContainers)
+        setPhase("installing");
+        term.writeln("\x1b[36m◆ Installing dependencies with pnpm (fast)...\x1b[0m");
       const install = await wc.spawn("pnpm", [
         "install",
         "--prefer-offline",
@@ -194,14 +201,17 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         })
       );
       const exitCode = await install.exit;
+      window.__wc_is_installing = false;
+      
       if (exitCode !== 0) {
         const msg = `pnpm install failed (exit ${exitCode}). Check the terminal for details.`;
         term.writeln(`\x1b[31m✗ ${msg}\x1b[0m`);
         setPhase("error");
-        onError(msg);
+        onErrorRef.current(msg);
         return;
       }
       term.writeln("\x1b[32m✓ Dependencies installed\x1b[0m");
+      }
 
       // 5. Determine start script from package.json
       let startScript = "dev";
@@ -230,12 +240,13 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         })
       );
     } catch (err: any) {
+      window.__wc_is_installing = false;
       const msg = err?.message || String(err);
       term.writeln(`\x1b[31m✗ Error: ${msg}\x1b[0m`);
       setPhase("error");
-      onError(msg);
+      onErrorRef.current(msg);
     }
-  }, [onError]);
+  }, []);
 
   // Run app when fileData changes (debounced to wait for streaming to finish)
   const fileDataRef = useRef<FileData | null>(null);
