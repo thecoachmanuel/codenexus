@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
     }
 
-    const systemPrompt = `You are an expert prompt engineer for an AI app builder. The user has provided a short, basic idea for a web application. Your task is to enhance it into a detailed, comprehensive prompt that describes the app's features, layout, and UI/UX. Do not output anything except the enhanced prompt text itself. Make it exciting and highly descriptive, specifying things like "modern design", "Tailwind CSS", animations, layout structure, responsive design, etc. Limit it to 3-4 concise sentences. Do not include quotes around the output.`;
+    const systemPrompt = `You are an expert prompt engineer for an AI app builder. The user has provided a basic idea for a web application. Your task is to enhance it into a detailed, comprehensive prompt that forces the AI to build an app with ultra-premium modern aesthetics. You MUST explicitly instruct the AI to use "micro-interactions", "professional modern typography (e.g., Inter or Outfit)", "curated harmonious color palettes (no generic red/blue/green)", "smooth hover effects", "dynamic page transitions", and "premium layout structures like glassmorphism or sleek dark modes". Describe the app's core features alongside these strict UI/UX requirements. Do not output anything except the enhanced prompt text itself. Limit it to 3-4 concise sentences. Do not include quotes around the output.`;
 
     const models = await getModels();
 
