@@ -66,57 +66,15 @@ export async function generateContentStream(options: GenerateOptions) {
     const models = await getModels();
     model = models.defaultModel;
   }
-  
-  // Loop multiple times to allow token buckets to refill and to survive long 503 spikes
-  const maxAttempts = Math.max(API_KEYS.length * 4, 10);
 
-  let lastError: unknown;
-
-  const tryModel = async (targetModel: string) => {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const { client, keyIndex } = getCurrentClient();
-      try {
-        return await client.models.generateContentStream({
-          model: targetModel,
-          contents: contents as Parameters<typeof client.models.generateContentStream>[0]["contents"],
-          config: config as Parameters<typeof client.models.generateContentStream>[0]["config"],
-        });
-      } catch (err: unknown) {
-        lastError = err;
-        const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
-        
-        const isTransientOrRateLimit = 
-          msg.includes("429") || 
-          msg.includes("503") || 
-          msg.includes("unavailable") || 
-          msg.includes("rate limit") || 
-          msg.includes("quota") ||
-          msg.includes("overloaded");
-
-        if (isTransientOrRateLimit && attempt < maxAttempts - 1) {
-          const isFullCycle = (attempt + 1) % API_KEYS.length === 0;
-          const delayMs = isFullCycle ? 10000 : 2000; // Wait 10s if we exhausted all keys once, else 2s
-          
-          console.warn(`[gemini] Key ${keyIndex + 1} rate-limited on ${targetModel}. Waiting ${delayMs}ms before rotating...`);
-          await new Promise(r => setTimeout(r, delayMs));
-          
-          globalForGemini.geminiKeyIndex = (keyIndex + 1) % API_KEYS.length;
-          continue;
-        }
-        
-        // If it's a hard error (e.g. 400 Bad Request) or we exhausted all attempts, break
-        break;
-      }
-    }
-    return null;
-  };
-
-  let stream = await tryModel(model as string);
-  if (stream) return stream;
-
-
-
-  throw lastError ?? new Error("All Gemini API keys failed or the models are currently unavailable.");
+  const { client } = getCurrentClient();
+  // Do NOT catch and retry here. Let the error bubble up to core.ts
+  // so that the UI can instantly display the rotating key status.
+  return await client.models.generateContentStream({
+    model: model,
+    contents: contents as Parameters<typeof client.models.generateContentStream>[0]["contents"],
+    config: config as Parameters<typeof client.models.generateContentStream>[0]["config"],
+  });
 }
 
 // ─── For non-streaming (agent / cline SDK) ────────────────────────────────────
