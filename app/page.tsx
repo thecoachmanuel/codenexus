@@ -380,12 +380,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="md:hidden mt-8 rounded-lg border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-200/90 text-left max-w-sm mx-auto flex gap-3 items-start">
-            <Monitor className="h-5 w-5 shrink-0 mt-0.5" />
-            <p>
-              <strong>Desktop recommended:</strong> You can start a project from here, but you'll need a laptop or desktop screen to view the live preview and code editor.
-            </p>
-          </div>
+
         </div>
 
         <p className="mt-10 text-sm text-white/40">
