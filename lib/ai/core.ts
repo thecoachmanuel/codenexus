@@ -254,8 +254,8 @@ async function runGeminiArtifactStream(
            ...lastMessage,
            parts: [...lastMessage.parts]
          };
-         dynamicContents[dynamicContents.length - 1].parts[0] = {
-           text: dynamicContents[dynamicContents.length - 1].parts[0].text + "\n\n" + skipMessage
+         (dynamicContents[dynamicContents.length - 1] as any).parts[0] = {
+           text: (dynamicContents[dynamicContents.length - 1] as any).parts[0].text + "\n\n" + skipMessage
          };
       }
     }
