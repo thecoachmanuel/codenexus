@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Workspace from "@/lib/models/Workspace";
-import { generateContentStream, getModels } from "@/lib/gemini";
+import { generateContentStream, getModels, rotateApiKey, getApiKeysCount } from "@/lib/gemini";
 import { calculateGenerationCost } from "@/lib/credit-calculator";
 import { extractDependencies, findMissingFiles, autoFixAbsoluteImports, autoStubMissingFiles } from "@/lib/dependencies";
 import { BASE_DEPENDENCIES, FULLSTACK_BOILERPLATE } from "@/lib/constants";
@@ -219,116 +219,152 @@ async function runGeminiArtifactStream(
   systemInstruction: string,
   enqueue: (data: any) => void
 ): Promise<ParsedArtifact> {
-  const geminiStream = await generateContentStream({
-    model: model,
-    contents,
-    config: {
-      systemInstruction,
-      temperature: 0.7,
-    },
-  });
-
-  let accumulated = "";
-  let fullResponse = "";
-  let artifact: ParsedArtifact = { files: {}, suggestions: [] };
+  let attempt = 0;
+  const maxAttempts = Math.max(getApiKeysCount() * 3, 10);
   
-  let isInsideArtifact = false;
-  let isInsideAction = false;
-  let currentFilePath = "";
-  let currentFileCode = "";
+  while (attempt < maxAttempts) {
+    let geminiStream;
+    try {
+      geminiStream = await generateContentStream({
+        model: model,
+        contents,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        },
+      });
+    } catch (err: any) {
+      throw err;
+    }
 
-  for await (const chunk of geminiStream) {
-    const parts = chunk.candidates?.[0]?.content?.parts ?? [];
-    for (const part of parts) {
-      if (!part.text) continue;
-      accumulated += part.text;
-      fullResponse += part.text;
+    let accumulated = "";
+    let fullResponse = "";
+    let artifact: ParsedArtifact = { files: {}, suggestions: [] };
+    
+    let isInsideArtifact = false;
+    let isInsideAction = false;
+    let currentFilePath = "";
+    let currentFileCode = "";
 
-      // Extract Artifact Metadata
-      if (!isInsideArtifact && accumulated.includes("<boltArtifact")) {
-        isInsideArtifact = true;
-        enqueue(sseEvent("status", { message: "Generating project structure..." }));
-      }
+    try {
+      for await (const chunk of geminiStream) {
+        const parts = chunk.candidates?.[0]?.content?.parts ?? [];
+        for (const part of parts) {
+          if (!part.text) continue;
+          accumulated += part.text;
+          fullResponse += part.text;
 
-      if (isInsideArtifact && !artifact.title) {
-        const titleMatch = accumulated.match(/<boltArtifact[^>]*title="([^"]+)"/);
-        if (titleMatch) {
-          const extractedTitle = titleMatch[1];
-          // Filter out the literal placeholder if the AI forgets to replace it
-          if (!extractedTitle.includes("<short") && !extractedTitle.includes("word title>")) {
-            artifact.title = extractedTitle;
-          } else {
-            artifact.title = "Generated App"; // Fallback to prevent placeholder text
-          }
-        }
-      }
-
-      if (isInsideArtifact && artifact.suggestions.length === 0) {
-        const suggMatch = accumulated.match(/<boltArtifact[^>]*suggestions="([^"]+)"/);
-        if (suggMatch) {
-           artifact.suggestions = suggMatch[1].split(',').map(s => s.trim()).filter(Boolean);
-        }
-      }
-
-      // Check for action open
-      if (isInsideArtifact && !isInsideAction) {
-        const actionMatch = accumulated.match(/<boltAction[^>]*filePath="([^"]+)"[^>]*>/);
-        if (actionMatch) {
-          isInsideAction = true;
-          currentFilePath = actionMatch[1];
-          currentFileCode = "";
-          // Clear everything before and including the opening tag
-          accumulated = accumulated.substring(accumulated.indexOf(actionMatch[0]) + actionMatch[0].length);
-          enqueue(sseEvent("status", { message: `Writing ${currentFilePath}...` }));
-        }
-      }
-
-      // Check for action close
-      if (isInsideAction) {
-        const closeIdx = accumulated.indexOf("</boltAction>");
-        if (closeIdx !== -1) {
-          currentFileCode += accumulated.substring(0, closeIdx);
-          
-          let code = currentFileCode.trim();
-          if (code.startsWith("```")) {
-             code = code.replace(/^```[a-z]*\n/i, "");
-             if (code.endsWith("```")) code = code.substring(0, code.length - 3).trim();
+          // Extract Artifact Metadata
+          if (!isInsideArtifact && accumulated.includes("<boltArtifact")) {
+            isInsideArtifact = true;
+            enqueue(sseEvent("status", { message: "Generating project structure..." }));
           }
 
-          artifact.files[currentFilePath] = { code };
-          
-          let normalizedPath = currentFilePath;
-          if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-          enqueue(sseEvent("file_patch", { path: normalizedPath, code }));
-
-          isInsideAction = false;
-          currentFilePath = "";
-          currentFileCode = "";
-          accumulated = accumulated.substring(closeIdx + "</boltAction>".length);
-        } else {
-          // Send all but the last 20 chars to currentFileCode to avoid splitting </boltAction>
-          if (accumulated.length > 20) {
-            const flush = accumulated.substring(0, accumulated.length - 20);
-            currentFileCode += flush;
-            accumulated = accumulated.substring(accumulated.length - 20);
-            
-            // emit partial file update for live UI typing
-            let partialCode = currentFileCode;
-            if (partialCode.startsWith("```")) {
-               partialCode = partialCode.replace(/^```[a-z]*\n/i, "");
+          if (isInsideArtifact && !artifact.title) {
+            const titleMatch = accumulated.match(/<boltArtifact[^>]*title="([^"]+)"/);
+            if (titleMatch) {
+              const extractedTitle = titleMatch[1];
+              // Filter out the literal placeholder if the AI forgets to replace it
+              if (!extractedTitle.includes("<short") && !extractedTitle.includes("word title>")) {
+                artifact.title = extractedTitle;
+              } else {
+                artifact.title = "Generated App"; // Fallback to prevent placeholder text
+              }
             }
-            let normalizedPath = currentFilePath;
-            if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
-            enqueue(sseEvent("file_patch", { path: normalizedPath, code: partialCode }));
+          }
+
+          if (isInsideArtifact && artifact.suggestions.length === 0) {
+            const suggMatch = accumulated.match(/<boltArtifact[^>]*suggestions="([^"]+)"/);
+            if (suggMatch) {
+               artifact.suggestions = suggMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+            }
+          }
+
+          // Check for action open
+          if (isInsideArtifact && !isInsideAction) {
+            const actionMatch = accumulated.match(/<boltAction[^>]*filePath="([^"]+)"[^>]*>/);
+            if (actionMatch) {
+              isInsideAction = true;
+              currentFilePath = actionMatch[1];
+              currentFileCode = "";
+              // Clear everything before and including the opening tag
+              accumulated = accumulated.substring(accumulated.indexOf(actionMatch[0]) + actionMatch[0].length);
+              enqueue(sseEvent("status", { message: `Writing ${currentFilePath}...` }));
+            }
+          }
+
+          // Check for action close
+          if (isInsideAction) {
+            const closeIdx = accumulated.indexOf("</boltAction>");
+            if (closeIdx !== -1) {
+              currentFileCode += accumulated.substring(0, closeIdx);
+              
+              let code = currentFileCode.trim();
+              if (code.startsWith("```")) {
+                 code = code.replace(/^```[a-z]*\n/i, "");
+                 if (code.endsWith("```")) code = code.substring(0, code.length - 3).trim();
+              }
+
+              artifact.files[currentFilePath] = { code };
+              
+              let normalizedPath = currentFilePath;
+              if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+              enqueue(sseEvent("file_patch", { path: normalizedPath, code }));
+
+              isInsideAction = false;
+              currentFilePath = "";
+              currentFileCode = "";
+              accumulated = accumulated.substring(closeIdx + "</boltAction>".length);
+            } else {
+              // Send all but the last 20 chars to currentFileCode to avoid splitting </boltAction>
+              if (accumulated.length > 20) {
+                const flush = accumulated.substring(0, accumulated.length - 20);
+                currentFileCode += flush;
+                accumulated = accumulated.substring(accumulated.length - 20);
+                
+                // emit partial file update for live UI typing
+                let partialCode = currentFileCode;
+                if (partialCode.startsWith("```")) {
+                   partialCode = partialCode.replace(/^```[a-z]*\n/i, "");
+                }
+                let normalizedPath = currentFilePath;
+                if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
+                enqueue(sseEvent("file_patch", { path: normalizedPath, code: partialCode }));
+              }
+            }
           }
         }
       }
+
+      artifact.assistantMessage = fullResponse.replace(/<boltArtifact[\s\S]*?<\/boltArtifact>/g, '').trim();
+      return artifact;
+      
+    } catch (err: any) {
+      attempt++;
+      const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+      
+      const isTransientOrRateLimit = 
+        msg.includes("429") || 
+        msg.includes("503") || 
+        msg.includes("unavailable") || 
+        msg.includes("rate limit") || 
+        msg.includes("quota") ||
+        msg.includes("overloaded") ||
+        msg.includes("fetch failed") ||
+        msg.includes("stream aborted");
+
+      if (isTransientOrRateLimit && attempt < maxAttempts) {
+        rotateApiKey();
+        enqueue(sseEvent("status", { message: "API limit detected. Gracefully rotating key..." }));
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      
+      throw err;
     }
   }
-
-  artifact.assistantMessage = fullResponse.replace(/<boltArtifact[\s\S]*?<\/boltArtifact>/g, '').trim();
-
-  return artifact;
+  
+  throw new Error("Failed to complete generation stream after maximum retry attempts.");
 }
 
 // ─── Route ────────────────────────────────────────────────────────────────────
