@@ -323,6 +323,15 @@ export function ChatPanel({
     if (!initialPrompt || hasAutoSubmittedRef.current || messages.length > 0)
       return;
     hasAutoSubmittedRef.current = true;
+    
+    // Clear URL to prevent resending on page refresh
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("prompt");
+      url.searchParams.delete("hasImage");
+      window.history.replaceState(null, "", url.toString());
+    }
+    
     onGenerate(initialPrompt, initialImageUrl ?? undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialImageUrl]);

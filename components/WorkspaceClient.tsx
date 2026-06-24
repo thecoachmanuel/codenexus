@@ -72,8 +72,7 @@ export function WorkspaceClient({
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusLog, setStatusLog] = useState<StatusStep[]>([]);
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
-  
+  const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
   // Undo / Revert History Stack
   const [fileHistory, setFileHistory] = useState<FileData[]>([]);
 
@@ -387,22 +386,27 @@ export function WorkspaceClient({
     <>
       <div className="relative flex h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-[#0a0a0a]">
         
-        {/* Mobile Backdrop overlay */}
-        {isMobileChatOpen && (
-          <div 
-            className="md:hidden absolute inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
-            onClick={() => setIsMobileChatOpen(false)}
-          />
-        )}
+        {/* Mobile Tab Control Pill */}
+        <div className="md:hidden absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-[#1a1a1a] border border-white/10 rounded-full p-1 flex items-center shadow-2xl backdrop-blur-md">
+          <button 
+            onClick={() => setMobileTab("chat")}
+            className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${mobileTab === 'chat' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
+          >
+            Chat
+          </button>
+          <button 
+            onClick={() => setMobileTab("preview")}
+            className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${mobileTab === 'preview' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
+          >
+            Preview
+          </button>
+        </div>
 
         {/* ChatPanel Container */}
         <div 
           className={`
-            md:relative md:flex md:h-full md:shrink-0 md:translate-y-0
-            ${isMobileChatOpen 
-              ? 'absolute inset-x-0 bottom-0 z-50 h-[85vh] rounded-t-3xl shadow-2xl transition-transform duration-300 translate-y-0' 
-              : 'absolute inset-x-0 bottom-0 z-50 h-[85vh] transition-transform duration-300 translate-y-full md:translate-y-0'
-            }
+            md:relative md:flex md:h-full md:shrink-0
+            ${mobileTab === 'chat' ? 'flex flex-1 h-full w-full pt-16 md:pt-0' : 'hidden md:flex'}
           `}
         >
           <ChatPanel
@@ -415,8 +419,8 @@ export function WorkspaceClient({
             initialImageUrl={resolvedImageUrl}
             suggestions={fileData?.suggestions}
             onGenerate={async (prompt, imageUrl) => {
-              // Automatically collapse sheet when generating on mobile
-              setIsMobileChatOpen(false);
+              // Automatically switch to preview when generating on mobile
+              setMobileTab("preview");
               setFixRetryCount(0); // Reset compile error retries on explicit user prompt
               await handleGenerate(prompt, imageUrl);
             }}
@@ -426,7 +430,7 @@ export function WorkspaceClient({
             userId={userId}
             workspaceId={workspaceId}
             appTitle={fileData?.title ?? workspace?.title ?? null}
-            onCloseMobile={() => setIsMobileChatOpen(false)}
+            onCloseMobile={() => setMobileTab("preview")}
           />
         </div>
 
@@ -434,7 +438,10 @@ export function WorkspaceClient({
         <div className="hidden md:block w-px shrink-0 bg-white/6" />
 
         {/* CodePanel Container */}
-        <div className="flex flex-col flex-1 min-w-0 h-full relative overflow-hidden">
+        <div className={`
+          flex-col flex-1 min-w-0 h-full relative overflow-hidden pt-16 md:pt-0
+          ${mobileTab === 'preview' ? 'flex' : 'hidden md:flex'}
+        `}>
           <ErrorBoundary>
             <CodePanel
               fileData={fileData}
@@ -462,19 +469,6 @@ export function WorkspaceClient({
               setPreviewError={setPreviewError}
             />
           </ErrorBoundary>
-          
-          {/* Mobile Floating Action Button */}
-          <button 
-            onClick={() => setIsMobileChatOpen(true)}
-            className={`
-              md:hidden absolute bottom-6 right-6 z-40 
-              flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/20
-              transition-transform duration-300
-              ${isMobileChatOpen ? 'scale-0' : 'scale-100'}
-            `}
-          >
-            <MessageSquare className="h-6 w-6" />
-          </button>
         </div>
       </div>
     </>
