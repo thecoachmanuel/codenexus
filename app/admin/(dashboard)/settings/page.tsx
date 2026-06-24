@@ -7,9 +7,16 @@ export default function AdminSettingsPage() {
   const [exchangeRate, setExchangeRate] = useState<number | "">("");
   const [defaultModel, setDefaultModel] = useState("");
   const [proModel, setProModel] = useState("");
+  const [useSameModel, setUseSameModel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (useSameModel) {
+      setDefaultModel(proModel);
+    }
+  }, [useSameModel, proModel]);
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -23,6 +30,9 @@ export default function AdminSettingsPage() {
         }
         if (data.settings?.proModel) {
           setProModel(data.settings.proModel);
+        }
+        if (data.settings?.defaultModel && data.settings?.proModel && data.settings.defaultModel === data.settings.proModel) {
+          setUseSameModel(true);
         }
       })
       .finally(() => setLoading(false));
@@ -120,33 +130,54 @@ export default function AdminSettingsPage() {
               <Loader2 className="w-5 h-5 animate-spin text-white/30" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white/70">
-                  Default Model (Fast)
-                </label>
-                <input
-                  type="text"
-                  value={defaultModel}
-                  onChange={(e) => setDefaultModel(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                  placeholder="e.g. gemini-2.5-flash"
-                />
-                <p className="text-[11px] text-white/30">Used for initial generation and basic edits.</p>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white/70">
-                  Pro Model (Smart)
-                </label>
-                <input
-                  type="text"
-                  value={proModel}
-                  onChange={(e) => setProModel(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                  placeholder="e.g. gemini-2.5-pro"
-                />
-                <p className="text-[11px] text-white/30">Used for complex tasks and Pro users.</p>
+            <div className="space-y-6">
+              <label className="flex items-center gap-3 cursor-pointer group w-max">
+                <div className="relative flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    checked={useSameModel}
+                    onChange={(e) => setUseSameModel(e.target.checked)}
+                    className="appearance-none w-5 h-5 border-2 border-white/20 rounded bg-transparent checked:bg-blue-500 checked:border-blue-500 transition-colors"
+                  />
+                  {useSameModel && (
+                    <svg className="absolute w-3 h-3 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-sm text-white/70 group-hover:text-white transition-colors">Use Pro Model for everything</span>
+              </label>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {!useSameModel && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/70">
+                      Default Model (Fast)
+                    </label>
+                    <input
+                      type="text"
+                      value={defaultModel}
+                      onChange={(e) => setDefaultModel(e.target.value)}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                      placeholder="e.g. gemini-2.5-flash"
+                    />
+                    <p className="text-[11px] text-white/30">Used for initial generation and basic edits.</p>
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white/70">
+                    Pro Model (Smart)
+                  </label>
+                  <input
+                    type="text"
+                    value={proModel}
+                    onChange={(e) => setProModel(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                    placeholder="e.g. gemini-2.5-pro"
+                  />
+                  <p className="text-[11px] text-white/30">Used for complex tasks and Pro users.</p>
+                </div>
               </div>
             </div>
           )}
