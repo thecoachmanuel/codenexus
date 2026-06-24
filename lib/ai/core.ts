@@ -355,7 +355,11 @@ export async function generateWorkspaceTask(
 
     const contents = buildFrontendContents(messages, fileData);
     const models = await getModels();
-    const targetModel = (retryCount ?? 0) >= 3 ? models.proModel : models.defaultModel;
+    let targetModel = models.defaultModel;
+    if ((retryCount ?? 0) >= 2) {
+      targetModel = models.proModel;
+      enqueue(sseEvent("status", { message: "Escalating to Pro model for advanced repair…" }));
+    }
 
     // Run Single-Shot Artifact Generation
     const artifact = await runGeminiArtifactStream(
