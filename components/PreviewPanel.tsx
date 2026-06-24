@@ -84,6 +84,11 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         try { devProcessRef.current.kill(); } catch {}
         devProcessRef.current = null;
       }
+      if (window.__wc_instance) {
+        try { window.__wc_instance.teardown(); } catch {}
+        window.__wc_instance = undefined as any;
+        window.__wc_boot_promise = undefined as any;
+      }
       setUrl(null);
       errorBufferRef.current = [];
     }
