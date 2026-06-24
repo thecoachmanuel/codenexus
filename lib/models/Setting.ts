@@ -4,6 +4,8 @@ export interface ISetting {
   exchangeRate: number; // NGN to USD rate
   defaultModel: string;
   proModel: string;
+  aiSuggestions: string[][];
+  aiPlaceholders: string[];
 }
 
 const settingSchema = new mongoose.Schema<ISetting>(
@@ -11,6 +13,8 @@ const settingSchema = new mongoose.Schema<ISetting>(
     exchangeRate: { type: Number, required: true, default: 1500 },
     defaultModel: { type: String, required: true, default: "gemini-2.5-flash" },
     proModel: { type: String, required: true, default: "gemini-2.5-pro" },
+    aiSuggestions: { type: [[String]], default: [] },
+    aiPlaceholders: { type: [String], default: [] },
   },
   { timestamps: true }
 );

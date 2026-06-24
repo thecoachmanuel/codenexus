@@ -35,11 +35,15 @@ export default function LandingPage() {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [suggestionSets, setSuggestionSets] = useState(SUGGESTIONS_SETS);
+  const [placeholders, setPlaceholders] = useState(PLACEHOLDERS);
   const [suggestions, setSuggestions] = useState(SUGGESTIONS_SETS[0]);
   const [plans, setPlans] = useState<any[]>([]);
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadCount, setUploadCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const userPlan = (user?.plan ?? "free") as string;
@@ -47,9 +51,23 @@ export default function LandingPage() {
   const canUploadImage = isSignedIn && imageLimit > 0 && uploadCount < imageLimit;
 
   useEffect(() => {
-    // Pick random suggestion set on mount to avoid hydration mismatch
-    setSuggestions(SUGGESTIONS_SETS[Math.floor(Math.random() * SUGGESTIONS_SETS.length)]);
-    
+    import("@/actions/admin").then(m => m.checkIsAdmin().then(setIsAdmin).catch(() => {}));
+
+    fetch("/api/settings/public")
+      .then(res => res.json())
+      .then(data => {
+        if (data.suggestions && data.placeholders) {
+          setSuggestionSets(data.suggestions);
+          setPlaceholders(data.placeholders);
+          setSuggestions(data.suggestions[Math.floor(Math.random() * data.suggestions.length)]);
+        } else {
+          setSuggestions(SUGGESTIONS_SETS[Math.floor(Math.random() * SUGGESTIONS_SETS.length)]);
+        }
+      })
+      .catch(() => {
+        setSuggestions(SUGGESTIONS_SETS[Math.floor(Math.random() * SUGGESTIONS_SETS.length)]);
+      });
+
     // Fetch dynamic plans
     fetch("/api/plans")
       .then(res => res.json())
@@ -58,13 +76,14 @@ export default function LandingPage() {
       })
       .catch(err => console.error("Failed to fetch plans", err));
   }, []);
+
   useEffect(() => {
     if (isFocused || prompt) return;
     const t = setInterval(() => {
-      setPlaceholderIndex((i) => (i + 1) % PLACEHOLDERS.length);
+      setPlaceholderIndex((i) => (i + 1) % placeholders.length);
     }, 3000);
     return () => clearInterval(t);
-  }, [isFocused, prompt]);
+  }, [isFocused, prompt, placeholders]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -94,6 +113,20 @@ export default function LandingPage() {
   const handleSuggestion = (s: string) => {
     setPrompt(s);
     textareaRef.current?.focus();
+  };
+
+  const handleGenerateIdeas = async () => {
+    if (isGeneratingIdeas) return;
+    try {
+      setIsGeneratingIdeas(true);
+      const { generateNewPromptSuggestions } = await import("@/actions/admin");
+      await generateNewPromptSuggestions();
+      window.location.reload();
+    } catch (e) {
+      alert("Failed to generate new ideas.");
+    } finally {
+      setIsGeneratingIdeas(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,7 +271,7 @@ export default function LandingPage() {
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder={PLACEHOLDERS[placeholderIndex]}
+              placeholder={placeholders[placeholderIndex] || "Describe what you want to build..."}
               rows={1}
               className="w-full resize-none bg-transparent px-5 pb-4 pt-5 text-base placeholder:text-white/20 focus:outline-none sm:text-base"
               style={{ minHeight: 56, maxHeight: 200 }}
@@ -368,16 +401,35 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            {suggestions.map((s) => (
-              <button
-                key={s}
-                onClick={() => handleSuggestion(s)}
-                className="rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-white/80 hover:border-white/30 hover:bg-white/10 hover:text-white"
+          <div className="mt-4 flex flex-col items-center gap-4">
+            <div className="flex flex-wrap justify-center gap-2">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleSuggestion(s)}
+                  className="rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-white/80 hover:border-white/30 hover:bg-white/10 hover:text-white"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateIdeas}
+                disabled={isGeneratingIdeas}
+                className="mt-2 h-7 rounded-full border-white/10 bg-white/5 text-[11px] text-white/50 hover:bg-white/10 hover:text-white"
               >
-                {s}
-              </button>
-            ))}
+                {isGeneratingIdeas ? (
+                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-1.5 h-3 w-3" />
+                )}
+                {isGeneratingIdeas ? "Generating Ideas..." : "Generate New AI Suggestions"}
+              </Button>
+            )}
           </div>
 
 
