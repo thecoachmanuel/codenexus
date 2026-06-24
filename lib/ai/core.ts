@@ -157,9 +157,10 @@ RULES:
 17. **IMAGES**: Use \`https://image.pollinations.ai/prompt/{descriptive-keyword}?width=800&height=600&nologo=true\`. Never local paths.
 18. **DATA PERSISTENCE**: Use localStorage or sessionStorage for client-side state. Use framer-motion AnimatePresence for mount/unmount animations.
 19. **NO STUBS**: Output the ENTIRE file every time. Never write \`// ... rest of code\`.
-20. **DEFAULT EXPORTS**: Every component file uses \`export default\`. Never named exports on components.
-21. **SURGICAL EDITS ONLY**: When fixing or updating an app, **do not rewrite the entire project**. Only output the \`<boltAction type="file">\` blocks for the specific files that you are modifying. Furthermore, inside those files, strictly maintain the existing component structure and styling. Do not hallucinate a new design.
-22. **README**: ALWAYS include a \`README.md\` file containing details about the generated app, its features, and explicit instructions on how to deploy it (e.g. to Vercel or Netlify).
+20. **ITERATIVE COMPLEXITY**: If the user requests a massive, complex application, DO NOT try to build 20+ features in one shot. Build a fully functional, high-quality **Core Version (MVP)** first. Then, in your dynamic conversational summary, suggest 2-3 specific features the user can ask you to add next.
+21. **DEFAULT EXPORTS**: Every component file uses \`export default\`. Never named exports on components.
+22. **SURGICAL EDITS ONLY**: When fixing or updating an app, **do not rewrite the entire project**. Only output the \`<boltAction type="file">\` blocks for the specific files that you are modifying. Furthermore, inside those files, strictly maintain the existing component structure and styling. Do not hallucinate a new design.
+23. **README**: ALWAYS include a \`README.md\` file containing details about the generated app, its features, and explicit instructions on how to deploy it (e.g. to Vercel or Netlify).
 `;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
