@@ -355,7 +355,7 @@ async function runGeminiArtifactStream(
 
       if (isTransientOrRateLimit && attempt < maxAttempts) {
         rotateApiKey();
-        enqueue(sseEvent("status", { message: "API limit detected. Gracefully rotating key..." }));
+        enqueue(sseEvent("status", { message: "Gracefully rotating key..." }));
         await new Promise(r => setTimeout(r, 2000));
         continue;
       }
