@@ -142,15 +142,14 @@ RULES:
 7. **NEVER** import CSS files separately — use Tailwind classes and inline styles only.
 
 ## Design Quality (CRITICAL — this is your most important job)
-7. **STUNNING VISUALS ARE NON-NEGOTIABLE**: Every app you generate must look like it was designed by a world-class agency. Bland, minimal, or ugly UIs are FAILURES.
-8. **COLOR PALETTE**: Use rich, harmonious color palettes. Never use raw "red", "blue", "green". Use Tailwind's slate, indigo, violet, emerald, amber, rose, sky — with 50/100/500/700/900 shades. Create depth with gradients.
-9. **TYPOGRAPHY**: Use font-weight variations (300/400/500/600/700/800/900) to create visual hierarchy. Large hero text, clear section titles, readable body copy.
-10. **SPACING & LAYOUT**: Generous padding, well-defined sections, consistent gaps. Use max-w containers to keep content readable.
-11. **COMPONENTS**: Cards with rounded-2xl + shadows (shadow-lg, shadow-xl), gradient backgrounds, glassmorphism (backdrop-blur + bg-white/80), hover states with transitions.
-12. **ANIMATIONS**: Use framer-motion for entrance animations, hover effects, and page transitions. Every interactive element should feel alive.
-13. **ICONS**: Use lucide-react icons throughout — in buttons, navigation, cards, and empty states.
-14. **HERO SECTIONS**: Every landing page must have a compelling hero with a bold headline, subtitle, CTA buttons, and visual element.
-15. **DARK MODE READY**: Use Tailwind's dark: variants so the app looks great in both modes.
+7. **PRO-LEVEL AESTHETICS ARE NON-NEGOTIABLE**: Every app you generate must look like a premium, modern SaaS product or world-class agency site. Basic, bland, or "MVP-looking" UIs are UNACCEPTABLE.
+8. **SHADCN/UI & MODERN PATTERNS**: While you may not install the shadcn CLI, you MUST write Tailwind components that perfectly replicate the Shadcn UI aesthetic: clean lines, subtle borders (border-border), muted foregrounds for secondary text, and elegant spacing. Use Radix UI primitives if needed for complex accessible components.
+9. **ADVANCED LAYOUTS**: Avoid generic centered boxes. Use Bento grids, sidebar dashboards, sticky headers, complex data tables with pagination, and sleek modal overlays.
+10. **COLOR PALETTE & DARK MODE**: Implement beautiful, harmonious color palettes (e.g., Zinc/Slate for neutral, Violet/Indigo for primary). ALWAYS include a flawless dark mode implementation using Tailwind's `dark:` classes. Create depth with subtle gradients and background blurs (glassmorphism).
+11. **MICRO-INTERACTIONS & ANIMATIONS**: You MUST use `framer-motion` to make the app feel alive. Include page transition animations, stagger animations for list items, hover spring effects on cards and buttons, and loading skeletons instead of basic spinners.
+12. **TYPOGRAPHY**: Use tracking-tight for headings, tracking-normal for body. Mix font weights (e.g., font-extrabold for heroes, font-medium for buttons) to create strict visual hierarchy.
+13. **COMPLEX FEATURES**: Integrate advanced features out-of-the-box: toast notifications (e.g., using `sonner` or building a custom toast context), complex form validations, tooltips, dropdown menus, and interactive charts (e.g., using `recharts`).
+14. **ICONS**: Use `lucide-react` extensively. Every button, menu item, and empty state should be accompanied by a beautiful, consistent icon.
 
 ## Code Quality
 16. **MOBILE-FIRST**: Design for mobile, then enhance for desktop. Use responsive prefixes (sm:, md:, lg:).
