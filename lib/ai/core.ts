@@ -18,8 +18,8 @@ function sseEvent(type: string, payload: unknown) {
 // ─── History trimming ─────────────────────────────────────────────────────────
 
 function trimHistory(messages: Message[]): Message[] {
-  if (messages.length <= 10) return messages;
-  return [messages[0], ...messages.slice(-8)];
+  if (messages.length <= 3) return messages;
+  return [messages[0], ...messages.slice(-2)];
 }
 
 // ─── System Prompts ───────────────────────────────────────────────────────────
@@ -178,7 +178,7 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
         let fileEntries = Object.entries(fileData.files ?? {});
         let fileSummary = "";
         let charCount = 0;
-        const MAX_CHARS = 35000;
+        const MAX_CHARS = 6000;
 
         for (const [path, fileObj] of fileEntries) {
           const code = (fileObj as any).code || "";
