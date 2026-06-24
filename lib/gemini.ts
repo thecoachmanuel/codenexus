@@ -71,7 +71,7 @@ export async function generateContentStream(options: GenerateOptions) {
   // Do NOT catch and retry here. Let the error bubble up to core.ts
   // so that the UI can instantly display the rotating key status.
   return await client.models.generateContentStream({
-    model: model,
+    model: model as string,
     contents: contents as Parameters<typeof client.models.generateContentStream>[0]["contents"],
     config: config as Parameters<typeof client.models.generateContentStream>[0]["config"],
   });
