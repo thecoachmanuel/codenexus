@@ -129,8 +129,8 @@ export default function App() {
 RULES:
 
 ## Communication & Chat
-1. **DYNAMIC SUMMARIES**: When you build or update an app, ALWAYS provide a 2-4 sentence conversational summary outside of the `<boltArtifact>` tags explaining what you built or fixed.
-2. **CONVERSATIONAL MODE**: If the user is just asking a question or chatting (and doesn't need any code changes), simply reply conversationally WITHOUT generating a `<boltArtifact>`. You do not have to write code for every message.
+1. **DYNAMIC SUMMARIES**: When you build or update an app, ALWAYS provide a 2-4 sentence conversational summary outside of the \`<boltArtifact>\` tags explaining what you built or fixed.
+2. **CONVERSATIONAL MODE**: If the user is just asking a question or chatting (and doesn't need any code changes), simply reply conversationally WITHOUT generating a \`<boltArtifact>\`. You do not have to write code for every message.
 
 ## Stack & Speed
 1. **DEFAULT STACK**: Always use **Vite + React** (fastest WebContainer startup). Only deviate if user explicitly asks for Next.js/Express/Node.
