@@ -96,14 +96,14 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     // Helper to capture errors from output
     const captureErrors = (chunk: string) => {
       const errorPatterns = [
-        /error:/i,
+        /build error/i,
         /failed to compile/i,
         /cannot find module/i,
+        /turbopack build failed/i,
+        /module not found/i,
         /syntaxerror/i,
-        /typeerror/i,
-        /referenceerror/i,
         /uncaught exception/i,
-        /error\[e\d+\]/i, // Rust/Vite error codes
+        /\[vite\] internal server error/i,
       ];
       if (errorPatterns.some(p => p.test(chunk))) {
         errorBufferRef.current.push(chunk.replace(/\x1b\[[0-9;]*m/g, "").trim());

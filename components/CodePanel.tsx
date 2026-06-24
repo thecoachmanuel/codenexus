@@ -509,6 +509,13 @@ export function CodePanel({
                 <Bot className="h-3 w-3 mr-1.5" />
                 Fix with AI
               </Button>
+              <button
+                onClick={() => setPreviewError(null)}
+                className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                title="Dismiss error"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           </div>
         )}
