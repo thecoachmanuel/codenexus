@@ -101,8 +101,8 @@ function MessageBubble({
               <div className="self-center mb-0.5">
                 <CopyButton text={msg.content} />
               </div>
-              <div className="rounded-2xl rounded-br-sm bg-white/10 px-3.5 py-2.5">
-                <p className="text-[13px] leading-relaxed text-white wrap-break-word">
+              <div className="rounded-2xl rounded-br-sm bg-white/10 px-3.5 py-2.5 overflow-hidden">
+                <p className="text-[13px] leading-relaxed text-white break-words whitespace-pre-wrap">
                   {msg.content}
                 </p>
               </div>
@@ -151,14 +151,14 @@ function MessageBubble({
                       Agent reasoning
                     </span>
                   </div>
-                  <p className="text-[12px] leading-relaxed text-white/35 wrap-break-word">
+                  <p className="text-[12px] leading-relaxed text-white/35 break-words whitespace-pre-wrap">
                     {msg.content}
                     <span className="ml-0.5 inline-block h-3 w-0.5 animate-[blink_1s_ease-in-out_infinite] bg-blue-400/60 align-middle" />
                   </p>
                 </div>
               ) : (
                 // Normal completed assistant message
-                <div className="prose prose-sm prose-invert max-w-none wrap-break-word text-[13px] leading-relaxed text-white [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-blue-300/80 [&_code]:text-xs [&_code]:break-all [&_li]:my-0.5 [&_p]:my-1 [&_pre]:overflow-x-auto! [&_pre]:whitespace-pre-wrap! [&_ul]:my-1">
+                <div className="prose prose-sm prose-invert max-w-none break-words text-[13px] leading-relaxed text-white overflow-hidden [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-blue-300/80 [&_code]:text-xs [&_code]:break-all [&_li]:my-0.5 [&_p]:my-1 [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_ul]:my-1">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               )}
