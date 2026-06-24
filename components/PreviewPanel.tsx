@@ -97,7 +97,12 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         /module not found/i,
         /syntaxerror/i,
         /uncaught exception/i,
+        /unhandledrejection/i,
+        /typeerror:/i,
+        /referenceerror:/i,
+        /prisma.*error/i,
         /\[vite\] internal server error/i,
+        /⨯/i, // Next.js backend crash indicator
       ];
       if (errorPatterns.some(p => p.test(chunk))) {
         errorBufferRef.current.push(chunk.replace(/\x1b\[[0-9;]*m/g, "").trim());
