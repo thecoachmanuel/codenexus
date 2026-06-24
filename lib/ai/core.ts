@@ -238,12 +238,32 @@ async function runGeminiArtifactStream(
   let attempt = 0;
   const maxAttempts = Math.max(getApiKeysCount() * 3, 10);
   
+  let artifact: ParsedArtifact = { files: {}, suggestions: [] };
+  let previouslyCompletedFiles = new Set<string>();
+
   while (attempt < maxAttempts) {
     let geminiStream;
+    let dynamicContents = [...contents];
+
+    if (previouslyCompletedFiles.size > 0) {
+      const skipMessage = `[SYSTEM EXCEPTION]: Your previous generation was interrupted by a network error. You already successfully generated the following files: ${Array.from(previouslyCompletedFiles).join(", ")}. Do NOT generate these files again. Output a new <boltArtifact> containing ONLY the remaining files needed to complete the user's request.`;
+      
+      const lastMessage = dynamicContents[dynamicContents.length - 1] as any;
+      if (lastMessage && lastMessage.parts && lastMessage.parts.length > 0) {
+         dynamicContents[dynamicContents.length - 1] = {
+           ...lastMessage,
+           parts: [...lastMessage.parts]
+         };
+         dynamicContents[dynamicContents.length - 1].parts[0] = {
+           text: dynamicContents[dynamicContents.length - 1].parts[0].text + "\n\n" + skipMessage
+         };
+      }
+    }
+
     try {
       geminiStream = await generateContentStream({
         model: model,
-        contents,
+        contents: dynamicContents,
         config: {
           systemInstruction,
           temperature: 0.7,
@@ -255,7 +275,6 @@ async function runGeminiArtifactStream(
 
     let accumulated = "";
     let fullResponse = "";
-    let artifact: ParsedArtifact = { files: {}, suggestions: [] };
     
     let isInsideArtifact = false;
     let isInsideAction = false;
@@ -322,6 +341,7 @@ async function runGeminiArtifactStream(
               }
 
               artifact.files[currentFilePath] = { code };
+              previouslyCompletedFiles.add(currentFilePath);
               
               let normalizedPath = currentFilePath;
               if (!normalizedPath.startsWith("/")) normalizedPath = "/" + normalizedPath;
@@ -352,7 +372,9 @@ async function runGeminiArtifactStream(
         }
       }
 
-      artifact.assistantMessage = fullResponse.replace(/<boltArtifact[\s\S]*?<\/boltArtifact>/g, '').trim();
+      if (!artifact.assistantMessage) {
+        artifact.assistantMessage = fullResponse.replace(/<boltArtifact[\s\S]*?<\/boltArtifact>/g, '').trim();
+      }
       return artifact;
       
     } catch (err: any) {
