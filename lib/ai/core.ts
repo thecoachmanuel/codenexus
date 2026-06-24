@@ -159,6 +159,7 @@ RULES:
 19. **NO STUBS**: Output the ENTIRE file every time. Never write \`// ... rest of code\`.
 20. **DEFAULT EXPORTS**: Every component file uses \`export default\`. Never named exports on components.
 21. **SURGICAL EDITS ONLY**: When fixing or updating an app, **do not rewrite the entire project**. Only output the \`<boltAction type="file">\` blocks for the specific files that you are modifying.
+22. **README**: ALWAYS include a \`README.md\` file containing details about the generated app, its features, and explicit instructions on how to deploy it (e.g. to Vercel or Netlify).
 `;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
