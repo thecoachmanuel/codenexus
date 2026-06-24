@@ -19,6 +19,7 @@ export default async function WorkspacePage({
 
   return (
     <WorkspaceClient
+      key={id || prompt || "new"}
       initialPrompt={prompt ?? null}
       initialImageUrl={hasImage === "1" ? "__from_session__" : null}
       workspace={workspace}
