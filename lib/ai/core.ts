@@ -154,7 +154,7 @@ RULES:
 18. **DATA PERSISTENCE**: Use localStorage or sessionStorage for client-side state. Use framer-motion AnimatePresence for mount/unmount animations.
 19. **NO STUBS**: Output the ENTIRE file every time. Never write \`// ... rest of code\`.
 20. **DEFAULT EXPORTS**: Every component file uses \`export default\`. Never named exports on components.
-21. **SURGICAL EDITS ONLY**: When fixing or updating an app, **do not rewrite the entire project**. Only output the `<boltAction type="file">` blocks for the specific files that you are modifying.
+21. **SURGICAL EDITS ONLY**: When fixing or updating an app, **do not rewrite the entire project**. Only output the \`<boltAction type="file">\` blocks for the specific files that you are modifying.
 `;
 
 // ─── Contents builder ─────────────────────────────────────────────────────────
