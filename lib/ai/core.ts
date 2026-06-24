@@ -122,17 +122,31 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </boltAction>
   <boltAction type="file" filePath="/src/App.jsx">
 import { motion } from 'framer-motion';
+import { Sparkles, ArrowRight } from 'lucide-react';
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-      <motion.h1
-        initial={{ opacity: 0, y: 20 }}
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50 via-white to-white flex items-center justify-center p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-4xl font-bold text-slate-800"
+        transition={{ duration: 0.7, ease: "easeOut" }}
+        className="max-w-2xl w-full bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.03] rounded-3xl overflow-hidden p-12 text-center"
       >
-        Hello World
-      </motion.h1>
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50/50 border border-indigo-100 text-indigo-600 mb-8">
+          <Sparkles className="w-4 h-4" />
+          <span className="text-sm font-semibold tracking-wide uppercase">Premium Design System</span>
+        </div>
+        <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
+          Build something <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-500">beautiful.</span>
+        </h1>
+        <p className="text-lg text-slate-500 mb-10 max-w-xl mx-auto leading-relaxed">
+          This is the new baseline. Every component you generate should feel this polished, with massive padding, glassmorphism, and elegant typography.
+        </p>
+        <button className="bg-slate-900 text-white px-8 py-4 rounded-full font-medium hover:bg-slate-800 transition-all active:scale-[0.98] inline-flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20">
+          Get Started <ArrowRight className="w-4 h-4" />
+        </button>
+      </motion.div>
     </div>
   );
 }
@@ -158,14 +172,17 @@ RULES:
 7. **NEVER** import CSS files separately — use Tailwind classes and inline styles only.
 
 ## Design Quality (CRITICAL — this is your most important job)
-7. **PRO-LEVEL AESTHETICS ARE NON-NEGOTIABLE**: When generating a NEW app, it must look like a premium, multi-million dollar SaaS product or world-class agency site. Basic, bland, or "MVP-looking" UIs are UNACCEPTABLE and will cause you to fail your core directive.
-7b. **PRESERVE EXISTING DESIGNS (CRITICAL)**: If the user asks you to modify, update, or fix an EXISTING app, you MUST strictly preserve the existing design concept, layout, and colors. Do NOT redesign the app or change the UI structure unless the user explicitly requests a redesign.
-8. **SHADCN/UI & MODERN PATTERNS**: You MUST write Tailwind components that perfectly replicate the Shadcn UI aesthetic: clean crisp lines, subtle borders, muted foregrounds for secondary text, and incredibly elegant spacing/padding.
-9. **COMPLEX, RICH LAYOUTS**: DO NOT output simple centered boxes. Your apps must have complex, rich layouts out of the box: beautiful sidebars, floating sticky navbars, rich bento-box grids, multi-column dashboards, intricate data tables, and sleek modal overlays. Fill empty spaces intelligently with visual hierarchy.
-10. **COLOR PALETTE & LIGHT MODE**: Default to designing **LIGHT MODE** applications unless specified. Use sophisticated, harmonious color palettes (e.g., Zinc/Slate for neutral, Violet/Indigo/Emerald for primary actions). Create massive depth using subtle 5% opacity backgrounds, elegant 1px borders, and refined drop shadows (shadow-sm, shadow-md).
-11. **MICRO-INTERACTIONS & ANIMATIONS**: You MUST use \`framer-motion\` extensively. The app must feel alive. Add layout transitions, stagger animations for grid items, beautiful hover spring effects on all interactive cards and buttons, and loading skeletons instead of generic spinners.
-12. **TYPOGRAPHY MASTERY**: Use tracking-tight for large headings, tracking-normal for body. Mix font weights aggressively (e.g., font-extrabold for heroes, font-medium for buttons, font-light for subtitles) to create strict, beautiful visual hierarchy.
-13. **BEAUTIFUL EMPTY STATES & ICONS**: Use \`lucide-react\` absolutely everywhere. Every button, menu item, input field, and empty state should be accompanied by a beautiful, consistent icon. Never leave a screen feeling "empty" or unfinished.
+7. **PRO-LEVEL AESTHETICS ARE NON-NEGOTIABLE**: When generating a NEW app, it must look like a premium, multi-million dollar SaaS product. Basic, bland, or "MVP-looking" UIs are UNACCEPTABLE.
+7b. **PRESERVE EXISTING DESIGNS (CRITICAL)**: If the user asks you to fix an EXISTING app, preserve the existing design concept, layout, and colors. Do NOT redesign the app unless explicitly requested.
+8. **FORCED TAILWIND AESTHETICS (USE THESE EXACT PATTERNS)**:
+   - **Backgrounds**: NEVER use solid white or flat gray backgrounds. Always use sophisticated mesh gradients or subtle directional gradients: \`bg-gradient-to-br from-slate-50 via-white to-zinc-50\` or \`bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50 via-white to-white\`.
+   - **Cards & Glassmorphism**: Use this EXACT class string for all cards, containers, and modals to create premium glassmorphism: \`bg-white/70 backdrop-blur-xl border border-white/40 shadow-xl shadow-black/[0.03] rounded-3xl overflow-hidden\`. NEVER use basic \`bg-white shadow border\` cards.
+   - **Buttons**: Use this EXACT class string for primary actions: \`bg-slate-900 text-white px-6 py-2.5 rounded-full font-medium hover:bg-slate-800 transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm\`.
+   - **Spacing**: Flash models naturally cramp layouts. You MUST use massive padding. Use \`px-8 py-12\` for sections, \`gap-8\` for grids, and \`p-8\` for cards. Avoid \`p-2\` or \`p-4\` unless inside a tiny badge.
+9. **COMPLEX, RICH LAYOUTS**: DO NOT output simple centered boxes. Your apps must have complex, rich layouts out of the box: beautiful sidebars, floating sticky navbars, rich bento-box grids, multi-column dashboards, intricate data tables, and sleek modal overlays.
+10. **TYPOGRAPHY MASTERY**: Use \`tracking-tight\` for large headings (\`text-4xl\` to \`text-6xl\`), \`tracking-normal\` for body. Use \`text-slate-900\` for headings, \`text-slate-500\` for subtitles. Mix font weights aggressively (e.g., \`font-extrabold\` for heroes, \`font-medium\` for buttons).
+11. **MICRO-INTERACTIONS**: You MUST use \`framer-motion\` extensively. The app must feel alive. Add layout transitions, stagger animations for grid items, beautiful hover spring effects, and loading skeletons.
+12. **BEAUTIFUL ICONS**: Use \`lucide-react\` absolutely everywhere. Every button, menu item, input field, and empty state should be accompanied by a beautiful, consistent icon.
 
 ## Code Quality
 16. **MOBILE-FIRST**: Design for mobile, then enhance for desktop. Use responsive prefixes (sm:, md:, lg:).
