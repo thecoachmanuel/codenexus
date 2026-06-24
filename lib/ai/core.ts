@@ -33,7 +33,11 @@ OUTPUT: Respond using the EXACT XML artifact format below. Do not include any ot
 {
   "name": "generated-app",
   "private": true,
-  "scripts": { "dev": "vite --host 0.0.0.0 --port 3000" },
+  "scripts": { 
+    "dev": "vite --host 0.0.0.0 --port 3000",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -76,6 +80,15 @@ export default defineConfig({ plugins: [react()] });
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>App</title>
+    <!-- Catch unhandled errors and forward them to the IDE -->
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        window.parent.postMessage({ type: 'preview_error', message: message + '\\n  at ' + source + ':' + lineno + ':' + colno }, '*');
+      };
+      window.addEventListener('unhandledrejection', function(event) {
+        window.parent.postMessage({ type: 'preview_error', message: 'Unhandled Rejection: ' + (event.reason?.message || event.reason) }, '*');
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -136,7 +149,10 @@ RULES:
 1. **DEFAULT STACK**: Always use **Vite + React** (fastest WebContainer startup). Only deviate if user explicitly asks for Next.js/Express/Node.
 2. **PORT BINDING (CRITICAL)**: dev script MUST use \`vite --host 0.0.0.0 --port 3000\` — no exceptions.
 3. **SURGICAL UPDATES (CRITICAL)**: If the user asks for a modification or fix, **ONLY output the specific files that changed.** NEVER output files that did not change. Do NOT re-output package.json, index.html, etc., unless you are actively changing them.
-4. **BOILERPLATE (NEW APPS ONLY)**: When generating a completely new app, you MUST include these core files: \`/package.json\`, \`/vite.config.js\`, \`/tailwind.config.js\`, \`/postcss.config.js\`, \`/index.html\`, \`/src/main.jsx\`, and \`/src/index.css\`. Do not include these when doing an update.
+4. **BOILERPLATE (NEW APPS ONLY)**: When generating a completely new app, you MUST include these core files: \`/package.json\`, \`/vite.config.js\`, \`/tailwind.config.js\`, \`/postcss.config.js\`, \`/index.html\`, \`/src/main.jsx\`, and \`/src/index.css\`. 
+   - \`package.json\` MUST contain \`"build": "vite build"\` so Vercel deployments succeed.
+   - \`index.html\` MUST contain an error catching script in the \`<head>\`: \`<script>window.onerror = function(m,s,l,c,e){window.parent.postMessage({type:'preview_error',message:m+'\\n at '+s+':'+l+':'+c},'*')};window.addEventListener('unhandledrejection',function(e){window.parent.postMessage({type:'preview_error',message:'Unhandled Rejection: '+(e.reason?.message||e.reason)},'*')});</script>\`
+   Do not include these core files when doing an update unless requested.
 5. **TAILWIND SETUP**: Always install Tailwind via npm and use \`postcss.config.js\` and \`src/index.css\`. Avoid CDN scripts as they fail in WebContainer isolated iframes and cause ugly previews.
 6. **DEFAULT PACKAGES**: Always include \`framer-motion\` and \`lucide-react\` — users expect animations and icons. Add more packages only as needed.
 7. **NEVER** import CSS files separately — use Tailwind classes and inline styles only.

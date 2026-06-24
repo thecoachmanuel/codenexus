@@ -47,6 +47,21 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     onErrorRef.current = onError;
   }, [onError]);
 
+  // Listen for iframe unhandled runtime errors injected into index.html
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === 'preview_error') {
+        const errorMsg = "Runtime Error in Preview: " + e.data.message;
+        errorBufferRef.current.push(errorMsg);
+        setTimeout(() => {
+          onErrorRef.current(errorBufferRef.current.slice(-5).join("\n").substring(0, 600));
+        }, 500);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // Boot the terminal UI (xterm.js) as soon as the component mounts
   useEffect(() => {
     if (!terminalContainerRef.current || xtermRef.current) return;
