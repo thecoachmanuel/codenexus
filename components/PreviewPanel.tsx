@@ -382,24 +382,14 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         )}
       </div>
 
-      {/* Terminal panel */}
-      {showTerminal && (
-        <div
-          className="border-t border-white/5 bg-[#0d0d0d] overflow-hidden shrink-0"
-          style={{ height: 220 }}
-        >
-          <div ref={terminalContainerRef} className="h-full w-full p-1" />
-        </div>
-      )}
-
-      {/* Hidden terminal mount when collapsed — keeps xterm.js alive */}
-      {!showTerminal && (
-        <div
-          ref={terminalContainerRef}
-          className="h-0 overflow-hidden"
-          aria-hidden="true"
-        />
-      )}
+      {/* Terminal panel - Always rendered to keep xterm.js alive, just visually collapsed via height */}
+      <div
+        className={`border-t border-white/5 bg-[#0d0d0d] overflow-hidden shrink-0 transition-all duration-200 ${
+          showTerminal ? "h-[220px]" : "h-0 border-t-0"
+        }`}
+      >
+        <div ref={terminalContainerRef} className="h-full w-full p-1" aria-hidden={!showTerminal} />
+      </div>
     </div>
   );
 }
