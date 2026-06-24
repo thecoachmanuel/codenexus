@@ -131,6 +131,8 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         term.writeln(`\x1b[32m✓ Server ready → ${serverUrl}\x1b[0m`);
         setUrl(serverUrl);
         setPhase("ready");
+        errorBufferRef.current = [];
+        onError(null);
       };
       wc.on("server-ready", serverReadyHandler);
 
@@ -157,6 +159,8 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       // If configuration hasn't changed and dev server is running, Vite HMR will automatically pick up the mounted files!
       if (!needsRestart) {
         term.writeln("\x1b[33m⚡ Fast Refresh (HMR) applied\x1b[0m");
+        errorBufferRef.current = [];
+        onError(null);
         return; 
       }
       
