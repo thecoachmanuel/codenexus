@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
+import mongoose from "mongoose";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const DEFAULT_FILE_LIMIT = 50;
@@ -166,7 +167,6 @@ export async function POST(req: NextRequest) {
 
   // 8. Create the Workspace in the database automatically
   const Workspace = (await import("@/lib/models/Workspace")).default;
-  const mongoose = await import("mongoose");
 
   const title = repo;
   const messages = [
