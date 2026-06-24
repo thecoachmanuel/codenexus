@@ -260,19 +260,7 @@ async function runGeminiArtifactStream(
       }
     }
 
-    try {
-      geminiStream = await generateContentStream({
-        model: model,
-        contents: dynamicContents,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-        },
-      });
-    } catch (err: any) {
-      throw err;
-    }
-
+    let geminiStream;
     let accumulated = "";
     let fullResponse = "";
     
@@ -282,6 +270,15 @@ async function runGeminiArtifactStream(
     let currentFileCode = "";
 
     try {
+      geminiStream = await generateContentStream({
+        model: model,
+        contents: dynamicContents,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        },
+      });
+
       for await (const chunk of geminiStream) {
         const parts = chunk.candidates?.[0]?.content?.parts ?? [];
         for (const part of parts) {
