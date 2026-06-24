@@ -128,6 +128,10 @@ export default function App() {
 
 RULES:
 
+## Communication & Chat
+1. **DYNAMIC SUMMARIES**: When you build or update an app, ALWAYS provide a 2-4 sentence conversational summary outside of the `<boltArtifact>` tags explaining what you built or fixed.
+2. **CONVERSATIONAL MODE**: If the user is just asking a question or chatting (and doesn't need any code changes), simply reply conversationally WITHOUT generating a `<boltArtifact>`. You do not have to write code for every message.
+
 ## Stack & Speed
 1. **DEFAULT STACK**: Always use **Vite + React** (fastest WebContainer startup). Only deviate if user explicitly asks for Next.js/Express/Node.
 2. **PORT BINDING (CRITICAL)**: dev script MUST use \`vite --host 0.0.0.0 --port 3000\` — no exceptions.
@@ -361,15 +365,15 @@ export async function generateWorkspaceTask(
       enqueue
     );
 
-    if (Object.keys(artifact.files).length === 0) {
-       throw new Error("Failed to generate files. The AI didn't return a valid artifact.");
+    if (Object.keys(artifact.files).length === 0 && !artifact.assistantMessage) {
+       throw new Error("Failed to generate response. The AI returned an empty output.");
     }
 
     const aiTitle = artifact.title || "Generated App";
     const suggestions = artifact.suggestions.length > 0 ? artifact.suggestions : ["Deploy to Vercel", "Add Authentication"];
     const assistantMessage = artifact.assistantMessage && artifact.assistantMessage.length > 5
       ? artifact.assistantMessage
-      : "I have successfully built your application using the robust single-shot artifact stream!";
+      : "I have updated your application files as requested.";
 
     // ── Merge existing files with new files ────────────────────────────────
     const baseWorkspace: Record<string, { code: string }> = { ...(fileData?.files ?? {}) };
