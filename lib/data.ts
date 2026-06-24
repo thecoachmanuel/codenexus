@@ -2,28 +2,28 @@ import { Sparkles, Zap, Code2, Eye, Package, ImageIcon, GitBranch } from "lucide
 
 export const SUGGESTIONS_SETS = [
   [
-    "A sleek crypto portfolio tracker with charts",
-    "An interactive travel itinerary planner",
-    "A modern real estate property dashboard",
-    "A fitness workout logging app with graphs",
-    "A minimalist habit tracker with daily streaks",
-    "A task management tool for remote teams",
+    "A Spotify-style music streaming interface",
+    "An AI prompt engineering playground",
+    "A sleek social media analytics dashboard",
+    "A minimalist e-commerce shoe store",
+    "A visual bug tracking board for developers",
+    "A real-time multiplayer whiteboard app",
   ],
   [
-    "A personal finance dashboard with budgets",
-    "A recipe and meal planning application",
-    "A real-time weather app with animated icons",
-    "A digital library organizer and tracker",
-    "A language learning flashcard app",
-    "An AI-powered daily journaling tool",
+    "A Netflix clone with movie carousels",
+    "A meditation app with breathing animations",
+    "A modern job board with salary filters",
+    "An interactive periodic table of elements",
+    "A vintage 90s-style personal blog",
+    "A smart home IoT control panel",
   ],
   [
-    "A podcast discovery and player interface",
-    "A virtual plant care reminder system",
-    "A collaborative kanban board with drag-and-drop",
-    "A local events and community meetup finder",
-    "A subscription management tracker",
-    "A vintage-style pomodoro timer",
+    "A dark-mode developer portfolio website",
+    "A local coffee shop ordering system",
+    "A 3D interactive product configurator",
+    "A dynamic markdown blog generator",
+    "A personal CRM for networking",
+    "A sleek pomodoro timer with lofi music",
   ]
 ];
 
@@ -89,9 +89,9 @@ export const STEPS = [
 ];
 
 export const PLACEHOLDERS = [
-  "A task manager with priority labels and drag-and-drop…",
-  "A crypto portfolio tracker with live charts…",
-  "A markdown notes app with live preview…",
-  "An expense tracker with monthly breakdowns…",
-  "A habit tracker with streaks and heatmaps…",
+  "A modern real estate platform with map search…",
+  "A Notion-style document editor with slash commands…",
+  "An interactive SaaS pricing page with toggles…",
+  "A minimalist weather dashboard with animated gradients…",
+  "A GitHub-style repository browser with file trees…",
 ];
