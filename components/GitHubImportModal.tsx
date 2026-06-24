@@ -18,7 +18,7 @@ import { PricingModal } from "@/components/PricingModal";
 interface GitHubImportModalProps {
   children: React.ReactNode;
   isProUser: boolean;
-  onImport: (fileData: FileData, repoName: string) => void;
+  onImport: (workspaceId: string, repoName: string) => void;
 }
 
 export function GitHubImportModal({ children, isProUser, onImport }: GitHubImportModalProps) {
@@ -48,17 +48,11 @@ export function GitHubImportModal({ children, isProUser, onImport }: GitHubImpor
         return;
       }
 
-      const fileData: FileData = {
-        files: data.files,
-        dependencies: data.dependencies,
-        title: data.title,
-      };
-
       setResult({ fileCount: data.fileCount, truncated: data.truncated });
 
       // Short delay so user sees the success state
       setTimeout(() => {
-        onImport(fileData, data.title);
+        onImport(data.workspaceId, data.title);
         setOpen(false);
         setRepoUrl("");
         setResult(null);

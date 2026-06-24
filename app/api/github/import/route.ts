@@ -164,10 +164,37 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({
+  // 8. Create the Workspace in the database automatically
+  const Workspace = (await import("@/lib/models/Workspace")).default;
+  const mongoose = await import("mongoose");
+
+  const title = repo;
+  const messages = [
+    {
+      role: "assistant",
+      content: `✅ Successfully imported **${repo}** from GitHub.\n\n${Object.keys(files).length} files loaded into your workspace. You can now ask me to modify, refactor, add features, or explain any part of the code.`,
+    },
+  ];
+
+  const fileData = {
     files,
     dependencies,
-    title: repo,
+    title,
+  };
+
+  const subdomain = `${title.toLowerCase().replace(/[^a-z0-9]/g, "")}-${Date.now().toString(36)}`;
+
+  const workspace = await Workspace.create({
+    userId: new mongoose.Types.ObjectId(session.userId),
+    title,
+    messages,
+    fileData,
+    subdomain
+  });
+
+  return NextResponse.json({
+    workspaceId: (workspace._id as mongoose.Types.ObjectId).toString(),
+    title,
     fileCount: Object.keys(files).length,
     truncated: treeData.truncated ?? false,
   });

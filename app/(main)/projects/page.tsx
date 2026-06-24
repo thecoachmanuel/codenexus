@@ -66,10 +66,8 @@ export default function ProjectsPage() {
     load();
   }, [router]);
 
-  const handleGitHubImport = (fileData: FileData, repoName: string) => {
-    // Store in sessionStorage so the workspace page can pick it up
-    sessionStorage.setItem("github_import", JSON.stringify({ fileData, repoName }));
-    router.push("/workspace");
+  const handleGitHubImport = (workspaceId: string, repoName: string) => {
+    router.push(`/workspace?id=${workspaceId}`);
   };
 
   // Optimistically remove a project from local state

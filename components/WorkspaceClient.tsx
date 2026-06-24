@@ -93,30 +93,6 @@ export function WorkspaceClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Read GitHub import from sessionStorage (set by the projects page)
-  useEffect(() => {
-    if (workspace) return; // Don't override an existing workspace
-    try {
-      const raw = sessionStorage.getItem("github_import");
-      if (!raw) return;
-      sessionStorage.removeItem("github_import");
-      const { fileData: imported, repoName } = JSON.parse(raw) as {
-        fileData: FileData;
-        repoName: string;
-      };
-      setFileData(imported);
-      setMessages([
-        {
-          role: "assistant",
-          content: `✅ Successfully imported **${repoName}** from GitHub.\n\n${Object.keys(imported.files ?? {}).length} files loaded into your workspace. You can now ask me to modify, refactor, add features, or explain any part of the code.`,
-        },
-      ]);
-    } catch {
-      // ignore
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
 
   // AbortController refs — used to cancel in-flight streams
   const generateAbortRef = useRef<AbortController | null>(null);
