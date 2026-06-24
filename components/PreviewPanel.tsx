@@ -178,15 +178,13 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       
       window.__wc_last_deps = depsString;
 
-      // 4. npm install (fast flags)
+      // 4. pnpm install (much faster than npm in WebContainers)
       setPhase("installing");
-      term.writeln("\x1b[36m◆ Installing dependencies (this takes ~30s)...\x1b[0m");
-      const install = await wc.spawn("npm", [
+      term.writeln("\x1b[36m◆ Installing dependencies with pnpm (fast)...\x1b[0m");
+      const install = await wc.spawn("pnpm", [
         "install",
         "--prefer-offline",
-        "--no-audit",
-        "--no-fund",
-        "--legacy-peer-deps",
+        "--ignore-scripts"
       ]);
       install.output.pipeTo(
         new WritableStream({
@@ -197,7 +195,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       );
       const exitCode = await install.exit;
       if (exitCode !== 0) {
-        const msg = `npm install failed (exit ${exitCode}). Check the terminal for details.`;
+        const msg = `pnpm install failed (exit ${exitCode}). Check the terminal for details.`;
         term.writeln(`\x1b[31m✗ ${msg}\x1b[0m`);
         setPhase("error");
         onError(msg);
@@ -218,10 +216,10 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         } catch {}
       }
 
-      // 6. Start dev server
+      // 6. Start dev server using pnpm
       setPhase("starting");
-      term.writeln(`\x1b[36m◆ Starting: npm run ${startScript}...\x1b[0m`);
-      const dev = await wc.spawn("npm", ["run", startScript]);
+      term.writeln(`\x1b[36m◆ Starting: pnpm run ${startScript}...\x1b[0m`);
+      const dev = await wc.spawn("pnpm", ["run", startScript]);
       window.__wc_dev_process = dev;
       dev.output.pipeTo(
         new WritableStream({
