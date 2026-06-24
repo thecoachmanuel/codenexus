@@ -17,7 +17,7 @@ declare global {
 
 interface PreviewPanelProps {
   fileData: FileData | null;
-  onError: (error: string) => void;
+  onError: (error: string | null) => void;
 }
 
 type Phase = "idle" | "booting" | "installing" | "starting" | "ready" | "error";
