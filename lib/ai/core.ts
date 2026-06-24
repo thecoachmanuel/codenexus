@@ -260,7 +260,6 @@ async function runGeminiArtifactStream(
       }
     }
 
-    let geminiStream;
     let accumulated = "";
     let fullResponse = "";
     
