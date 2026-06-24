@@ -7,16 +7,18 @@ export default function AdminSettingsPage() {
   const [exchangeRate, setExchangeRate] = useState<number | "">("");
   const [defaultModel, setDefaultModel] = useState("");
   const [proModel, setProModel] = useState("");
-  const [useSameModel, setUseSameModel] = useState(false);
+  const [modelStrategy, setModelStrategy] = useState<"separate" | "default_only" | "pro_only">("separate");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    if (useSameModel) {
+    if (modelStrategy === "pro_only") {
       setDefaultModel(proModel);
+    } else if (modelStrategy === "default_only") {
+      setProModel(defaultModel);
     }
-  }, [useSameModel, proModel]);
+  }, [modelStrategy, proModel, defaultModel]);
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -32,7 +34,11 @@ export default function AdminSettingsPage() {
           setProModel(data.settings.proModel);
         }
         if (data.settings?.defaultModel && data.settings?.proModel && data.settings.defaultModel === data.settings.proModel) {
-          setUseSameModel(true);
+          if (data.settings.defaultModel.includes("pro")) {
+            setModelStrategy("pro_only");
+          } else {
+            setModelStrategy("default_only");
+          }
         }
       })
       .finally(() => setLoading(false));
@@ -131,25 +137,23 @@ export default function AdminSettingsPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              <label className="flex items-center gap-3 cursor-pointer group w-max">
-                <div className="relative flex items-center justify-center">
-                  <input
-                    type="checkbox"
-                    checked={useSameModel}
-                    onChange={(e) => setUseSameModel(e.target.checked)}
-                    className="appearance-none w-5 h-5 border-2 border-white/20 rounded bg-transparent checked:bg-blue-500 checked:border-blue-500 transition-colors"
-                  />
-                  {useSameModel && (
-                    <svg className="absolute w-3 h-3 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-                <span className="text-sm text-white/70 group-hover:text-white transition-colors">Use Pro Model for everything</span>
-              </label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white/70">
+                  Model Strategy
+                </label>
+                <select
+                  value={modelStrategy}
+                  onChange={(e) => setModelStrategy(e.target.value as any)}
+                  className="w-full sm:w-[300px] bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                >
+                  <option value="separate">Use Separate Models</option>
+                  <option value="default_only">Use Default Model for everything</option>
+                  <option value="pro_only">Use Pro Model for everything</option>
+                </select>
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {!useSameModel && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                {modelStrategy !== "pro_only" && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-white/70">
                       Default Model (Fast)
@@ -165,19 +169,21 @@ export default function AdminSettingsPage() {
                   </div>
                 )}
                 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-white/70">
-                    Pro Model (Smart)
-                  </label>
-                  <input
-                    type="text"
-                    value={proModel}
-                    onChange={(e) => setProModel(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                    placeholder="e.g. gemini-2.5-pro"
-                  />
-                  <p className="text-[11px] text-white/30">Used for complex tasks and Pro users.</p>
-                </div>
+                {modelStrategy !== "default_only" && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/70">
+                      Pro Model (Smart)
+                    </label>
+                    <input
+                      type="text"
+                      value={proModel}
+                      onChange={(e) => setProModel(e.target.value)}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                      placeholder="e.g. gemini-2.5-pro"
+                    />
+                    <p className="text-[11px] text-white/30">Used for complex tasks and Pro users.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
