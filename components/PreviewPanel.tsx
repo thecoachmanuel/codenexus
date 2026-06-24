@@ -12,6 +12,9 @@ declare global {
   interface Window {
     __wc_instance?: WebContainer;
     __wc_boot_promise?: Promise<WebContainer>;
+    __wc_dev_process?: any;
+    __wc_last_deps?: string;
+    __wc_server_url?: string;
   }
 }
 
@@ -25,16 +28,18 @@ type Phase = "idle" | "booting" | "installing" | "starting" | "ready" | "error";
 // Removed isStaticApp function to ensure npm install always runs for generated apps
 
 export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
+  const [url, setUrl] = useState<string | null>(() => {
+    return typeof window !== 'undefined' ? window.__wc_server_url || null : null;
+  });
+  const [phase, setPhase] = useState<Phase>(() => {
+    return typeof window !== 'undefined' && window.__wc_server_url ? "ready" : "idle";
+  });
+  const [showTerminal, setShowTerminal] = useState(false);
+
   const terminalContainerRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
-  const devProcessRef = useRef<any>(null);
   const errorBufferRef = useRef<string[]>([]);
-  const lastDepsStringRef = useRef<string | null>(null);
-
-  const [url, setUrl] = useState<string | null>(null);
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [showTerminal, setShowTerminal] = useState(false);
 
   // Boot the terminal UI (xterm.js) as soon as the component mounts
   useEffect(() => {
@@ -76,19 +81,20 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       next: data.files["/next.config.js"]?.code || data.files["next.config.js"]?.code || ""
     });
 
-    const needsRestart = lastDepsStringRef.current !== depsString || !devProcessRef.current || !window.__wc_instance;
+    const needsRestart = window.__wc_last_deps !== depsString || !window.__wc_dev_process || !window.__wc_instance;
 
     // Kill any existing dev process if we need a hard restart
     if (needsRestart) {
-      if (devProcessRef.current) {
-        try { devProcessRef.current.kill(); } catch {}
-        devProcessRef.current = null;
+      if (window.__wc_dev_process) {
+        try { window.__wc_dev_process.kill(); } catch {}
+        window.__wc_dev_process = undefined;
       }
       if (window.__wc_instance) {
         try { window.__wc_instance.teardown(); } catch {}
         window.__wc_instance = undefined as any;
         window.__wc_boot_promise = undefined as any;
       }
+      window.__wc_server_url = undefined;
       setUrl(null);
       errorBufferRef.current = [];
     }
@@ -134,6 +140,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       // Register server-ready listener (re-registers each time we call runApp)
       const serverReadyHandler = (port: number, serverUrl: string) => {
         term.writeln(`\x1b[32m✓ Server ready → ${serverUrl}\x1b[0m`);
+        window.__wc_server_url = serverUrl;
         setUrl(serverUrl);
         setPhase("ready");
         errorBufferRef.current = [];
@@ -169,7 +176,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         return; 
       }
       
-      lastDepsStringRef.current = depsString;
+      window.__wc_last_deps = depsString;
 
       // 4. npm install (fast flags)
       setPhase("installing");
@@ -215,7 +222,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       setPhase("starting");
       term.writeln(`\x1b[36m◆ Starting: npm run ${startScript}...\x1b[0m`);
       const dev = await wc.spawn("npm", ["run", startScript]);
-      devProcessRef.current = dev;
+      window.__wc_dev_process = dev;
       dev.output.pipeTo(
         new WritableStream({
           write(chunk) {
