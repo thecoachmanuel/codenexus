@@ -161,7 +161,10 @@ RULES:
 ## Stack & Speed
 1. DEFAULT STACK: Always use Vite + React (fastest WebContainer startup). Only deviate if user explicitly asks for Next.js/Express/Node.
 2. PORT BINDING (CRITICAL): dev script MUST use "vite --host 0.0.0.0 --port 3000" — no exceptions.
-3. SURGICAL UPDATES (CRITICAL): If the user asks for a modification or fix, ONLY output the specific files that changed. NEVER output files that did not change.
+3. SURGICAL UPDATES (CRITICAL): If the user asks for a modification, feature, or bug fix on an existing app:
+   - YOU MUST PRESERVE THE EXISTING DESIGN CONCEPT, LAYOUT, AND STYLING. Do not hallucinate a totally new app or randomly redesign the UI.
+   - ONLY output the specific files that changed (e.g., if you only changed App.jsx, ONLY output App.jsx).
+   - NEVER output files that did not change (do NOT output package.json, index.html, index.css etc unless you explicitly modified them).
 4. BOILERPLATE (NEW APPS ONLY): When generating a completely new app, you MUST include: /package.json, /vite.config.js, /tailwind.config.js, /postcss.config.js, /index.html, /src/main.jsx, /src/index.css.
    - package.json MUST contain "build": "vite build" so Vercel deployments succeed.
    - index.html MUST contain the Inter Google Font link tags AND the error catching script in the head.
@@ -292,13 +295,13 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
         let fileEntries = Object.entries(fileData.files ?? {});
         let fileSummary = "";
         let charCount = 0;
-        const MAX_CHARS = 6000;
+        const MAX_CHARS = 250000; // Increased to 250k chars (approx 60k tokens) so AI sees the full project context
 
         for (const [path, fileObj] of fileEntries) {
           const code = (fileObj as any).code || "";
           const entry = `### ${path}\n\`\`\`\n${code}\n\`\`\`\n\n`;
           if (charCount + entry.length > MAX_CHARS) {
-             fileSummary += `\n\n[System: Additional older files omitted from context to save tokens.]`;
+             fileSummary += `\n\n[System: Additional older files omitted from context to save tokens. MAX_CHARS limit reached.]`;
              break;
           }
           fileSummary += entry;
