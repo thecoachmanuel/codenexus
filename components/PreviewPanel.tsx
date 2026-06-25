@@ -19,6 +19,16 @@ declare global {
   }
 }
 
+// Eagerly kick off WebContainer boot as soon as this module is imported.
+// This overlaps the ~2-3s cold boot with the AI generation step so it's
+// often already done by the time the user's first file data arrives.
+if (typeof window !== "undefined" && !window.__wc_boot_promise) {
+  window.__wc_boot_promise = WebContainer.boot();
+  window.__wc_boot_promise
+    .then((wc) => { window.__wc_instance = wc; })
+    .catch(() => { /* will retry inside runApp */ });
+}
+
 interface PreviewPanelProps {
   fileData: FileData | null;
   onError: (error: string | null) => void;
@@ -283,11 +293,12 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    // Wait 2.5s after last file change before running — avoids running during streaming
+    // 800ms debounce — fileData only arrives after generation is complete,
+    // so a short debounce is safe and cuts perceived latency significantly.
     debounceRef.current = setTimeout(() => {
       hasRunRef.current = true;
       runApp(fileData);
-    }, 2500);
+    }, 800);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
