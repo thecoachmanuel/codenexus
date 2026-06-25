@@ -205,13 +205,14 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         window.__wc_last_deps = depsString;
         window.__wc_is_installing = true;
 
-        // 4. pnpm install (much faster than npm in WebContainers)
+        // 4. npm install (uses WebContainer's native Turbo npm resolver which is much faster than userland pnpm)
         setPhase("installing");
-        term.writeln("\x1b[36m◆ Installing dependencies with pnpm (fast)...\x1b[0m");
-      const install = await wc.spawn("pnpm", [
+        term.writeln("\x1b[36m◆ Installing dependencies with native Turbo npm (fast)...\x1b[0m");
+      const install = await wc.spawn("npm", [
         "install",
-        "--prefer-offline",
-        "--ignore-scripts"
+        "--no-audit",
+        "--no-fund",
+        "--legacy-peer-deps"
       ]);
       install.output.pipeTo(
         new WritableStream({
@@ -224,7 +225,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       window.__wc_is_installing = false;
       
       if (exitCode !== 0) {
-        const msg = `pnpm install failed (exit ${exitCode}). Check the terminal for details.`;
+        const msg = `npm install failed (exit ${exitCode}). Check the terminal for details.`;
         term.writeln(`\x1b[31m✗ ${msg}\x1b[0m`);
         setPhase("error");
         onErrorRef.current(msg);
@@ -246,10 +247,10 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         } catch {}
       }
 
-      // 6. Start dev server using pnpm
+      // 6. Start dev server using npm
       setPhase("starting");
-      term.writeln(`\x1b[36m◆ Starting: pnpm run ${startScript}...\x1b[0m`);
-      const dev = await wc.spawn("pnpm", ["run", startScript]);
+      term.writeln(`\x1b[36m◆ Starting: npm run ${startScript}...\x1b[0m`);
+      const dev = await wc.spawn("npm", ["run", startScript]);
       window.__wc_dev_process = dev;
       dev.output.pipeTo(
         new WritableStream({
