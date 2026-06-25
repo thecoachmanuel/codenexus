@@ -7,6 +7,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { Loader2, Terminal as TerminalIcon, RefreshCw, AlertTriangle, Zap } from "lucide-react";
 import type { FileData } from "@/types/workspace";
+import { buildInstantPreviewHTML } from "@/lib/preview/instantBuilder";
 
 declare global {
   interface Window {
@@ -32,6 +33,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
   const [url, setUrl] = useState<string | null>(() => {
     return typeof window !== 'undefined' ? window.__wc_server_url || null : null;
   });
+  const [srcDoc, setSrcDoc] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>(() => {
     return typeof window !== 'undefined' && window.__wc_server_url ? "ready" : "idle";
   });
@@ -145,6 +147,17 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     };
 
     try {
+      // Attempt instant preview first (0ms load time bypass)
+      const instantHtml = buildInstantPreviewHTML(data);
+      if (instantHtml) {
+        term.writeln("\x1b[35m⚡ Using Instant HTML Compiler (Lightning Fast Bypass)...\x1b[0m");
+        setSrcDoc(instantHtml);
+        setUrl(null);
+        setPhase("ready");
+        errorBufferRef.current = [];
+        onErrorRef.current(null);
+        return; // Bypass WebContainer completely!
+      }
       // 1. Boot WebContainer (singleton — only boots once per page load)
       if (!window.__wc_instance) {
         setPhase("booting");
@@ -365,7 +378,14 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
           showTerminal ? "flex-[2]" : "flex-1"
         }`}
       >
-        {url ? (
+        {srcDoc ? (
+          <iframe
+            srcDoc={srcDoc}
+            className="absolute inset-0 w-full h-full border-0"
+            title="App Preview"
+            allow="cross-origin-isolated"
+          />
+        ) : url ? (
           <iframe
             src={url}
             className="absolute inset-0 w-full h-full border-0"
