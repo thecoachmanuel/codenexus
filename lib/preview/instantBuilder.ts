@@ -59,23 +59,38 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
       let code = file.code;
 
       // Extract non-relative imports
-      const importRegex = /import\s+(?:.*?\s+from\s+)?['"]([^'".]+)['"];?/g;
+      const importRegex = /import\s+([\s\S]*?)\s+from\s+['"]([^'".]+)['"];?/g;
       let match;
       while ((match = importRegex.exec(code)) !== null) {
-        const importPath = match[1];
+        const importPath = match[2];
         if (!importPath.startsWith(".")) {
           allImports.add(match[0]);
         }
       }
 
-      // Strip ALL imports
-      code = code.replace(/import\s+(?:.*?\s+from\s+)?['"][^'"]+['"];?/g, "");
+      // Also extract side-effect non-relative imports like import "lucide-react";
+      const sideEffectRegex = /import\s+['"]([^'".]+)['"];?/g;
+      while ((match = sideEffectRegex.exec(code)) !== null) {
+        if (!match[1].startsWith(".")) {
+          allImports.add(match[0]);
+        }
+      }
 
-      // Strip export default (convert to just function/class declaration)
+      // Strip ALL imports (relative and non-relative)
+      code = code.replace(/import\s+[\s\S]*?\s+from\s+['"][^'"]+['"];?/g, "");
+      code = code.replace(/import\s+['"][^'"]+['"];?/g, "");
+
+      // Strip export default function/class
       code = code.replace(/export\s+default\s+(function|class|const|let|var)/g, "$1");
       
-      // Strip other exports
+      // Strip standalone export default Identifier;
+      code = code.replace(/export\s+default\s+[a-zA-Z0-9_]+;?/g, "");
+
+      // Strip named exports (e.g. export function X)
       code = code.replace(/export\s+(function|class|const|let|var)/g, "$1");
+      
+      // Strip named export blocks (e.g. export { X, Y })
+      code = code.replace(/export\s+\{[\s\S]*?\};?/g, "");
 
       combinedBody += `\n// --- ${file.path} ---\n` + code + "\n\n";
     }
