@@ -11,14 +11,16 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
       "";
 
     // 2. Get Package JSON for imports
-    let pkg: any = {};
+    let pkg: Record<string, any> = {};
     const pkgRaw =
       fileData.files["/package.json"]?.code ||
       fileData.files["package.json"]?.code;
     if (pkgRaw) {
       try {
         pkg = JSON.parse(pkgRaw);
-      } catch (e) {}
+      } catch {
+        // Ignore parse error
+      }
     }
 
     const deps = pkg.dependencies || {};
@@ -36,7 +38,7 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
     // 3. Gather and sort JS/JSX files
     const jsFiles = Object.entries(fileData.files)
       .filter(([path]) => path.endsWith(".js") || path.endsWith(".jsx"))
-      .map(([path, obj]) => ({ path, code: (obj as any).code || "" }));
+      .map(([path, obj]) => ({ path, code: obj.code || "" }));
 
     // Sort order: components first, then App.jsx, then main.jsx last
     jsFiles.sort((a, b) => {
