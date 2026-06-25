@@ -19,16 +19,6 @@ declare global {
   }
 }
 
-// Eagerly kick off WebContainer boot as soon as this module is imported.
-// This overlaps the ~2-3s cold boot with the AI generation step so it's
-// often already done by the time the user's first file data arrives.
-if (typeof window !== "undefined" && !window.__wc_boot_promise) {
-  window.__wc_boot_promise = WebContainer.boot();
-  window.__wc_boot_promise
-    .then((wc) => { window.__wc_instance = wc; })
-    .catch(() => { /* will retry inside runApp */ });
-}
-
 interface PreviewPanelProps {
   fileData: FileData | null;
   onError: (error: string | null) => void;
@@ -72,8 +62,20 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // Boot the terminal UI (xterm.js) as soon as the component mounts
+  // Boot the terminal UI (xterm.js) and start WebContainer early
   useEffect(() => {
+    // Eagerly kick off WebContainer boot as soon as the component mounts.
+    // This ensures document.body is ready and prevents the boot process from hanging.
+    if (!window.__wc_boot_promise) {
+      window.__wc_boot_promise = WebContainer.boot();
+      window.__wc_boot_promise
+        .then((wc) => { window.__wc_instance = wc; })
+        .catch((err) => {
+           console.error("Eager boot failed:", err);
+           window.__wc_boot_promise = undefined; // clear so it can retry
+        });
+    }
+
     if (!terminalContainerRef.current || xtermRef.current) return;
     const term = new Terminal({
       convertEol: true,
