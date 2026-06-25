@@ -51,14 +51,38 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
       return 0;
     });
 
-    // 4. Combine JS
     const allImports = new Set<string>();
     let combinedBody = "";
 
+    // Map to keep track of what each file exports as its default
+    const defaultExportsMap: Record<string, string> = {};
+
     for (const file of jsFiles) {
       let code = file.code;
+      const baseName = file.path.split("/").pop()?.replace(/\.jsx?$/, "") || "Component";
+      const safeIdentifier = baseName.replace(/[^a-zA-Z0-9_]/g, "");
 
-      // Extract non-relative imports
+      // 1. Identify and normalize default exports
+      // export default function Name() -> function Name()
+      code = code.replace(/export\s+default\s+(function|class)\s+([a-zA-Z0-9_]+)/g, (match, type, name) => {
+        defaultExportsMap[file.path] = name;
+        return `${type} ${name}`;
+      });
+
+      // export default Identifier; -> (stripped later, but we record it)
+      const idMatch = code.match(/export\s+default\s+([a-zA-Z0-9_]+);?/);
+      if (idMatch && !['function', 'class', 'const', 'let', 'var'].includes(idMatch[1])) {
+        defaultExportsMap[file.path] = idMatch[1];
+        code = code.replace(/export\s+default\s+[a-zA-Z0-9_]+;?/g, "");
+      }
+
+      // export default () => ... -> const SafeIdentifier = () => ...
+      if (!defaultExportsMap[file.path] && /export\s+default\s+/.test(code)) {
+        defaultExportsMap[file.path] = safeIdentifier;
+        code = code.replace(/export\s+default\s+/, `const ${safeIdentifier} = `);
+      }
+
+      // 2. Extract non-relative imports
       const importRegex = /import\s+([\s\S]*?)\s+from\s+['"]([^'".]+)['"];?/g;
       let match;
       while ((match = importRegex.exec(code)) !== null) {
@@ -68,7 +92,6 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
         }
       }
 
-      // Also extract side-effect non-relative imports like import "lucide-react";
       const sideEffectRegex = /import\s+['"]([^'".]+)['"];?/g;
       while ((match = sideEffectRegex.exec(code)) !== null) {
         if (!match[1].startsWith(".")) {
@@ -76,20 +99,19 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
         }
       }
 
-      // Strip ALL imports (relative and non-relative)
+      // 3. Process Relative Imports (Map them to our global variables)
+      code = code.replace(/import\s+([a-zA-Z0-9_]+)\s+from\s+['"](\.[^'"]+)['"];?/g, (fullMatch, localName, relativePath) => {
+        // Resolve the relative path to an exported name
+        const targetBaseName = relativePath.split("/").pop()?.replace(/\.jsx?$/, "") || "";
+        const targetSafeId = targetBaseName.replace(/[^a-zA-Z0-9_]/g, "");
+        return `const ${localName} = ${targetSafeId};`;
+      });
+
       code = code.replace(/import\s+[\s\S]*?\s+from\s+['"][^'"]+['"];?/g, "");
       code = code.replace(/import\s+['"][^'"]+['"];?/g, "");
 
-      // Strip export default function/class
-      code = code.replace(/export\s+default\s+(function|class|const|let|var)/g, "$1");
-      
-      // Strip standalone export default Identifier;
-      code = code.replace(/export\s+default\s+[a-zA-Z0-9_]+;?/g, "");
-
-      // Strip named exports (e.g. export function X)
+      // 4. Strip leftover exports
       code = code.replace(/export\s+(function|class|const|let|var)/g, "$1");
-      
-      // Strip named export blocks (e.g. export { X, Y })
       code = code.replace(/export\s+\{[\s\S]*?\};?/g, "");
 
       combinedBody += `\n// --- ${file.path} ---\n` + code + "\n\n";
@@ -103,6 +125,15 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      window.parent.postMessage({ type: 'preview_error', message: msg + '\\nLine: ' + lineNo }, '*');
+      return false;
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      window.parent.postMessage({ type: 'preview_error', message: event.reason?.message || event.reason }, '*');
+    });
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="importmap">
