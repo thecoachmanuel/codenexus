@@ -257,7 +257,7 @@ Every app must feel like a premium product from this decade.
    - Testimonials or social proof section.
    - Footer with site links, socials, copyright.
 
-7. ICONS: Use lucide-react on every button, input (as prefix/suffix), nav item, empty state, feature card, and section header. Never leave UI elements iconless.
+7. ICONS: Use lucide-react on every button, input (as prefix/suffix), nav item, empty state, feature card, and section header. Never leave UI elements iconless. STRICT REQUIREMENT: You MUST explicitly import every icon you use. DO NOT hallucinate icon names that do not exist in Lucide (e.g. NEVER use 'Barbell', use 'Dumbbell' instead). If you are unsure if an icon exists, use a safe generic fallback like 'Circle' or 'Check'.
 
 8. EMPTY STATES: Always add illustrated empty states using icons + helpful text + a CTA. Never show a blank screen.
 
