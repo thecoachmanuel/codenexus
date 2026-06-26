@@ -1,108 +1,333 @@
-import { useEffect, useState } from "react";
-import { Zap } from "lucide-react";
+"use client";
+
+import { useEffect, useRef, useState, useCallback } from "react";
+import { WebContainer } from "@webcontainer/api";
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+import "@xterm/xterm/css/xterm.css";
+import { Loader2, Terminal as TerminalIcon, RefreshCw, AlertTriangle, Zap } from "lucide-react";
 import type { FileData } from "@/types/workspace";
-import {
-  SandpackProvider,
-  SandpackLayout,
-  SandpackPreview,
-} from "@codesandbox/sandpack-react";
+import { buildInstantPreviewHTML } from "@/lib/preview/instantBuilder";
+
+declare global {
+  interface Window {
+    __wc_instance?: WebContainer;
+    __wc_boot_promise?: Promise<WebContainer>;
+    __wc_dev_process?: any;
+    __wc_last_deps?: string;
+    __wc_server_url?: string;
+    __wc_is_installing?: boolean;
+  }
+}
 
 interface PreviewPanelProps {
   fileData: FileData | null;
   onError: (error: string | null) => void;
 }
 
+type Phase = "idle" | "booting" | "installing" | "starting" | "ready" | "error";
+
+// Removed isStaticApp function to ensure npm install always runs for generated apps
+
 export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
-  const [files, setFiles] = useState<Record<string, string>>({});
+  const [url, setUrl] = useState<string | null>(() => {
+    return typeof window !== 'undefined' ? window.__wc_server_url || null : null;
+  });
+  const [srcDoc, setSrcDoc] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>(() => {
+    return typeof window !== 'undefined' && window.__wc_server_url ? "ready" : "idle";
+  });
+  const [showTerminal, setShowTerminal] = useState(false);
 
+  const terminalContainerRef = useRef<HTMLDivElement>(null);
+  const xtermRef = useRef<Terminal | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
+  const errorBufferRef = useRef<string[]>([]);
+  
+  const onErrorRef = useRef(onError);
   useEffect(() => {
-    if (!fileData?.files) return;
-    const newFiles: Record<string, string> = {};
-    let hasIndexHtml = false;
-    let hasTailwindConfig = false;
+    onErrorRef.current = onError;
+  }, [onError]);
 
-    for (const [path, obj] of Object.entries(fileData.files)) {
-      let code = obj.code || "";
-      let cleanPath = path;
-
-      // Sandpack expects root paths to start with /
-      if (!cleanPath.startsWith("/")) {
-        cleanPath = "/" + cleanPath.replace(/^\.\//, "");
+  // Listen for iframe unhandled runtime errors injected into index.html
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === 'preview_error') {
+        const errorMsg = "Runtime Error in Preview: " + e.data.message;
+        errorBufferRef.current.push(errorMsg);
+        setTimeout(() => {
+          onErrorRef.current(errorBufferRef.current.slice(-5).join("\n").substring(0, 600));
+        }, 500);
       }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
-      if (cleanPath.endsWith("index.html")) hasIndexHtml = true;
-      if (cleanPath.endsWith("tailwind.config.js")) hasTailwindConfig = true;
+  // Boot the terminal UI (xterm.js) and start WebContainer early
+  useEffect(() => {
+    // Eagerly kick off WebContainer boot as soon as the component mounts.
+    // This ensures document.body is ready and prevents the boot process from hanging.
+    if (!window.__wc_boot_promise) {
+      window.__wc_boot_promise = WebContainer.boot();
+      window.__wc_boot_promise
+        .then((wc) => { window.__wc_instance = wc; })
+        .catch((err) => {
+           console.error("Eager boot failed:", err);
+           window.__wc_boot_promise = undefined; // clear so it can retry
+        });
+    }
 
-      // Sandpack internally parses JSON files. If the AI generates invalid JSON (e.g. trailing commas), it crashes.
-      if (cleanPath.endsWith(".json")) {
-        try {
-          JSON.parse(code);
-        } catch {
-          try {
-            // Fix trailing commas
-            const fixedCode = code.replace(/,\s*}/g, "}").replace(/,\s*\]/g, "]");
-            JSON.parse(fixedCode);
-            code = fixedCode;
-          } catch {
-            // Fallback for completely corrupted JSON
-            if (cleanPath === "/package.json") {
-              code = JSON.stringify({ name: "app", dependencies: { react: "^18.0.0", "react-dom": "^18.0.0" }});
-            } else {
-              code = "{}";
-            }
+    if (!terminalContainerRef.current || xtermRef.current) return;
+    const term = new Terminal({
+      convertEol: true,
+      theme: {
+        background: "#0d0d0d",
+        foreground: "#d4d4d4",
+        cursor: "#60a5fa",
+        selectionBackground: "#60a5fa33",
+      },
+      fontSize: 12,
+      fontFamily: "Menlo, Monaco, 'Courier New', monospace",
+      scrollback: 500,
+    });
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(terminalContainerRef.current);
+    fitAddon.fit();
+    xtermRef.current = term;
+    fitAddonRef.current = fitAddon;
+
+    const ro = new ResizeObserver(() => {
+      try { fitAddon.fit(); } catch {}
+    });
+    ro.observe(terminalContainerRef.current);
+
+    return () => ro.disconnect();
+  }, []);
+
+  const runApp = useCallback(async (data: FileData) => {
+    const term = xtermRef.current;
+    if (!term || !data?.files || Object.keys(data.files).length === 0) return;
+
+    const depsString = JSON.stringify({
+      pkg: data.files["/package.json"]?.code || data.files["package.json"]?.code || "",
+      vite: data.files["/vite.config.js"]?.code || data.files["vite.config.js"]?.code || "",
+      next: data.files["/next.config.js"]?.code || data.files["next.config.js"]?.code || ""
+    });
+
+    // Helper to capture errors from output
+    const captureErrors = (chunk: string) => {
+      const errorPatterns = [
+        /build error/i,
+        /failed to compile/i,
+        /cannot find module/i,
+        /turbopack build failed/i,
+        /module not found/i,
+        /syntaxerror/i,
+        /uncaught exception/i,
+        /unhandledrejection/i,
+        /typeerror:/i,
+        /referenceerror:/i,
+        /prisma.*error/i,
+        /\[vite\] internal server error/i,
+        /⨯/i, // Next.js backend crash indicator
+      ];
+      if (errorPatterns.some(p => p.test(chunk))) {
+        errorBufferRef.current.push(chunk.replace(/\x1b\[[0-9;]*m/g, "").trim());
+        // Debounce error reporting — only fire after 2s of no new errors
+        const snapshot = [...errorBufferRef.current];
+        setTimeout(() => {
+          if (JSON.stringify(errorBufferRef.current) === JSON.stringify(snapshot)) {
+            const errorMsg = snapshot.slice(-5).join("\n").substring(0, 600);
+            onErrorRef.current(errorMsg);
+          }
+        }, 2000);
+      }
+    };
+
+    try {
+      // Attempt instant preview first (0ms load time bypass)
+      const instantHtml = buildInstantPreviewHTML(data);
+      if (instantHtml) {
+        term.writeln("\x1b[35m⚡ Using Instant HTML Compiler (Lightning Fast Bypass)...\x1b[0m");
+        setSrcDoc(instantHtml);
+        setUrl(null);
+        setPhase("ready");
+        errorBufferRef.current = [];
+        onErrorRef.current(null);
+        return; // Bypass WebContainer completely!
+      }
+      // 1. Boot WebContainer (singleton — only boots once per page load)
+      if (!window.__wc_instance) {
+        setPhase("booting");
+        term.writeln("\x1b[36m◆ Booting WebContainer...\x1b[0m");
+        if (!window.__wc_boot_promise) {
+          window.__wc_boot_promise = WebContainer.boot();
+        }
+        window.__wc_instance = await window.__wc_boot_promise;
+        term.writeln("\x1b[32m✓ WebContainer ready\x1b[0m");
+      }
+      const wc = window.__wc_instance;
+
+      // Register server-ready listener (re-registers each time we call runApp)
+      const serverReadyHandler = (port: number, serverUrl: string) => {
+        term.writeln(`\x1b[32m✓ Server ready → ${serverUrl}\x1b[0m`);
+        window.__wc_server_url = serverUrl;
+        setUrl(serverUrl);
+        setPhase("ready");
+        errorBufferRef.current = [];
+        onErrorRef.current(null);
+      };
+      wc.on("server-ready", serverReadyHandler);
+
+      // 2. Build file tree for WebContainer
+      term.writeln("\x1b[36m◆ Mounting files...\x1b[0m");
+      const tree: Record<string, any> = {};
+      for (const [rawPath, fileObj] of Object.entries(data.files)) {
+        const parts = rawPath.replace(/^\//, "").split("/").filter(Boolean);
+        if (parts.length === 0) continue;
+        let node = tree;
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          if (i === parts.length - 1) {
+            node[part] = { file: { contents: (fileObj as any).code || "" } };
+          } else {
+            node[part] = node[part] || { directory: {} };
+            node = node[part].directory;
           }
         }
       }
+      await wc.mount(tree);
+      term.writeln(`\x1b[32m✓ ${Object.keys(data.files).length} files mounted\x1b[0m`);
 
-      newFiles[cleanPath] = code;
-    }
-
-    // Natively inject Tailwind CDN into index.html if the AI generated a Tailwind configuration
-    // but didn't output a postcss.config.js to compile it natively.
-    if (hasTailwindConfig && hasIndexHtml) {
-      if (newFiles["/index.html"] && !newFiles["/index.html"].includes("tailwindcss.com")) {
-         newFiles["/index.html"] = newFiles["/index.html"].replace(
-           "</head>", 
-           `  <script src="https://cdn.tailwindcss.com"></script>\n</head>`
-         );
+      if (window.__wc_is_installing) {
+        term.writeln("\x1b[33m⚡ Files updated while installing. Continuing install...\x1b[0m");
+        return;
       }
-    } else if (hasTailwindConfig && !hasIndexHtml) {
-      newFiles["/index.html"] = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>`;
-    }
 
-    // For the pure client-side 'react' template, Sandpack expects index.js as the main entry point.
-    // If the AI generated main.jsx, we create a tiny index.js wrapper to boot it seamlessly!
-    if (!newFiles["/index.js"] && !newFiles["/src/index.js"]) {
-      const mainPath = Object.keys(newFiles).find(p => p.includes("main.jsx") || p.includes("main.js") || p.includes("index.jsx"));
-      if (mainPath) {
-        newFiles["/index.js"] = `import ".${mainPath}";`;
+      const needsInstall = window.__wc_last_deps !== depsString;
+      const needsStart = !window.__wc_dev_process;
+
+      // If configuration hasn't changed and dev server is running, Vite HMR will automatically pick up the mounted files!
+      if (!needsInstall && !needsStart) {
+        term.writeln("\x1b[33m⚡ Fast Refresh (HMR) applied\x1b[0m");
+        errorBufferRef.current = [];
+        onErrorRef.current(null);
+        return; 
       }
+      
+      // If we need to restart server or install, kill existing dev process
+      if (window.__wc_dev_process) {
+        try { window.__wc_dev_process.kill(); } catch {}
+        window.__wc_dev_process = undefined;
+        window.__wc_server_url = undefined;
+        setUrl(null);
+        errorBufferRef.current = [];
+      }
+
+      if (needsInstall) {
+        window.__wc_last_deps = depsString;
+        window.__wc_is_installing = true;
+
+        // 4. npm install (uses WebContainer's native Turbo npm resolver which is much faster than userland pnpm)
+        setPhase("installing");
+        term.writeln("\x1b[36m◆ Installing dependencies with native Turbo npm (fast)...\x1b[0m");
+      const install = await wc.spawn("npm", [
+        "install",
+        "--no-audit",
+        "--no-fund",
+        "--legacy-peer-deps"
+      ]);
+      install.output.pipeTo(
+        new WritableStream({
+          write(chunk) {
+            term.write(chunk);
+          },
+        })
+      );
+      const exitCode = await install.exit;
+      window.__wc_is_installing = false;
+      
+      if (exitCode !== 0) {
+        const msg = `npm install failed (exit ${exitCode}). Check the terminal for details.`;
+        term.writeln(`\x1b[31m✗ ${msg}\x1b[0m`);
+        setPhase("error");
+        onErrorRef.current(msg);
+        return;
+      }
+      term.writeln("\x1b[32m✓ Dependencies installed\x1b[0m");
+      }
+
+      // 5. Determine start script from package.json
+      let startScript = "dev";
+      const pkgRaw =
+        data.files["/package.json"]?.code || data.files["package.json"]?.code;
+      if (pkgRaw) {
+        try {
+          const pkg = JSON.parse(pkgRaw);
+          if (pkg.scripts?.dev) startScript = "dev";
+          else if (pkg.scripts?.start) startScript = "start";
+          else if (pkg.scripts?.serve) startScript = "serve";
+        } catch {}
+      }
+
+      // 6. Start dev server using npm
+      setPhase("starting");
+      term.writeln(`\x1b[36m◆ Starting: npm run ${startScript}...\x1b[0m`);
+      const dev = await wc.spawn("npm", ["run", startScript]);
+      window.__wc_dev_process = dev;
+      dev.output.pipeTo(
+        new WritableStream({
+          write(chunk) {
+            term.write(chunk);
+            captureErrors(chunk);
+          },
+        })
+      );
+    } catch (err: any) {
+      window.__wc_is_installing = false;
+      const msg = err?.message || String(err);
+      term.writeln(`\x1b[31m✗ Error: ${msg}\x1b[0m`);
+      setPhase("error");
+      onErrorRef.current(msg);
     }
+  }, []);
 
-    // The 'react' template requires index.html to be in the /public folder
-    if (newFiles["/index.html"]) {
-      newFiles["/public/index.html"] = newFiles["/index.html"];
-      delete newFiles["/index.html"];
-    }
+  // Run app when fileData changes (debounced to wait for streaming to finish)
+  const fileDataRef = useRef<FileData | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasRunRef = useRef(false);
 
-    setFiles(newFiles);
-    onError(null); // Clear errors on new data
-  }, [fileData, onError]);
+  useEffect(() => {
+    if (!fileData?.files) return;
+    const fileCount = Object.keys(fileData.files).length;
+    if (fileCount === 0) return;
 
-  const fileCount = Object.keys(files).length;
-  const isIdle = fileCount === 0;
+    fileDataRef.current = fileData;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    // 800ms debounce — fileData only arrives after generation is complete,
+    // so a short debounce is safe and cuts perceived latency significantly.
+    debounceRef.current = setTimeout(() => {
+      hasRunRef.current = true;
+      runApp(fileData);
+    }, 800);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [fileData, runApp]);
+
+  const phaseLabel: Record<Phase, string> = {
+    idle: "Waiting for generated files...",
+    booting: "Booting WebContainer...",
+    installing: "Installing dependencies...",
+    starting: "Starting dev server...",
+    ready: "Running",
+    error: "Build failed",
+  };
 
   return (
     <div className="flex flex-col h-full w-full bg-[#0a0a0a]">
@@ -111,46 +336,124 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
         <div className="flex items-center gap-2 text-xs text-white/50">
           <div
             className={`h-2 w-2 rounded-full ${
-              isIdle ? "bg-white/20" : "bg-green-400 animate-pulse"
+              phase === "ready"
+                ? "bg-green-400 animate-pulse"
+                : phase === "error"
+                ? "bg-red-400"
+                : phase === "idle"
+                ? "bg-white/20"
+                : "bg-yellow-400 animate-pulse"
             }`}
           />
-          <span>{isIdle ? "Waiting for generated files..." : "Running offline in Sandpack Browser Bundler"}</span>
+          <span>{phaseLabel[phase]}</span>
+          {phase !== "idle" && phase !== "ready" && phase !== "error" && (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {(phase === "ready" || phase === "error") && fileDataRef.current && (
+            <button
+              onClick={() => runApp(fileDataRef.current!)}
+              className="text-white/30 hover:text-white/70 transition-colors"
+              title="Restart server"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button
+            onClick={() => setShowTerminal((v) => !v)}
+            className={`transition-colors ${
+              showTerminal ? "text-white/70" : "text-white/30 hover:text-white/70"
+            }`}
+            title="Toggle terminal"
+          >
+            <TerminalIcon className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 
-      {/* Preview Container */}
-      <div className="flex-1 relative bg-white overflow-hidden">
-        {isIdle ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0a0a0a]">
-            <Zap className="h-10 w-10 text-white/10" />
-            <div className="text-center">
-              <p className="text-sm text-white/30">Live preview will appear here</p>
-              <p className="text-xs text-white/15 mt-1">Generate an app to get started</p>
-            </div>
-          </div>
+      {/* Preview iframe */}
+      <div
+        className={`relative bg-white overflow-hidden transition-all duration-200 ${
+          showTerminal ? "flex-[2]" : "flex-1"
+        }`}
+      >
+        {srcDoc ? (
+          <iframe
+            srcDoc={srcDoc}
+            className="absolute inset-0 w-full h-full border-0"
+            title="App Preview"
+            allow="cross-origin-isolated"
+          />
+        ) : url ? (
+          <iframe
+            src={url}
+            className="absolute inset-0 w-full h-full border-0"
+            title="App Preview"
+            allow="cross-origin-isolated"
+          />
         ) : (
-          <SandpackProvider
-            template="react"
-            theme="dark"
-            files={files}
-            options={{
-              classes: {
-                "sp-wrapper": "h-full w-full",
-                "sp-layout": "h-full w-full border-none bg-white",
-                "sp-preview-container": "h-full w-full",
-                "sp-preview-iframe": "h-full w-full border-none bg-white"
-              }
-            }}
-          >
-            <SandpackLayout className="h-full w-full !border-none !rounded-none">
-              <SandpackPreview
-                showOpenInCodeSandbox={false}
-                showRefreshButton={true}
-                className="h-full w-full flex-1"
-              />
-            </SandpackLayout>
-          </SandpackProvider>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0a0a0a]">
+            {phase === "idle" ? (
+              <>
+                <Zap className="h-10 w-10 text-white/10" />
+                <div className="text-center">
+                  <p className="text-sm text-white/30">Live preview will appear here</p>
+                  <p className="text-xs text-white/15 mt-1">Generate an app to get started</p>
+                </div>
+              </>
+            ) : phase === "error" ? (
+              <>
+                <AlertTriangle className="h-8 w-8 text-red-400/50" />
+                <div className="text-center">
+                  <p className="text-sm text-red-400/70 font-medium">Build failed</p>
+                  <p className="text-xs text-white/30 mt-1">
+                    Open the terminal ↗ to see details, or use{" "}
+                    <span className="text-blue-400/70">Fix with AI</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => runApp(fileDataRef.current!)}
+                  className="text-xs text-white/40 border border-white/10 rounded-md px-3 py-1.5 hover:bg-white/5 transition-colors"
+                >
+                  ↺ Retry
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="relative">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-400/50" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-white/50 font-medium">{phaseLabel[phase]}</p>
+                  {phase === "installing" && (
+                    <p className="text-xs text-white/25 mt-1">
+                      First build takes ~30–60s · Subsequent builds are faster
+                    </p>
+                  )}
+                  {phase === "starting" && (
+                    <p className="text-xs text-white/25 mt-1">Starting dev server...</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowTerminal(true)}
+                  className="text-xs text-white/25 border border-white/5 rounded-md px-3 py-1.5 hover:bg-white/5 transition-colors"
+                >
+                  View terminal output
+                </button>
+              </>
+            )}
+          </div>
         )}
+      </div>
+
+      {/* Terminal panel - Always rendered to keep xterm.js alive, just visually collapsed via height */}
+      <div
+        className={`border-t border-white/5 bg-[#0d0d0d] overflow-hidden shrink-0 transition-all duration-200 ${
+          showTerminal ? "h-[220px]" : "h-0 border-t-0"
+        }`}
+      >
+        <div ref={terminalContainerRef} className="h-full w-full p-1" aria-hidden={!showTerminal} />
       </div>
     </div>
   );
