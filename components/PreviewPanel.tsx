@@ -82,6 +82,21 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
 </html>`;
     }
 
+    // For the pure client-side 'react' template, Sandpack expects index.js as the main entry point.
+    // If the AI generated main.jsx, we create a tiny index.js wrapper to boot it seamlessly!
+    if (!newFiles["/index.js"] && !newFiles["/src/index.js"]) {
+      const mainPath = Object.keys(newFiles).find(p => p.includes("main.jsx") || p.includes("main.js") || p.includes("index.jsx"));
+      if (mainPath) {
+        newFiles["/index.js"] = `import ".${mainPath}";`;
+      }
+    }
+
+    // The 'react' template requires index.html to be in the /public folder
+    if (newFiles["/index.html"]) {
+      newFiles["/public/index.html"] = newFiles["/index.html"];
+      delete newFiles["/index.html"];
+    }
+
     setFiles(newFiles);
     onError(null); // Clear errors on new data
   }, [fileData, onError]);
@@ -99,7 +114,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
               isIdle ? "bg-white/20" : "bg-green-400 animate-pulse"
             }`}
           />
-          <span>{isIdle ? "Waiting for generated files..." : "Running perfectly in Sandpack"}</span>
+          <span>{isIdle ? "Waiting for generated files..." : "Running offline in Sandpack Browser Bundler"}</span>
         </div>
       </div>
 
@@ -115,7 +130,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
           </div>
         ) : (
           <SandpackProvider
-            template="vite-react"
+            template="react"
             theme="dark"
             files={files}
             options={{
