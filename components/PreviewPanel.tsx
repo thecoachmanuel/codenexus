@@ -85,7 +85,7 @@ function buildSandpackFiles(fileData: FileData): {
   deps: Record<string, string>;
 } {
   const files: Record<string, string> = {};
-  let deps: Record<string, string> = {};
+  let deps: Record<string, string> = { ...(fileData.dependencies || {}) };
 
   if (!fileData.files) return { files, deps };
 
