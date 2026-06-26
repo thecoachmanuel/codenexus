@@ -4,11 +4,31 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
   if (!fileData || !fileData.files) return null;
 
   try {
-    // 1. Get CSS
-    const cssCode =
-      fileData.files["/src/index.css"]?.code ||
-      fileData.files["src/index.css"]?.code ||
-      "";
+    // 1. Gather CSS and Tailwind Config
+    let cssCode = "";
+    let tailwindConfigScript = "";
+
+    for (const [path, obj] of Object.entries(fileData.files)) {
+      if (path.endsWith(".css")) {
+        cssCode += `\n/* --- ${path} --- */\n` + (obj.code || "") + "\n";
+      } else if (path.endsWith("tailwind.config.js")) {
+        const twCode = obj.code || "";
+        const match = twCode.match(/export\s+default\s+({[\s\S]*});?/);
+        let configObj = "";
+        if (match) {
+          configObj = match[1];
+        } else {
+          const match2 = twCode.match(/module\.exports\s*=\s*({[\s\S]*});?/);
+          if (match2) configObj = match2[1];
+        }
+        
+        if (configObj) {
+          // Strip require() plugins to prevent browser ReferenceErrors
+          configObj = configObj.replace(/require\([^)]+\)/g, "{}");
+          tailwindConfigScript = `window.tailwind = { config: ${configObj} };`;
+        }
+      }
+    }
 
     // 2. Get Package JSON for imports
     let pkg: Record<string, any> = {};
@@ -57,6 +77,9 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    ${tailwindConfigScript}
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
