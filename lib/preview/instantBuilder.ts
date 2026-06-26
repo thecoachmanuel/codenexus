@@ -99,10 +99,12 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
           
           // Rewrite relative imports to bare specifiers mapped to our Blobs
           processedCode = processedCode.replace(/(import|export)\\s+([\\s\\S]*?)\\s+from\\s+['"](\\.[^'"]+)['"]/g, function(match, type, imports, relPath) {
+            if (relPath.endsWith('.css')) return '';
             const resolved = resolvePath(path, relPath);
             return type + ' ' + imports + " from '__local__" + resolved + "'";
           });
           processedCode = processedCode.replace(/(import)\\s+['"](\\.[^'"]+)['"]/g, function(match, type, relPath) {
+            if (relPath.endsWith('.css')) return '';
             const resolved = resolvePath(path, relPath);
             return type + " '__local__" + resolved + "'";
           });
