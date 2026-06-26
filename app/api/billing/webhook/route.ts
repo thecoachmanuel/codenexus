@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
+import Transaction from "@/lib/models/Transaction";
 import { verifyWebhookSignature } from "@/lib/billing";
 import { getPlanByKey } from "@/lib/plans";
 
@@ -17,12 +18,36 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
+    const data = event.data ?? {};
+    const reference = data.reference;
+    const amount = data.amount;
+    const currency = data.currency;
+    const status = data.status;
+    const { userId, planKey, discountApplied, discountOneTimePerUser } = data.metadata ?? {};
+
+    // Log the transaction in the database
+    if (reference && userId) {
+      // Upsert transaction to avoid duplicates on retries
+      await Transaction.findOneAndUpdate(
+        { reference },
+        {
+          userId,
+          amount,
+          currency,
+          reference,
+          status,
+          planKey,
+          metadata: data,
+        },
+        { upsert: true, new: true }
+      );
+    }
+
     // Handle successful charge / subscription renewal
     if (
       event.event === "charge.success" &&
-      event.data?.status === "success"
+      status === "success"
     ) {
-      const { userId, planKey, discountApplied, discountOneTimePerUser } = event.data?.metadata ?? {};
       if (!userId || !planKey) return NextResponse.json({ received: true });
 
       const user = await User.findById(userId);
