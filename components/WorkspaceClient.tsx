@@ -362,20 +362,35 @@ export function WorkspaceClient({
     <>
       <div className="relative flex h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-[#0a0a0a]">
         
-        {/* Mobile Tab Control Pill */}
-        <div className="md:hidden absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-[#1a1a1a] border border-white/10 rounded-full p-1 flex items-center shadow-2xl backdrop-blur-md">
-          <button 
-            onClick={() => setMobileTab("chat")}
-            className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${mobileTab === 'chat' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
-          >
-            Chat
-          </button>
-          <button 
-            onClick={() => setMobileTab("preview")}
-            className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${mobileTab === 'preview' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
-          >
-            Preview
-          </button>
+        {/* Mobile Tab Control Pill & Upgrade */}
+        <div className="md:hidden absolute top-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2">
+          {/* Chat/Preview Toggle Pill */}
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-full p-1 flex items-center shadow-2xl backdrop-blur-md">
+            <button 
+              onClick={() => setMobileTab("chat")}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${mobileTab === 'chat' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
+            >
+              Chat
+            </button>
+            <button 
+              onClick={() => setMobileTab("preview")}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${mobileTab === 'preview' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white/80'}`}
+            >
+              Preview
+            </button>
+          </div>
+
+          {/* Upgrade Button (Mobile) */}
+          {userPlan !== "pro" && (
+            <div className="bg-[#1a1a1a] border border-white/10 rounded-full p-1 flex items-center shadow-2xl backdrop-blur-md">
+              <PricingModal reason="upgrade">
+                <span className="group relative flex h-[28px] w-[28px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-cyan-500/10 transition-all duration-300 hover:from-violet-500/20 hover:via-fuchsia-500/20 hover:to-cyan-500/20 hover:shadow-[0_0_12px_rgba(139,92,246,0.3)]">
+                  <span className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                  <Bot className="h-4 w-4 text-violet-400 transition-colors group-hover:text-violet-300" />
+                </span>
+              </PricingModal>
+            </div>
+          )}
         </div>
 
         {/* ChatPanel Container */}
