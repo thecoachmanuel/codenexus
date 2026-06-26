@@ -367,7 +367,7 @@ export function WorkspaceClient({
       <div className="relative flex h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-[#0a0a0a]">
         
         {/* Mobile Tab Control Pill & Upgrade */}
-        <div className="md:hidden absolute top-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2">
+        <div className="md:hidden absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2">
           {/* Chat/Preview Toggle Pill */}
           <div className="bg-[#1a1a1a] border border-white/10 rounded-full p-1 flex items-center shadow-2xl backdrop-blur-md">
             <button 
