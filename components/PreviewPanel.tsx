@@ -33,6 +33,27 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
       if (cleanPath.endsWith("index.html")) hasIndexHtml = true;
       if (cleanPath.endsWith("tailwind.config.js")) hasTailwindConfig = true;
 
+      // Sandpack internally parses JSON files. If the AI generates invalid JSON (e.g. trailing commas), it crashes.
+      if (cleanPath.endsWith(".json")) {
+        try {
+          JSON.parse(code);
+        } catch {
+          try {
+            // Fix trailing commas
+            const fixedCode = code.replace(/,\s*}/g, "}").replace(/,\s*\]/g, "]");
+            JSON.parse(fixedCode);
+            code = fixedCode;
+          } catch {
+            // Fallback for completely corrupted JSON
+            if (cleanPath === "/package.json") {
+              code = JSON.stringify({ name: "app", dependencies: { react: "^18.0.0", "react-dom": "^18.0.0" }});
+            } else {
+              code = "{}";
+            }
+          }
+        }
+      }
+
       newFiles[cleanPath] = code;
     }
 
