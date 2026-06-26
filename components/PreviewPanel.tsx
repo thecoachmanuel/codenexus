@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Zap } from "lucide-react";
 import type { FileData } from "@/types/workspace";
 import {
@@ -17,13 +17,22 @@ interface PreviewPanelProps {
 
 function ErrorListener({ onError }: { onError: (error: string | null) => void }) {
   const { sandpack } = useSandpack();
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
   useEffect(() => {
     if (sandpack.error?.message) {
-      onError(sandpack.error.message);
-    } else {
-      onError(null);
+      // Capture compilation and runtime errors immediately
+      onErrorRef.current(sandpack.error.message);
+    } else if (sandpack.status === "idle") {
+      // Only clear the error if compilation finished successfully without errors
+      onErrorRef.current(null);
     }
-  }, [sandpack.error, onError]);
+  }, [sandpack.error?.message, sandpack.status]);
+
   return null;
 }
 
