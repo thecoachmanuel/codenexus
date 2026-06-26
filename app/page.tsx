@@ -622,7 +622,7 @@ export default function LandingPage() {
           <SectionLabel>Simple pricing</SectionLabel>
           <SectionHeading gray="Start free," blue="scale when ready." />
 
-          <p className="mx-auto mt-4 max-w-sm text-base text-white/35">
+          <p className="mx-auto mt-4 max-w-sm text-base text-white/70">
             No credit card required. Upgrade or downgrade anytime.
           </p>
         </div>
@@ -682,7 +682,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Description */}
-                <p className="mb-6 text-sm leading-relaxed text-white/35">
+                <p className="mb-6 text-sm leading-relaxed text-white/70">
                   {plan.description}
                 </p>
 
@@ -695,7 +695,7 @@ export default function LandingPage() {
                       <>
                         {plan.discountPercent > 0 && 
                          (!plan.discountOneTimePerUser || !user?.usedDiscountPlans?.includes(plan.key)) && (
-                          <span className="text-xl font-medium text-white/30 line-through">
+                          <span className="text-xl font-medium text-white/60 line-through">
                             ${plan.price}
                           </span>
                         )}
@@ -708,10 +708,10 @@ export default function LandingPage() {
                     )}
                   </span>
                   {plan.price > 0 && (
-                    <span className="text-base text-white/60">/mo</span>
+                    <span className="text-base text-white/80">/mo</span>
                   )}
                 </div>
-                <p className="mb-6 text-sm text-white/25">
+                <p className="mb-6 text-sm text-white/60">
                   {plan.price === 0 ? "Always free" : "Only billed monthly"}
                 </p>
 
@@ -732,7 +732,7 @@ export default function LandingPage() {
                           )}
                         />
                       </div>
-                      <span className="text-sm text-white/55">{f}</span>
+                      <span className="text-sm text-white/90">{f}</span>
                     </div>
                   ))}
                 </div>
@@ -823,7 +823,7 @@ export default function LandingPage() {
 
         <SectionHeading gray="Start building," blue="for free." />
 
-        <p className="mb-8 text-base leading-relaxed text-white/70">
+        <p className="mb-8 text-base leading-relaxed text-white/90">
           Get 10 free generations on sign up. No credit card required.
           <br />
           Upgrade when you&apos;re ready.
@@ -840,7 +840,7 @@ export default function LandingPage() {
         </Link>
       </section>
 
-      <footer className="relative z-10 border-t border-white/7 py-12 mx-auto px-6 flex flex-wrap items-center justify-center text-stone-400">
+      <footer className="relative z-10 border-t border-white/7 py-12 mx-auto px-6 flex flex-wrap items-center justify-center text-white/70">
         Developed by Coach Manuel
       </footer>
     </main>
