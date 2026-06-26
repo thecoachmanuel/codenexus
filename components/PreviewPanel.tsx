@@ -14,18 +14,37 @@ interface PreviewPanelProps {
   onError: (error: string | null) => void;
 }
 
+// Only allow file types the Sandpack bundler can safely parse
+const ALLOWED_EXTENSIONS = new Set([
+  ".js", ".jsx", ".ts", ".tsx",
+  ".css", ".json", ".html", ".svg", ".md", ".txt",
+  ".mjs", ".cjs", ".mdx",
+]);
+
+function sanitizeCode(code: string): string {
+  // Strip BOM markers and null bytes that cause "Unknown character: 0" parse errors
+  return code
+    .replace(/^\uFEFF/, "")       // strip UTF-8 BOM
+    .replace(/\x00/g, "")         // strip null bytes
+    .replace(/\r\n/g, "\n");      // normalize line endings
+}
+
 function buildSandpackFiles(fileData: FileData): Record<string, string> {
   const newFiles: Record<string, string> = {};
   if (!fileData.files) return newFiles;
 
   for (const [path, obj] of Object.entries(fileData.files)) {
-    let code = obj.code || "";
+    let code = sanitizeCode(obj.code || "");
     let cleanPath = path;
 
     // Sandpack expects root paths to start with /
     if (!cleanPath.startsWith("/")) {
       cleanPath = "/" + cleanPath.replace(/^\.\//, "");
     }
+
+    // Only pass files with known extensions to avoid parse errors
+    const ext = cleanPath.substring(cleanPath.lastIndexOf(".")).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.has(ext)) continue;
 
     // Sanitize JSON files - fix trailing commas that cause crashes
     if (cleanPath.endsWith(".json")) {
