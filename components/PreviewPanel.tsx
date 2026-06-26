@@ -16,6 +16,7 @@ interface PreviewPanelProps {
 
 function buildSandpackFiles(fileData: FileData): Record<string, string> {
   const newFiles: Record<string, string> = {};
+  if (!fileData.files) return newFiles;
 
   for (const [path, obj] of Object.entries(fileData.files)) {
     let code = obj.code || "";
