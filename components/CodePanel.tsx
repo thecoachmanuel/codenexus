@@ -270,35 +270,36 @@ export function CodePanel({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Top Navbar */}
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/5 bg-[#0a0a0a] px-2 sm:px-4">
-        <div className="flex items-center gap-4">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/5 bg-[#0a0a0a] px-1 sm:px-4 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-1 sm:gap-4 shrink-0">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ActiveTab)}>
-            <TabsList className="bg-white/5">
+            <TabsList className="bg-white/5 h-9 sm:h-10">
               <TabsTrigger
                 value="preview"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white"
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-xs sm:text-sm px-2 sm:px-3"
               >
-                <Eye className="mr-2 h-4 w-4" />
+                <Eye className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
                 Preview
               </TabsTrigger>
               <TabsTrigger
                 value="code"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white"
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-xs sm:text-sm px-2 sm:px-3"
               >
-                <Code2 className="mr-2 h-4 w-4" />
+                <Code2 className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
                 Code
               </TabsTrigger>
               <TabsTrigger
                 value="split"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white hidden md:flex"
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white hidden md:flex text-sm px-3"
               >
                 <Columns className="mr-2 h-4 w-4" />
                 Split
               </TabsTrigger>
               <TabsTrigger
                 value="env"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white"
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-xs sm:text-sm px-2 sm:px-3"
               >
+                <Settings2 className="mr-1.5 h-3.5 w-3.5 sm:hidden" />
                 <Settings2 className="mr-2 h-4 w-4 hidden sm:block" />
                 <span className="hidden sm:inline">Env</span>
                 <span className="sm:hidden">.env</span>
@@ -307,13 +308,13 @@ export function CodePanel({
           </Tabs>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-0.5 sm:gap-2 shrink-0 ml-2">
           {!isProUser && (
             <PricingModal reason="upgrade">
-              <span className="group relative flex h-7 cursor-pointer items-center gap-1.5 overflow-hidden rounded-md border border-white/25 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-cyan-500/10 px-2.5 text-sm font-medium text-white/90 transition-all duration-300 hover:border-white/20 hover:from-violet-500/20 hover:via-fuchsia-500/20 hover:to-cyan-500/20 hover:text-white/90 hover:shadow-[0_0_12px_rgba(139,92,246,0.3)]">
+              <span className="group relative flex h-7 cursor-pointer items-center gap-1.5 overflow-hidden rounded-md border border-white/25 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-cyan-500/10 px-2 sm:px-2.5 text-sm font-medium text-white/90 transition-all duration-300 hover:border-white/20 hover:from-violet-500/20 hover:via-fuchsia-500/20 hover:to-cyan-500/20 hover:text-white/90 hover:shadow-[0_0_12px_rgba(139,92,246,0.3)]">
                 <span className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                 <Bot className="h-3.5 w-3.5 text-violet-400 transition-colors group-hover:text-violet-300" />
-                <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
+                <span className="hidden sm:inline bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
                   Upgrade to PRO
                 </span>
               </span>
@@ -329,7 +330,7 @@ export function CodePanel({
             <Button
               variant="ghost"
               disabled={isExporting || !fileData}
-              className="text-white/70 hover:text-white px-2"
+              className="text-white/70 hover:text-white px-1.5 sm:px-2 h-8 sm:h-9"
               title="Deploy to Vercel"
             >
               <Rocket className="h-4 w-4" />
@@ -341,7 +342,7 @@ export function CodePanel({
               href={liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+              className="inline-flex h-8 sm:h-9 items-center justify-center rounded-md px-1.5 sm:px-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
               title="Open Live Site"
             >
               <Eye className="h-4 w-4 sm:mr-1.5" />
@@ -356,7 +357,7 @@ export function CodePanel({
             <Button
               variant="ghost"
               disabled={isExporting || !fileData}
-              className="text-white/70 hover:text-white px-2"
+              className="text-white/70 hover:text-white px-1.5 sm:px-2 h-8 sm:h-9"
               title="Export to GitHub"
             >
               <GithubIcon className="h-4 w-4" />
@@ -367,14 +368,15 @@ export function CodePanel({
             variant="ghost"
             onClick={handleExportZip}
             disabled={isExporting || !fileData}
+            className="text-white/70 hover:text-white px-1.5 sm:px-2 h-8 sm:h-9"
+            title="Download ZIP"
           >
             {isExporting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin sm:mr-1.5" />
             ) : (
-              <Download className="h-3.5 w-3.5 mr-1.5" />
+              <Download className="h-3.5 w-3.5 sm:mr-1.5" />
             )}
             <span className="hidden sm:inline">Download</span>
-            <span className="sm:hidden">ZIP</span>
           </Button>
         </div>
       </div>
