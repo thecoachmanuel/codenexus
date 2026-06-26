@@ -381,7 +381,7 @@ export function WorkspaceClient({
         {/* ChatPanel Container */}
         <div 
           className={`
-            md:relative md:flex md:h-full md:shrink-0
+            md:relative md:flex md:h-full md:shrink-0 md:w-[400px] lg:w-[450px]
             ${mobileTab === 'chat' ? 'flex flex-1 h-full w-full pt-16 md:pt-0' : 'hidden md:flex'}
           `}
         >
