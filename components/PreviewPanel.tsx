@@ -14,59 +14,70 @@ interface PreviewPanelProps {
   onError: (error: string | null) => void;
 }
 
-// Only allow file types the Sandpack bundler can safely parse
-const ALLOWED_EXTENSIONS = new Set([
-  ".js", ".jsx", ".ts", ".tsx",
-  ".css", ".json", ".html", ".svg", ".md", ".txt",
-  ".mjs", ".cjs", ".mdx",
+// Config/build-tool files that the Sandpack browser bundler cannot parse
+const SKIP_FILES = new Set([
+  "vite.config.js", "vite.config.ts",
+  "tailwind.config.js", "tailwind.config.ts", "tailwind.config.cjs",
+  "postcss.config.js", "postcss.config.cjs", "postcss.config.mjs",
+  "eslint.config.js", ".eslintrc.js", ".eslintrc.json", ".eslintrc.cjs",
+  ".prettierrc", ".prettierrc.js", ".prettierrc.json",
+  "jest.config.js", "jest.config.ts",
+  "babel.config.js", "babel.config.json",
+  "tsconfig.json", "tsconfig.node.json", "tsconfig.app.json",
+  ".env", ".env.local", ".env.production",
+  ".gitignore", ".npmrc", "README.md", "LICENSE",
+  "Makefile", "Dockerfile",
 ]);
 
 function sanitizeCode(code: string): string {
-  // Strip BOM markers and null bytes that cause "Unknown character: 0" parse errors
   return code
-    .replace(/^\uFEFF/, "")       // strip UTF-8 BOM
-    .replace(/\x00/g, "")         // strip null bytes
-    .replace(/\r\n/g, "\n");      // normalize line endings
+    .replace(/^\uFEFF/, "")   // strip UTF-8 BOM
+    .replace(/\x00/g, "")     // strip null bytes
+    .replace(/\r\n/g, "\n");  // normalize line endings
 }
 
-function buildSandpackFiles(fileData: FileData): Record<string, string> {
-  const newFiles: Record<string, string> = {};
-  if (!fileData.files) return newFiles;
+function buildSandpackFiles(fileData: FileData): {
+  files: Record<string, string>;
+  deps: Record<string, string>;
+} {
+  const files: Record<string, string> = {};
+  let deps: Record<string, string> = {};
+
+  if (!fileData.files) return { files, deps };
 
   for (const [path, obj] of Object.entries(fileData.files)) {
     let code = sanitizeCode(obj.code || "");
     let cleanPath = path;
 
-    // Sandpack expects root paths to start with /
+    // Normalize to start with /
     if (!cleanPath.startsWith("/")) {
       cleanPath = "/" + cleanPath.replace(/^\.\//, "");
     }
 
-    // Only pass files with known extensions to avoid parse errors
-    const ext = cleanPath.substring(cleanPath.lastIndexOf(".")).toLowerCase();
-    if (!ALLOWED_EXTENSIONS.has(ext)) continue;
+    const basename = cleanPath.split("/").pop() || "";
 
-    // Sanitize JSON files - fix trailing commas that cause crashes
-    if (cleanPath.endsWith(".json")) {
+    // Extract deps from package.json but don't pass the file itself to avoid conflicts
+    if (basename === "package.json") {
       try {
-        JSON.parse(code);
-      } catch {
-        try {
-          const fixedCode = code.replace(/,\s*}/g, "}").replace(/,\s*\]/g, "]");
-          JSON.parse(fixedCode);
-          code = fixedCode;
-        } catch {
-          code = cleanPath === "/package.json"
-            ? '{"name":"app","dependencies":{"react":"^18.0.0","react-dom":"^18.0.0"}}'
-            : "{}";
-        }
-      }
+        const fixed = code.replace(/,\s*}/g, "}").replace(/,\s*\]/g, "]");
+        const pkg = JSON.parse(fixed);
+        deps = pkg.dependencies || {};
+      } catch { /* ignore */ }
+      continue; // Don't pass package.json to Sandpack — template manages it
     }
 
-    newFiles[cleanPath] = code;
+    // Skip Node.js/build-tool config files — browser bundler can't parse them
+    if (SKIP_FILES.has(basename)) continue;
+
+    // Only pass source-code file types
+    const ext = basename.includes(".") ? "." + basename.split(".").pop()!.toLowerCase() : "";
+    const allowed = [".js",".jsx",".ts",".tsx",".css",".svg",".html",".json",".md",".txt",".mdx"];
+    if (!allowed.includes(ext)) continue;
+
+    files[cleanPath] = code;
   }
 
-  return newFiles;
+  return { files, deps };
 }
 
 export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
@@ -74,12 +85,12 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     onError(null);
   }, [fileData, onError]);
 
-  const files = useMemo(() => {
-    if (!fileData?.files) return null;
+  const { files, deps } = useMemo(() => {
+    if (!fileData?.files) return { files: {} as Record<string, string>, deps: {} as Record<string, string> };
     return buildSandpackFiles(fileData);
   }, [fileData]);
 
-  const isIdle = !files || Object.keys(files).length === 0;
+  const isIdle = Object.keys(files).length === 0;
 
   return (
     <div className="flex flex-col h-full w-full bg-[#0a0a0a]">
@@ -110,6 +121,13 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
             template="vite-react"
             theme="light"
             files={files}
+            customSetup={{
+              dependencies: {
+                react: "^18.0.0",
+                "react-dom": "^18.0.0",
+                ...deps,
+              },
+            }}
             options={{
               externalResources: [
                 "https://cdn.tailwindcss.com",
