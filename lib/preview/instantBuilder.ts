@@ -40,7 +40,6 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
     for (const [path, obj] of Object.entries(fileData.files)) {
       if (path.endsWith(".js") || path.endsWith(".jsx")) {
         // Standardize paths to ensure relative imports like './App' work.
-        // e.g. "/src/App.jsx" -> "./App.jsx"
         let cleanPath = path.replace(/^\/?(src\/)?/, "");
         if (!cleanPath.startsWith("./")) {
           cleanPath = "./" + cleanPath;
@@ -75,6 +74,19 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
         window.parent.postMessage({ type: 'preview_error', message: event.reason?.message || event.reason }, '*');
       });
 
+      function resolvePath(base, relative) {
+        if (!relative.startsWith('.')) return relative;
+        const baseParts = base.split('/');
+        baseParts.pop(); // remove filename
+        const relParts = relative.split('/');
+        for (const part of relParts) {
+          if (part === '.') continue;
+          if (part === '..') baseParts.pop();
+          else baseParts.push(part);
+        }
+        return baseParts.join('/');
+      }
+
       const files = ${JSON.stringify(jsFilesMap)};
       const importmap = { imports: ${JSON.stringify(importMap)} };
       const blobMap = {};
@@ -82,8 +94,18 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
       try {
         // Compile files and create Blob URLs
         for (const [path, code] of Object.entries(files)) {
-          // Replace lucide-react with standard import (esm.sh handles it)
+          // Replace lucide-react with standard import
           let processedCode = code.replace(/import\\s+\\{([^}]+)\\}\\s+from\\s+['"]lucide-react['"]/g, "import { $1 } from 'lucide-react'");
+          
+          // Rewrite relative imports to bare specifiers mapped to our Blobs
+          processedCode = processedCode.replace(/(import|export)\\s+([\\s\\S]*?)\\s+from\\s+['"](\\.[^'"]+)['"]/g, function(match, type, imports, relPath) {
+            const resolved = resolvePath(path, relPath);
+            return type + ' ' + imports + " from '__local__" + resolved + "'";
+          });
+          processedCode = processedCode.replace(/(import)\\s+['"](\\.[^'"]+)['"]/g, function(match, type, relPath) {
+            const resolved = resolvePath(path, relPath);
+            return type + " '__local__" + resolved + "'";
+          });
           
           // Babel compilation
           const compiled = Babel.transform(processedCode, { presets: ['react'] }).code;
@@ -91,13 +113,12 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
           const url = URL.createObjectURL(blob);
           
           blobMap[path] = url;
-          // Support importing without extension
-          blobMap[path.replace(/\\.jsx?$/, '')] = url;
         }
 
-        // Register relative paths in the importmap
+        // Register resolved paths in the importmap
         for (const [path, url] of Object.entries(blobMap)) {
-          importmap.imports[path] = url;
+          importmap.imports['__local__' + path] = url;
+          importmap.imports['__local__' + path.replace(/\\.jsx?$/, '')] = url;
         }
 
         // Inject the importmap
