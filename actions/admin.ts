@@ -19,6 +19,7 @@ export async function generateNewPromptSuggestions() {
 
   const prompt = `You are a creative product manager for a tool that instantly turns natural language prompts into working React applications.
 Generate a diverse set of modern, exciting web application ideas that users could ask the AI to build. Include SaaS ideas, consumer apps, interactive dashboards, etc.
+CRITICAL INSTRUCTION: Each suggestion MUST be extremely short, punchy, and less than a sentence in length (e.g. 3-6 words maximum).
 Output strictly as a valid JSON object matching this interface:
 {
   "suggestions": [
