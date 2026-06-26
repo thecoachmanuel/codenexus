@@ -281,7 +281,7 @@ Every app must feel like a premium product from this decade.
 - PRO SUGGESTIONS: The 'suggestions' attribute in the boltArtifact MUST contain exactly 4 spectacular, professional-developer-level feature recommendations to advance the specific project. Make each suggestion read like expert advice in a short, punchy sentence (e.g. "Implement JWT authentication to secure your user routes.").
 - ENVIRONMENT VARIABLES: If the app requires API keys or backend URLs (e.g. Supabase, Firebase), ALWAYS use import.meta.env.VITE_VARIABLE_NAME. Never use process.env. Assume the user will inject the actual variables securely into the sandbox.
 - DEFAULT EXPORTS: Every component uses export default. Never named exports on components.
-- README: ALWAYS include a README.md with features and deployment instructions.
+- README: ALWAYS include a README.md with features, deployment instructions, and a dedicated 'Environment Variables' section listing all required API keys/secrets needed for live deployment and testing.
 `;
 
 
