@@ -524,7 +524,7 @@ export function ChatPanel({
       )}
 
       {/* Input */}
-      <div className="border-t border-white/6 p-3">
+      <div className="border-t border-white/10 p-3">
         {pendingImageUrl && (
           <div className="relative mb-2 w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -549,7 +549,7 @@ export function ChatPanel({
               ? "border-white/4"
               : noCredits
               ? "border-white/4 opacity-60"
-              : "border-white/20 hover:border-white/12"
+              : "border-white/40 hover:border-white/60"
           )}
         >
           <textarea
