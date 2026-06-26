@@ -27,11 +27,8 @@ function ErrorListener({ onError }: { onError: (error: string | null) => void })
     if (sandpack.error?.message) {
       // Capture compilation and runtime errors immediately
       onErrorRef.current(sandpack.error.message);
-    } else if (sandpack.status === "idle") {
-      // Only clear the error if compilation finished successfully without errors
-      onErrorRef.current(null);
     }
-  }, [sandpack.error?.message, sandpack.status]);
+  }, [sandpack.error?.message]);
 
   return null;
 }
