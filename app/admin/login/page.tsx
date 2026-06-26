@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-              placeholder="admin@crevo.com"
+              placeholder="johndoe@demo.com"
             />
           </div>
           
