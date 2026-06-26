@@ -31,7 +31,7 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
     }
 
     // 2. Get Package JSON for imports
-    let pkg: Record<string, any> = {};
+    let pkg: Record<string, unknown> = {};
     const pkgRaw =
       fileData.files["/package.json"]?.code ||
       fileData.files["package.json"]?.code;
@@ -43,7 +43,7 @@ export function buildInstantPreviewHTML(fileData: FileData): string | null {
       }
     }
 
-    const deps = pkg.dependencies || {};
+    const deps = (pkg.dependencies as Record<string, string>) || {};
     const importMap: Record<string, string> = {
       react: "https://esm.sh/react@18.3.1",
       "react-dom": "https://esm.sh/react-dom@18.3.1",
