@@ -77,6 +77,17 @@ function buildSandpackFiles(fileData: FileData): {
     files[cleanPath] = code;
   }
 
+  // The 'react' template needs /index.js as its entrypoint.
+  // If the AI generated src/main.jsx (Vite convention), create a shim.
+  if (!files["/index.js"] && !files["/src/index.js"]) {
+    const mainEntry = Object.keys(files).find(
+      (p) => p.endsWith("main.jsx") || p.endsWith("main.js") || p.endsWith("main.tsx")
+    );
+    if (mainEntry) {
+      files["/index.js"] = `import "${mainEntry}";`;
+    }
+  }
+
   return { files, deps };
 }
 
@@ -118,7 +129,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
           </div>
         ) : (
           <SandpackProvider
-            template="vite-react"
+            template="react"
             theme="light"
             files={files}
             customSetup={{
