@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
 
-    const expectedEmail = process.env.ADMIN_EMAIL || "johndoe@demo.com";
+    const expectedEmail = process.env.ADMIN_EMAIL || "admin@crevo.com";
     const expectedPassword = process.env.ADMIN_PASSWORD || "admin123";
 
     if (email !== expectedEmail || password !== expectedPassword) {
