@@ -225,19 +225,76 @@ export function CodePanel({
     setIsExporting(true);
     try {
       const zip = new JSZip();
+      const safeTitle = (appTitle || "generated-app").toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      let hasPackageJson = false;
+      let hasReadme = false;
+
       for (const [path, obj] of Object.entries(fileData.files || {})) {
         let code = obj.code;
         if (typeof code === "string") {
           code = code.replace(/^\s*\`\`\`[a-z]*\n/i, "").replace(/\n\`\`\`\s*$/i, "");
         }
-        zip.file(path.startsWith("/") ? path.slice(1) : path, code);
+        
+        const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+        if (cleanPath === "package.json") hasPackageJson = true;
+        if (cleanPath.toLowerCase() === "readme.md") hasReadme = true;
+
+        zip.file(`${safeTitle}/${cleanPath}`, code);
+      }
+
+      if (!hasPackageJson) {
+        const pkg = {
+          name: safeTitle,
+          version: "0.1.0",
+          private: true,
+          dependencies: {
+            "react": "^18.2.0",
+            "react-dom": "^18.2.0",
+            ...fileData.dependencies
+          },
+          scripts: {
+            "start": "react-scripts start",
+            "build": "react-scripts build",
+            "test": "react-scripts test",
+            "eject": "react-scripts eject"
+          },
+          browserslist: {
+            production: [">0.2%", "not dead", "not op_mini all"],
+            development: ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+          }
+        };
+        zip.file(`${safeTitle}/package.json`, JSON.stringify(pkg, null, 2));
+      }
+
+      if (!hasReadme) {
+        const readmeContent = `# ${appTitle || "Generated App"}
+
+This project was generated using AI.
+
+## Getting Started
+
+First, install the dependencies:
+\`\`\`bash
+npm install
+# or
+yarn install
+\`\`\`
+
+Then, run the development server:
+\`\`\`bash
+npm start
+# or
+yarn start
+\`\`\`
+`;
+        zip.file(`${safeTitle}/README.md`, readmeContent);
       }
       
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${appTitle || "generated-app"}.zip`;
+      a.download = `${safeTitle}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -369,14 +426,14 @@ export function CodePanel({
             onClick={handleExportZip}
             disabled={isExporting || !fileData}
             className="text-white/70 hover:text-white px-1.5 sm:px-2 h-8 sm:h-9"
-            title="Download ZIP"
+            title="Export Project"
           >
             {isExporting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin xl:mr-1.5" />
             ) : (
               <Download className="h-3.5 w-3.5 xl:mr-1.5" />
             )}
-            <span className="hidden xl:inline">Download</span>
+            <span className="hidden xl:inline">Export</span>
           </Button>
         </div>
       </div>
