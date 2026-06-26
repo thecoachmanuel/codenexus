@@ -7,7 +7,6 @@ import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { Loader2, Terminal as TerminalIcon, RefreshCw, AlertTriangle, Zap } from "lucide-react";
 import type { FileData } from "@/types/workspace";
-import { buildInstantPreviewHTML } from "@/lib/preview/instantBuilder";
 
 declare global {
   interface Window {
@@ -147,17 +146,6 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
     };
 
     try {
-      // Attempt instant preview first (0ms load time bypass)
-      const instantHtml = buildInstantPreviewHTML(data);
-      if (instantHtml) {
-        term.writeln("\x1b[35m⚡ Using Instant HTML Compiler (Lightning Fast Bypass)...\x1b[0m");
-        setSrcDoc(instantHtml);
-        setUrl(null);
-        setPhase("ready");
-        errorBufferRef.current = [];
-        onErrorRef.current(null);
-        return; // Bypass WebContainer completely!
-      }
       // 1. Boot WebContainer (singleton — only boots once per page load)
       if (!window.__wc_instance) {
         setPhase("booting");
