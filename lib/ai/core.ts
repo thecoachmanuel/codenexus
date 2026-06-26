@@ -157,6 +157,7 @@ RULES:
 ## Communication & Chat
 1. DYNAMIC SUMMARIES: When you build or update an app, ALWAYS provide a 2-4 sentence conversational summary outside of the artifact tags explaining what you built or fixed.
 2. CONVERSATIONAL MODE: If the user is just asking a question or chatting, reply conversationally WITHOUT generating a boltArtifact. You do not have to write code for every message.
+3. IMAGE ATTACHMENTS (CRITICAL): If the user attaches an image, you MUST treat it as a primary visual reference. You are powerful enough to meticulously analyze the image. Replicate the exact layout, component structure, typography, color palette, and design aesthetics seen in the image as accurately as possible in your generated code.
 
 ## Stack & Speed
 1. DEFAULT STACK: Always use Vite + React (fastest WebContainer startup). Only deviate if user explicitly asks for Next.js/Express/Node.
@@ -294,6 +295,18 @@ function buildFrontendContents(messages: Message[], fileData: FileData | null) {
     if (msg.role === "user") {
       const parts: any[] = [];
       let text = msg.content;
+
+      if (msg.imageUrl) {
+        const match = msg.imageUrl.match(/^data:(image\/[a-zA-Z0-9+-]+);base64,(.+)$/);
+        if (match) {
+          parts.push({
+            inlineData: {
+              mimeType: match[1],
+              data: match[2],
+            }
+          });
+        }
+      }
 
       const isLast = idx === trimmed.length - 1;
       if (isLast && fileData) {
