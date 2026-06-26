@@ -30,10 +30,15 @@ const SKIP_FILES = new Set([
 ]);
 
 function sanitizeCode(code: string): string {
-  return code
+  let clean = code
     .replace(/^\uFEFF/, "")   // strip UTF-8 BOM
     .replace(/\x00/g, "")     // strip null bytes
     .replace(/\r\n/g, "\n");  // normalize line endings
+
+  // Fix AI hallucination: strip wrapping markdown code fences (e.g., ```jsx ... ```)
+  clean = clean.replace(/^\s*```[a-zA-Z]*\s*\n([\s\S]*?)\n\s*```\s*$/i, "$1");
+
+  return clean;
 }
 
 function buildSandpackFiles(fileData: FileData): {
