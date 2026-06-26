@@ -137,6 +137,18 @@ function buildSandpackFiles(fileData: FileData): {
     }
   }
 
+  // Inject environment variables universally
+  if (fileData.envVars && Object.keys(fileData.envVars).length > 0) {
+    let envContent = "";
+    for (const [key, value] of Object.entries(fileData.envVars)) {
+      if (key.trim() === "") continue;
+      envContent += `${key}=${value}\n`;
+      if (!key.startsWith("VITE_")) envContent += `VITE_${key}=${value}\n`;
+      if (!key.startsWith("REACT_APP_")) envContent += `REACT_APP_${key}=${value}\n`;
+    }
+    files["/.env"] = envContent;
+  }
+
   return { files, deps };
 }
 
