@@ -568,7 +568,7 @@ export function ChatPanel({
                 : "Ask AI to modify…"
             }
             rows={1}
-            className="w-full resize-none bg-transparent px-3.5 pb-2 pt-3 text-[13px] text-white placeholder:text-white/20 focus:outline-none"
+            className="w-full resize-none bg-transparent px-3.5 pb-2 pt-3 text-base md:text-[13px] text-white placeholder:text-white/20 focus:outline-none"
             style={{ maxHeight: 160 }}
           />
 
