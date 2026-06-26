@@ -33,10 +33,27 @@ function sanitizeCode(code: string): string {
   let clean = code
     .replace(/^\uFEFF/, "")   // strip UTF-8 BOM
     .replace(/\x00/g, "")     // strip null bytes
-    .replace(/\r\n/g, "\n");  // normalize line endings
+    .replace(/\r\n/g, "\n")   // normalize line endings
+    .trim();
 
-  // Fix AI hallucination: strip wrapping markdown code fences (e.g., ```jsx ... ```)
-  clean = clean.replace(/^\s*```[a-zA-Z]*\s*\n([\s\S]*?)\n\s*```\s*$/i, "$1");
+  // Fix AI hallucination: strip markdown fences (```jsx) if the AI accidentally included them inside the file
+  const lines = clean.split("\n");
+  
+  // Strip opening fence
+  if (lines[0] && lines[0].trim().startsWith("```")) {
+    lines.shift();
+  }
+  
+  // Strip closing fence
+  if (lines.length > 0 && lines[lines.length - 1].trim() === "```") {
+    lines.pop();
+  }
+
+  // Fallback: If there's still a stray closing fence at the very end (due to trailing spaces)
+  clean = lines.join("\n").trim();
+  if (clean.endsWith("```")) {
+    clean = clean.slice(0, -3);
+  }
 
   return clean;
 }
