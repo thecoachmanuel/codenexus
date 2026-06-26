@@ -9,6 +9,7 @@ import { MobileBlocker } from "./MobileBlocker";
 import { MIN_CREDITS_TO_GENERATE } from "@/lib/constants";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useAuthContext } from "@/components/AuthProvider";
 
 import type {
   Message,
@@ -56,6 +57,7 @@ export function WorkspaceClient({
   userId,
   userPlan,
 }: WorkspaceClientProps) {
+  const { updateUserCredits } = useAuthContext();
   const [workspaceId, setWorkspaceId] = useState<string | null>(
     workspace?.id ?? null
   );
@@ -243,6 +245,7 @@ export function WorkspaceClient({
                   }));
                 }
                 setCredits(event.creditsRemaining);
+                updateUserCredits(event.creditsRemaining);
                 setMessages((prev) => [
                   ...prev,
                   { role: "assistant", content: event.assistantMessage },

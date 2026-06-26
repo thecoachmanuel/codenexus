@@ -25,6 +25,7 @@ interface AuthContextValue {
   isLoading: boolean;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateUserCredits: (credits: number) => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -33,6 +34,7 @@ const AuthContext = createContext<AuthContextValue>({
   isLoading: true,
   signOut: async () => {},
   refreshUser: async () => {},
+  updateUserCredits: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -56,6 +58,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const updateUserCredits = useCallback((newCredits: number) => {
+    setUser((prev) => (prev ? { ...prev, credits: newCredits } : null));
+  }, []);
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
@@ -75,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         signOut,
         refreshUser: fetchUser,
+        updateUserCredits,
       }}
     >
       {children}
