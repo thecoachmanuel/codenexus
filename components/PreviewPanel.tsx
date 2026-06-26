@@ -74,17 +74,22 @@ function buildSandpackFiles(fileData: FileData): {
     const allowed = [".js",".jsx",".ts",".tsx",".css",".svg",".html",".json",".md",".txt",".mdx"];
     if (!allowed.includes(ext)) continue;
 
+    // Ensure index.html is placed where the Sandpack react template expects it
+    if (cleanPath === "/index.html") {
+      cleanPath = "/public/index.html";
+    }
+
     files[cleanPath] = code;
   }
 
-  // The 'react' template needs /index.js as its entrypoint.
-  // If the AI generated src/main.jsx (Vite convention), create a shim.
-  if (!files["/index.js"] && !files["/src/index.js"]) {
+  // The 'react-ts' template needs /index.tsx or /index.js as its entrypoint.
+  // If the AI generated src/main.jsx (Vite convention) or something else, create a shim.
+  if (!files["/index.tsx"] && !files["/src/index.tsx"] && !files["/index.js"] && !files["/src/index.js"]) {
     const mainEntry = Object.keys(files).find(
-      (p) => p.endsWith("main.jsx") || p.endsWith("main.js") || p.endsWith("main.tsx")
+      (p) => p.match(/\/(main|index)\.(jsx?|tsx?)$/) && !p.includes("public/")
     );
     if (mainEntry) {
-      files["/index.js"] = `import "${mainEntry}";`;
+      files["/index.tsx"] = `import "${mainEntry}";`;
     }
   }
 
@@ -129,7 +134,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
           </div>
         ) : (
           <SandpackProvider
-            template="react"
+            template="react-ts"
             theme="light"
             files={files}
             customSetup={{
