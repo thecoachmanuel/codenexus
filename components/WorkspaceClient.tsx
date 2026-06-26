@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Bot } from "lucide-react";
 import { ChatPanel } from "./ChatPanel";
 import { CodePanel } from "./CodePanel";
 import { MobileBlocker } from "./MobileBlocker";
@@ -10,6 +10,7 @@ import { MIN_CREDITS_TO_GENERATE } from "@/lib/constants";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuthContext } from "@/components/AuthProvider";
+import { PricingModal } from "@/components/PricingModal";
 
 import type {
   Message,
