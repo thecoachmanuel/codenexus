@@ -27,7 +27,7 @@ export const PRICING_PLANS = [
     featured: false,
     planId: null,
     active: true,
-    features: ["10 generations / month", "Live preview", "Export to zip"],
+    features: ["10 credits / month", "Live preview", "Export to zip"],
   },
   {
     key: "starter",
@@ -37,7 +37,7 @@ export const PRICING_PLANS = [
     featured: true,
     planId: "cplan_3DvxGsOeYA5bpJzGWPi8o7wScRD",
     active: false,
-    features: ["50 generations / month", "Image uploads", "Live preview", "Export to zip"],
+    features: ["50 credits / month", "Image uploads", "Live preview", "Export to zip"],
   },
   {
     key: "pro",
@@ -47,7 +47,7 @@ export const PRICING_PLANS = [
     featured: false,
     planId: "cplan_3DvxTfywwB0NyQ1iqANclgNqlq8",
     active: false,
-    features: ["150 generations / month", "Priority AI", "Live preview", "Export to zip", "Image uploads", "GitHub repo import"],
+    features: ["150 credits / month", "Priority AI", "Live preview", "Export to zip", "Image uploads", "GitHub repo import"],
   },
 ] as const;
 

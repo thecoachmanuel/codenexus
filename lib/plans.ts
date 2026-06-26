@@ -9,7 +9,7 @@ const DEFAULT_PLANS = [
     price: 0,
     credits: 10,
     featured: false,
-    features: ["10 generations / month", "Live preview", "Export to zip"],
+    features: ["10 credits / month", "Live preview", "Export to zip"],
   },
   {
     key: "starter",
@@ -19,7 +19,7 @@ const DEFAULT_PLANS = [
     credits: 50,
     featured: true,
     features: [
-      "50 generations / month",
+      "50 credits / month",
       "Image uploads",
       "Live preview",
       "Export to zip",
@@ -33,7 +33,7 @@ const DEFAULT_PLANS = [
     credits: 150,
     featured: false,
     features: [
-      "150 generations / month",
+      "150 credits / month",
       "Priority AI (faster response)",
       "Live preview",
       "Export to zip",
