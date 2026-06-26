@@ -94,6 +94,7 @@ RULES:
 2. Ensure React 18.2.0 compatibility. Use default exports. Use Tailwind CSS.
 3. Path must start with / (e.g. /App.js).
 4. If the error is unfixable, return action: "report" instead.
+5. ENRICHED DESIGN (CRITICAL): Do not output plain or basic designs. Use highly vibrant, complementary color palettes (e.g. emerald, rose, indigo). All interactive elements MUST include framer-motion micro-interactions (e.g. whileHover, whileTap) and use rich styling like glassmorphism (backdrop-blur-md, borders, tinted shadows).
 
 CURRENT FILES:
 ${Object.entries(patchedFiles).map(([path, file]) => `--- ${path} ---\n${file.code}`).join("\n\n")}`;
