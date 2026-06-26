@@ -279,7 +279,7 @@ Every app must feel like a premium product from this decade.
 - NO STUBS: Output the ENTIRE file every time. Never write // ... rest of code.
 - ITERATIVE COMPLEXITY: Build a high-quality Core MVP first, avoiding massive generation in a single step.
 - PRO SUGGESTIONS: The 'suggestions' attribute in the boltArtifact MUST contain exactly 4 spectacular, professional-developer-level feature recommendations to advance the specific project. Make each suggestion read like expert advice in a short, punchy sentence (e.g. "Implement JWT authentication to secure your user routes.").
-- ENVIRONMENT VARIABLES: If the app requires API keys or backend URLs (e.g. Supabase, Firebase), ALWAYS use import.meta.env.VITE_VARIABLE_NAME. Never use process.env. Assume the user will inject the actual variables securely into the sandbox.
+- ENVIRONMENT VARIABLES: If the app requires API keys or backend URLs (e.g. Supabase, Firebase), ALWAYS use import.meta.env.VITE_VARIABLE_NAME. Never use process.env. CRITICAL: You MUST implement a fallback to mock data if the environment variables are missing. The app must never crash on load; if the keys are undefined, show a warning toast/banner and seamlessly render the app using realistic mock data.
 - DEFAULT EXPORTS: Every component uses export default. Never named exports on components.
 - README: ALWAYS include a README.md with features, deployment instructions, and a dedicated 'Environment Variables' section listing all required API keys/secrets needed for live deployment and testing.
 `;
