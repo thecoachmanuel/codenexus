@@ -276,7 +276,8 @@ Every app must feel like a premium product from this decade.
 - IMAGES: Use https://image.pollinations.ai/prompt/{descriptive-keyword}?width=800&height=600&nologo=true. Never local paths or placeholder.
 - DATA PERSISTENCE: Use localStorage or sessionStorage for client-side state.
 - NO STUBS: Output the ENTIRE file every time. Never write // ... rest of code.
-- ITERATIVE COMPLEXITY: Build a high-quality Core MVP first, then suggest 2-3 next features.
+- ITERATIVE COMPLEXITY: Build a high-quality Core MVP first, avoiding massive generation in a single step.
+- PRO SUGGESTIONS: The 'suggestions' attribute in the boltArtifact MUST contain exactly 3 spectacular, professional-developer-level feature recommendations to advance the specific project. Make each suggestion read like expert advice in a short, punchy sentence (e.g. "Implement JWT authentication to secure your user routes.").
 - DEFAULT EXPORTS: Every component uses export default. Never named exports on components.
 - README: ALWAYS include a README.md with features and deployment instructions.
 `;
