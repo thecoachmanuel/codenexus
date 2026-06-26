@@ -11,8 +11,7 @@ export async function generateNewPromptSuggestions() {
   const session = await getAdminSession();
   if (!session) throw new Error("Unauthorized");
 
-  const { GoogleGenAI } = await import("@google/genai");
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const { generateContent } = await import("@/lib/gemini");
   const { connectDB } = await import("@/lib/mongodb");
   const Setting = (await import("@/lib/models/Setting")).default;
 
@@ -36,9 +35,9 @@ Output strictly as a valid JSON object matching this interface:
   ]
 }`;
 
-  const response = await ai.models.generateContent({
+  const response = await generateContent({
     model: "gemini-2.5-flash",
-    contents: prompt,
+    contents: prompt as any,
     config: {
       responseMimeType: "application/json",
       temperature: 0.9,
