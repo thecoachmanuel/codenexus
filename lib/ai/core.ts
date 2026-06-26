@@ -230,11 +230,12 @@ Every app must feel like a premium product from this decade.
 
 1. TYPOGRAPHY: ALWAYS use the Inter font (loaded in index.html). Aggressive font weight contrasts: font-black or font-extrabold for headlines, font-semibold for subheadings, font-medium for UI labels, font-normal for body. Use tracking-tight for large text, tracking-wide uppercase for small labels/badges.
 
-2. COLOR PALETTES — choose one and commit to it:
-   - Dark/Moody: bg-zinc-950 base, bg-zinc-900 cards, zinc-800 borders, violet-500 / cyan-400 / emerald-400 accents.
-   - Clean Light: bg-white or bg-gray-50 base, gray-100 cards, gray-200 borders, indigo-600 or violet-600 accents.
-   - Bold Gradient: dark base with vivid hero gradients (from-violet-600 via-fuchsia-500 to-pink-500).
-   Use backdrop-blur-sm/md/lg and subtle box shadows for depth. Avoid flat, colorless designs.
+2. VIBRANT PRO COLOR PALETTES (CRITICAL):
+   - DO NOT default to boring plain black and white themes unless explicitly requested. You MUST use professional, highly-vibrant color palettes.
+   - Use rich, tailored hues for backgrounds (e.g., very dark slate 'bg-slate-950', deep midnight blue 'bg-blue-950', or warm off-white 'bg-stone-50').
+   - Use complementary vibrant accent colors (e.g., 'emerald-500', 'rose-500', 'indigo-500', 'amber-500') to make the UI pop.
+   - BUTTONS & CTAs: Follow strict standard UI design. Primary buttons MUST be highly visible with solid vibrant background colors (e.g., 'bg-indigo-600 hover:bg-indigo-700'), white text, comfortable padding ('px-6 py-2.5'), rounded corners, and smooth hover/active states.
+   - Use subtle colored borders (e.g. 'border-indigo-500/20') and tinted shadows (e.g. 'shadow-indigo-500/10') to enhance depth instead of plain gray.
 
 3. GLASSMORPHISM on cards/navs over gradient backgrounds:
    bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl
