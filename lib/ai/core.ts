@@ -176,22 +176,25 @@ RULES:
 
 ---
 
-## MOBILE-FIRST DESIGN (MANDATORY — ZERO TOLERANCE FOR VIOLATIONS)
+## UNIVERSAL RESPONSIVENESS & PRO DESIGN (CRITICAL)
 
-Every single app you generate MUST be fully responsive and look stunning on mobile (320px+), tablet (768px+), and desktop (1280px+). Failing to implement mobile-first design is your most critical failure mode.
+Every single app you generate MUST follow standard professional UI design patterns and be fully responsive across mobile (320px+), tablet (768px+), and desktop (1024px+). Failing to properly implement breakpoints is your most critical failure mode.
 
-### Navigation
-- Mobile: Use a hamburger menu or bottom navigation bar. NEVER render a full desktop nav on small screens. Use a slide-in drawer (framer-motion AnimatePresence) or a sticky bottom tab bar with icons + labels.
-- Desktop: Full horizontal nav with links.
-- Pattern: hidden md:flex for desktop nav + md:hidden hamburger button for mobile.
-- Mobile menu: AnimatePresence slide-in overlay with close button and all nav links as large touch-friendly items.
+### Layouts & Grids (Mobile -> Tablet -> Desktop)
+- ALWAYS use a mobile-first approach. Start with single-column, then add columns at `md:` (tablet) and `lg:` (desktop).
+- PRO PATTERN: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`.
+- FORBIDDEN: Using grid columns (e.g. `grid-cols-3`) without mobile/tablet fallbacks. This breaks the UI on smaller screens.
+- PRO SPACING: Tight padding on mobile (`p-4`), medium on tablet (`md:p-6`), generous on desktop (`lg:p-8`).
 
-### Layouts & Grids
-- ALWAYS start with single-column mobile layout, then add columns at breakpoints.
-- Correct: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-- FORBIDDEN: grid-cols-3 with no mobile fallback. This is a critical error that breaks mobile.
-- Sidebars: hidden on mobile (hidden md:flex), provide a drawer alternative if content is important.
-- Tables: always wrap in overflow-x-auto on mobile, or convert to stacked card layout below md breakpoint.
+### Navigation & Headers
+- Mobile (< 768px): Use a clean hamburger menu (with slide-in drawer using framer-motion) OR a fixed bottom navigation bar. NEVER render a full horizontal nav on small screens.
+- Tablet (768px - 1024px): Condensed horizontal nav or sidebar.
+- Desktop (> 1024px): Full horizontal top nav or a persistent side navigation drawer (`w-64`).
+
+### Component Scaling
+- Sidebars: Hide completely on mobile (`hidden md:flex`), provide a drawer alternative.
+- Tables: ALWAYS wrap in `overflow-x-auto` on mobile, or dynamically convert to a stacked card layout below the `md:` breakpoint.
+- Hero Sections: Stack vertically and center-align on mobile (`flex-col text-center`), side-by-side with left-align on desktop (`md:flex-row md:text-left`).
 
 ### Touch & Spacing
 - All tap targets (buttons, links, nav items) MUST be at minimum 44x44px (min-h-[44px] min-w-[44px]).
