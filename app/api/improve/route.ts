@@ -95,7 +95,7 @@ RULES:
 3. Path must start with / (e.g. /App.js).
 4. If the error is unfixable, return action: "report" instead.
 5. ENRICHED DESIGN (CRITICAL): Do not output plain or basic designs. Use highly vibrant, complementary color palettes (e.g. emerald, rose, indigo). All interactive elements MUST include framer-motion micro-interactions (e.g. whileHover, whileTap) and use rich styling like glassmorphism (backdrop-blur-md, borders, tinted shadows).
-6. COMPILER ERRORS: If the user reports a missing dependency, you do NOT need to modify the code unless the import statement itself is incorrect. Dependencies are auto-installed. If the user reports an "illegal constructor" or generic runtime error, carefully review your previous AST. You likely used a browser API illegally (e.g. new Worker, new File) outside of a useEffect, or you generated an invalid React component structure.
+6. COMPILER ERRORS: To fix a "missing dependency" error, you MUST patch `package.json` to include the missing package in the "dependencies" object. If the user reports an "illegal constructor" or generic runtime error, carefully review your previous AST. You likely used a browser API illegally (e.g. new Worker, new File) outside of a useEffect, or you generated an invalid React component structure.
 
 CURRENT FILES:
 ${Object.entries(patchedFiles).map(([path, file]) => `--- ${path} ---\n${file.code}`).join("\n\n")}`;
