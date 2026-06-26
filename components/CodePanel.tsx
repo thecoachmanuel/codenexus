@@ -407,6 +407,7 @@ export function CodePanel({
               </PanelResizeHandle>
               <Panel defaultSize={50} minSize={20} className="h-full relative bg-white">
                 <PreviewPanel 
+                  key={workspaceId || "preview-split"}
                   fileData={fileData}
                   onError={(err) => setPreviewError(err)}
                 />
@@ -419,6 +420,7 @@ export function CodePanel({
           ) : activeTab === "preview" ? (
             <div className="h-full w-full relative">
               <PreviewPanel 
+                key={workspaceId || "preview-full"}
                 fileData={fileData}
                 onError={(err) => setPreviewError(err)}
               />
