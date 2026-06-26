@@ -290,7 +290,7 @@ export function CodePanel({
               </TabsTrigger>
               <TabsTrigger
                 value="split"
-                className="data-[state=active]:bg-white/10 data-[state=active]:text-white hidden md:flex text-sm px-3"
+                className="data-[state=active]:bg-white/10 data-[state=active]:text-white hidden lg:flex text-sm px-3"
               >
                 <Columns className="mr-2 h-4 w-4" />
                 Split
@@ -299,10 +299,10 @@ export function CodePanel({
                 value="env"
                 className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-xs sm:text-sm px-2 sm:px-3"
               >
-                <Settings2 className="mr-1.5 h-3.5 w-3.5 sm:hidden" />
-                <Settings2 className="mr-2 h-4 w-4 hidden sm:block" />
-                <span className="hidden sm:inline">Env</span>
-                <span className="sm:hidden">.env</span>
+                <Settings2 className="mr-1.5 h-3.5 w-3.5 lg:hidden" />
+                <Settings2 className="mr-2 h-4 w-4 hidden lg:block" />
+                <span className="hidden lg:inline">Env</span>
+                <span className="lg:hidden">.env</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -311,10 +311,10 @@ export function CodePanel({
         <div className="flex items-center gap-0.5 sm:gap-2 shrink-0 ml-2">
           {!isProUser && (
             <PricingModal reason="upgrade">
-              <span className="group relative hidden sm:flex h-7 cursor-pointer items-center gap-1.5 overflow-hidden rounded-md border border-white/25 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-cyan-500/10 px-2 sm:px-2.5 text-sm font-medium text-white/90 transition-all duration-300 hover:border-white/20 hover:from-violet-500/20 hover:via-fuchsia-500/20 hover:to-cyan-500/20 hover:text-white/90 hover:shadow-[0_0_12px_rgba(139,92,246,0.3)]">
+              <span className="group relative hidden 2xl:flex h-7 cursor-pointer items-center gap-1.5 overflow-hidden rounded-md border border-white/25 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-cyan-500/10 px-2 sm:px-2.5 text-sm font-medium text-white/90 transition-all duration-300 hover:border-white/20 hover:from-violet-500/20 hover:via-fuchsia-500/20 hover:to-cyan-500/20 hover:text-white/90 hover:shadow-[0_0_12px_rgba(139,92,246,0.3)]">
                 <span className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                 <Bot className="h-3.5 w-3.5 text-violet-400 transition-colors group-hover:text-violet-300" />
-                <span className="hidden sm:inline bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
                   Upgrade to PRO
                 </span>
               </span>
@@ -345,8 +345,8 @@ export function CodePanel({
               className="inline-flex h-8 sm:h-9 items-center justify-center rounded-md px-1.5 sm:px-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
               title="Open Live Site"
             >
-              <Eye className="h-4 w-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Live Site</span>
+              <Eye className="h-4 w-4 xl:mr-1.5" />
+              <span className="hidden xl:inline">Live Site</span>
             </a>
           )}
 
@@ -372,11 +372,11 @@ export function CodePanel({
             title="Download ZIP"
           >
             {isExporting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin sm:mr-1.5" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin xl:mr-1.5" />
             ) : (
-              <Download className="h-3.5 w-3.5 sm:mr-1.5" />
+              <Download className="h-3.5 w-3.5 xl:mr-1.5" />
             )}
-            <span className="hidden sm:inline">Download</span>
+            <span className="hidden xl:inline">Download</span>
           </Button>
         </div>
       </div>
