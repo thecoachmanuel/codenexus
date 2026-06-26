@@ -229,9 +229,9 @@ export default function LandingPage() {
           <BlueTitle>apps and website in seconds.</BlueTitle>
         </h1>
 
-        <p className="mx-auto mt-6 max-w-xl text-balance text-base leading-relaxed text-white/90 z-10">
-          Just type what you want to build. Our AI writes the code, handles
-          dependencies, and spins up a live preview instantly in your browser.
+        <p className="mx-auto mt-6 max-w-xl text-balance text-base leading-relaxed text-white/70 z-10">
+          Describe what you want to build. AI writes the code, picks the
+          packages, and renders a live preview all inside your browser.
         </p>
 
         <div className="relative mx-auto mt-12 w-full max-w-2xl">
