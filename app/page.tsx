@@ -226,7 +226,7 @@ export default function LandingPage() {
         <h1 className="mx-auto max-w-3xl text-balance font-serif text-5xl leading-tight tracking-tight sm:text-6xl lg:text-7xl z-10">
           <GrayTitle>Turn ideas into working</GrayTitle>
           <br />
-          <BlueTitle>apps and website in seconds.</BlueTitle>
+          <BlueTitle>apps and websites in seconds.</BlueTitle>
         </h1>
 
         <p className="mx-auto mt-6 max-w-xl text-balance text-base leading-relaxed text-white/70 z-10">
