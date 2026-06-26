@@ -490,7 +490,7 @@ export function CodePanel({
       {previewError &&
         !isGenerating &&
         !isImproving &&
-        activeTab === "preview" && (
+        (activeTab === "preview" || activeTab === "split") && (
           <div className="absolute inset-x-0 bottom-0 z-20 border-t border-red-500/20 bg-red-950 p-4 shadow-xl">
             <div className="flex items-center gap-2.5">
               <AlertTriangle className="h-4 w-4 shrink-0 text-red-400/70" />

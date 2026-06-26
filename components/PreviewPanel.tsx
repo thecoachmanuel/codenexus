@@ -7,11 +7,24 @@ import {
   SandpackProvider,
   SandpackLayout,
   SandpackPreview,
+  useSandpack,
 } from "@codesandbox/sandpack-react";
 
 interface PreviewPanelProps {
   fileData: FileData | null;
   onError: (error: string | null) => void;
+}
+
+function ErrorListener({ onError }: { onError: (error: string | null) => void }) {
+  const { sandpack } = useSandpack();
+  useEffect(() => {
+    if (sandpack.error?.message) {
+      onError(sandpack.error.message);
+    } else {
+      onError(null);
+    }
+  }, [sandpack.error, onError]);
+  return null;
 }
 
 // Config/build-tool files that the Sandpack browser bundler cannot parse
@@ -176,6 +189,7 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
               },
             }}
           >
+            <ErrorListener onError={onError} />
             <SandpackLayout>
               <SandpackPreview
                 showOpenInCodeSandbox={false}
