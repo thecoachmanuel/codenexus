@@ -27,7 +27,7 @@ export default async function Header() {
               WebkitTextFillColor: "transparent",
             }}
           >
-            Crevo
+            Crevo AI
           </span>
         </Link>
 
