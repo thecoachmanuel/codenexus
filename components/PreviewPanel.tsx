@@ -78,7 +78,7 @@ function sanitizeCode(code: string): string {
   return clean;
 }
 
-function buildSandpackFiles(fileData: FileData): {
+export function buildSandpackFiles(fileData: FileData): {
   files: Record<string, string>;
   deps: Record<string, string>;
 } {
