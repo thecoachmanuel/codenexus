@@ -220,7 +220,7 @@ export default function LandingPage() {
 
         <Badge variant="outline" className="gap-2 p-4 backdrop-blur-sm text-white border-white/20">
           <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-          Build with Agentic AI
+          Build with Crevo AI
         </Badge>
 
         <h1 className="mx-auto max-w-3xl text-balance font-serif text-5xl leading-tight tracking-tight sm:text-6xl lg:text-7xl z-10">
@@ -451,7 +451,7 @@ export default function LandingPage() {
             </div>
 
             <div className="mx-auto flex h-6 w-64 items-center justify-center rounded-md bg-white/5 px-3">
-              <span className="text-sm text-white/25">crevo.app/workspace</span>
+              <span className="text-sm text-white/25">crevoai.website/workspace</span>
             </div>
           </div>
 
