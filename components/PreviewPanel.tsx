@@ -58,7 +58,7 @@ function SandpackLoadingOverlay() {
       {/* Mock Header Skeleton */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-gray-100 px-4 shadow-sm animate-pulse">
         <div className="h-6 w-32 rounded bg-gray-200" />
-        <div className="flex gap-4">
+        <div className="hidden sm:flex gap-4">
           <div className="h-5 w-16 rounded bg-gray-200" />
           <div className="h-5 w-16 rounded bg-gray-200" />
           <div className="h-5 w-16 rounded bg-gray-200" />
@@ -66,7 +66,7 @@ function SandpackLoadingOverlay() {
       </div>
 
       {/* Main Content Skeleton */}
-      <div className="flex flex-1 p-8 gap-8 animate-pulse">
+      <div className="flex flex-col sm:flex-row flex-1 p-4 sm:p-8 gap-6 sm:gap-8 animate-pulse">
         {/* Left column (hero/text mockup) */}
         <div className="hidden sm:flex w-1/2 flex-col justify-center gap-6">
           <div className="h-12 w-3/4 rounded-lg bg-gray-200" />
@@ -82,7 +82,7 @@ function SandpackLoadingOverlay() {
 
         {/* Right column (image/card mockup) */}
         <div className="flex flex-1 sm:w-1/2 items-center justify-center">
-          <div className="flex h-full max-h-[500px] w-full items-center justify-center rounded-2xl bg-gray-100 border border-gray-200">
+          <div className="flex h-full min-h-[300px] max-h-[500px] w-full items-center justify-center rounded-2xl bg-gray-100 border border-gray-200">
             <div className="flex flex-col items-center gap-4">
               <Zap className="h-10 w-10 animate-pulse text-gray-300" />
               <div className="text-gray-400 font-medium text-sm animate-pulse flex flex-col items-center">
