@@ -29,11 +29,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+import { headers } from "next/headers";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const host = headersList.get("host");
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${lora.variable} ${dmSans.variable} font-sans overflow-x-hidden antialiased`}>
@@ -44,7 +49,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <HeaderWrapper>
+            <HeaderWrapper host={host}>
               <Header />
             </HeaderWrapper>
             <main>{children}</main>
