@@ -261,14 +261,14 @@ export default function AdminVideosPage() {
   }, []);
 
   return (
-    <div className="relative flex h-full flex-col p-8 overflow-hidden">
+    <div className="relative flex min-h-full flex-col p-8 overflow-y-auto overflow-x-hidden">
       {/* Dynamic Background Mesh */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500 blur-[120px]" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600 blur-[120px]" />
       </div>
 
-      <div className="relative z-10 mb-8 flex items-center justify-between">
+      <div className="relative z-10 mb-8 flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 flex items-center gap-3">
             <Video className="h-9 w-9 text-indigo-400" />
@@ -278,7 +278,7 @@ export default function AdminVideosPage() {
         </div>
       </div>
 
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-180px)]">
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-[calc(100vh-180px)] pb-20">
         {/* Left Column: Controls */}
         <div className="col-span-1 flex flex-col gap-6">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
