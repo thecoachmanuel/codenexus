@@ -34,13 +34,14 @@ export async function PUT(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { userId, plan, credits } = await req.json();
+  const { userId, plan, credits, isBanned } = await req.json();
   if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
   await connectDB();
   const update: Record<string, unknown> = {};
   if (plan) update.plan = plan;
   if (credits !== undefined) update.credits = credits;
+  if (isBanned !== undefined) update.isBanned = isBanned;
 
   const user = await User.findByIdAndUpdate(userId, update, { new: true }).select("-password");
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });

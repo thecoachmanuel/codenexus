@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Loader2, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, XCircle, TrendingUp, DollarSign, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface Transaction {
   _id: string;
@@ -21,6 +22,23 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  const fetchAnalytics = async () => {
+    setLoadingStats(true);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch("/api/admin/analytics", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setAnalytics(await res.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const fetchTransactions = async (pageNum = 1) => {
     setLoading(true);
@@ -47,26 +65,137 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     fetchTransactions();
+    fetchAnalytics();
   }, []);
+
+  const formatCurrency = (amountInKobo: number) => {
+    return (amountInKobo / 100).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Transactions</h1>
-          <p className="text-sm text-white/50">Track all successful and failed payment attempts.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard & Transactions</h1>
+          <p className="text-sm text-white/50">Track revenue, user growth, and payment history.</p>
         </div>
         <button
-          onClick={() => fetchTransactions(page)}
-          disabled={loading}
+          onClick={() => { fetchTransactions(page); fetchAnalytics(); }}
+          disabled={loading || loadingStats}
           className="flex items-center gap-2 rounded-md bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors disabled:opacity-50"
         >
-          <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+          <RefreshCw className={cn("h-4 w-4", (loading || loadingStats) && "animate-spin")} />
           Refresh
         </button>
       </div>
 
+      {/* Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-xl border border-white/10 bg-[#111] p-5 flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1">Monthly Recurring Revenue (30d)</p>
+              <h3 className="text-2xl font-bold text-white">
+                {loadingStats ? <Loader2 className="w-5 h-5 animate-spin text-white/30" /> : formatCurrency(analytics?.mrr || 0)}
+              </h3>
+            </div>
+            <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-[#111] p-5 flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1">Total Revenue (All Time)</p>
+              <h3 className="text-2xl font-bold text-white">
+                {loadingStats ? <Loader2 className="w-5 h-5 animate-spin text-white/30" /> : formatCurrency(analytics?.totalRevenue || 0)}
+              </h3>
+            </div>
+            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+              <DollarSign className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-[#111] p-5 flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-xs font-medium text-white/50 uppercase tracking-wider mb-1">Total Users</p>
+              <h3 className="text-2xl font-bold text-white">
+                {loadingStats ? <Loader2 className="w-5 h-5 animate-spin text-white/30" /> : (analytics?.totalUsers?.toLocaleString() || 0)}
+              </h3>
+            </div>
+            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+              <Users className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* User Growth Chart */}
+      <div className="rounded-xl border border-white/10 bg-[#111] p-5">
+        <h3 className="text-sm font-semibold text-white mb-6">User Growth (Last 30 Days)</h3>
+        <div className="h-[300px] w-full">
+          {loadingStats ? (
+            <div className="h-full w-full flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-white/30" />
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={analytics?.userGrowth || []} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#ffffff50" 
+                  fontSize={12} 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tickFormatter={(val) => {
+                    const d = new Date(val);
+                    return `${d.getMonth()+1}/${d.getDate()}`;
+                  }}
+                />
+                <YAxis 
+                  stroke="#ffffff50" 
+                  fontSize={12} 
+                  tickLine={false} 
+                  axisLine={false}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#111', borderColor: '#ffffff20', borderRadius: '8px', color: '#fff' }}
+                  itemStyle={{ color: '#c4b5fd' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="totalUsers" 
+                  name="Total Users"
+                  stroke="#8b5cf6" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorUsers)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* Transactions Table */}
       <div className="rounded-xl border border-white/10 bg-[#111] overflow-hidden">
+        <div className="px-5 py-4 border-b border-white/10">
+          <h3 className="text-sm font-semibold text-white">Recent Transactions</h3>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-white/10 bg-white/5 text-white/60">
@@ -105,11 +234,7 @@ export default function TransactionsPage() {
                       {format(new Date(tx.createdAt), "MMM d, yyyy HH:mm")}
                     </td>
                     <td className="px-6 py-4 text-white/90 font-medium">
-                      {/* Assuming Paystack stores in kobo/cents. Format accordingly. */}
-                      {(tx.amount / 100).toLocaleString("en-US", {
-                        style: "currency",
-                        currency: tx.currency || "USD",
-                      })}
+                      {formatCurrency(tx.amount)}
                     </td>
                     <td className="px-6 py-4">
                       {tx.planKey ? (

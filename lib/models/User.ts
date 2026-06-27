@@ -11,6 +11,7 @@ export interface IUser extends Document {
   usedDiscountPlans: string[]; // plan keys where one-time discount has been used
   githubToken?: string; // encrypted GitHub PAT for repo export
   vercelToken?: string; // Vercel API token for deployment
+  isBanned: boolean; // Flag to lock out abusive users
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +27,7 @@ const UserSchema = new Schema<IUser>(
     usedDiscountPlans: { type: [String], default: [] },
     githubToken: { type: String, default: "" },
     vercelToken: { type: String, default: "" },
+    isBanned: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

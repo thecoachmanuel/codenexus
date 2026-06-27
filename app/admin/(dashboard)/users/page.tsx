@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Trash2, Pencil, X, Check, Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Trash2, Pencil, X, Check, Search, ChevronLeft, ChevronRight, Loader2, Ban } from "lucide-react";
 
 interface User {
   _id: string;
@@ -9,6 +9,7 @@ interface User {
   email: string;
   plan: "free" | "starter" | "pro";
   credits: number;
+  isBanned?: boolean;
   createdAt: string;
 }
 
@@ -86,6 +87,23 @@ export default function AdminUsersPage() {
       setTotal((t) => t - 1);
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const toggleBan = async (u: User) => {
+    if (!confirm(`Are you sure you want to ${u.isBanned ? 'unban' : 'ban'} this user?`)) return;
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: u._id, isBanned: !u.isBanned }),
+      });
+      const data = await res.json();
+      if (data.user) {
+        setUsers((prev) => prev.map((usr) => usr._id === u._id ? data.user : usr));
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -218,7 +236,14 @@ export default function AdminUsersPage() {
                 {users.map((u) => (
                   <tr key={u._id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-5 py-3">
-                      <div className="font-medium text-white">{u.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium text-white">{u.name}</div>
+                        {u.isBanned && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                            BANNED
+                          </span>
+                        )}
+                      </div>
                       <div className="text-white/40 text-xs">{u.email}</div>
                     </td>
                     <td className="px-5 py-3">
@@ -265,6 +290,9 @@ export default function AdminUsersPage() {
                           </>
                         ) : (
                           <>
+                            <button onClick={() => toggleBan(u)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 transition-all" title={u.isBanned ? "Unban" : "Ban"}>
+                              <Ban className="w-3.5 h-3.5" />
+                            </button>
                             <button onClick={() => startEdit(u)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all" title="Edit">
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
