@@ -67,16 +67,30 @@ export default function AdminVideosPage() {
       setScriptData(data);
       toast.success("Script generated! Pre-loading scenes...");
 
-      // Preload images
-      data.scenes.forEach((scene, index) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(scene.imagePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 10000)}`;
-        img.onload = () => {
-          imagesCache.current[index] = img;
-          if (index === 0) drawStaticFrame(img); // Draw first scene when loaded
-        };
+      // Preload all images blocking
+      const imagePromises = data.scenes.map((scene, index) => {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          
+          // Append unique scene sequence and a completely random seed to guarantee image variety
+          const uniquePrompt = `${scene.imagePrompt}, distinct scene ${index + 1}`;
+          img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(uniquePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 1000000) + index}`;
+          
+          img.onload = () => {
+            imagesCache.current[index] = img;
+            if (index === 0) drawStaticFrame(img);
+            resolve();
+          };
+          img.onerror = () => {
+             // Resolve anyway to avoid blocking forever if one image fails
+             resolve();
+          };
+        });
       });
+
+      await Promise.all(imagePromises);
+      toast.success("All scenes fully loaded and ready to play!");
 
     } catch (error: any) {
       toast.error(error.message);
@@ -87,7 +101,13 @@ export default function AdminVideosPage() {
 
   const renderLoop = () => {
     const state = playbackStateRef.current;
-    const img = imagesCache.current[state.sceneIndex];
+    
+    // Fallback to previous image if current scene image failed to load
+    let img = imagesCache.current[state.sceneIndex];
+    if (!img && state.sceneIndex > 0) {
+      img = imagesCache.current[state.sceneIndex - 1];
+    }
+    
     if (img && canvasRef.current) {
       const elapsed = (performance.now() - state.startTime) / 1000; // seconds
       
