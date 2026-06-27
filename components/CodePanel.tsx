@@ -183,7 +183,8 @@ export function CodePanel({
     if (vercelInfo?.url) {
       setLiveUrl(vercelInfo.url);
     } else if (subdomain) {
-      setLiveUrl(`${window.location.protocol}//${subdomain}.${window.location.host}`);
+      const host = window.location.host.replace(/^www\./, '');
+      setLiveUrl(`${window.location.protocol}//${subdomain}.${host}`);
     } else {
       setLiveUrl(null);
     }
