@@ -261,125 +261,160 @@ export default function AdminVideosPage() {
   }, []);
 
   return (
-    <div className="flex h-full flex-col p-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="relative flex h-full flex-col p-8 overflow-hidden">
+      {/* Dynamic Background Mesh */}
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500 blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600 blur-[120px]" />
+      </div>
+
+      <div className="relative z-10 mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            <Video className="h-8 w-8 text-indigo-500" />
+          <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 flex items-center gap-3">
+            <Video className="h-9 w-9 text-indigo-400" />
             Social Video Generator
           </h1>
-          <p className="mt-2 text-white/60">Generate unlimited short-form videos with Pollinations AI.</p>
+          <p className="mt-2 text-white/60 font-medium">Generate premium short-form videos with Pollinations AI.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-200px)]">
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-180px)]">
         {/* Left Column: Controls */}
         <div className="col-span-1 flex flex-col gap-6">
-          <div className="bg-[#111] border border-white/10 rounded-xl p-6 flex flex-col gap-4">
-            <label className="text-sm font-medium text-white/80">Video Topic or Prompt</label>
-            <textarea
-              className="w-full bg-black border border-white/10 rounded-lg p-4 text-white min-h-[120px] focus:outline-none focus:border-indigo-500 transition-colors"
-              placeholder="e.g. Top 3 AI coding tools that will replace software engineers..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-            />
-            <button
-              onClick={generateScript}
-              disabled={isGenerating}
-              className="w-full bg-white text-black font-semibold rounded-lg py-3 flex items-center justify-center gap-2 hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Generating Pipeline...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-5 h-5" />
-                  Generate Video
-                </>
-              )}
-            </button>
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+            {/* Subtle inner glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <div className="relative z-10 flex flex-col gap-4">
+              <label className="text-xs font-bold text-white/80 uppercase tracking-widest">Video Topic</label>
+              <textarea
+                className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white min-h-[120px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none shadow-inner"
+                placeholder="e.g. Top 3 AI coding tools that will replace software engineers..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+              />
+              <button
+                onClick={generateScript}
+                disabled={isGenerating}
+                className="w-full relative overflow-hidden bg-white text-black font-extrabold rounded-2xl py-4 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Generating Pipeline...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-5 h-5" />
+                    Generate Video
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Script Overview (if generated) */}
           {scriptData && (
-            <div className="bg-[#111] border border-white/10 rounded-xl p-6 flex flex-col gap-4 flex-1 overflow-y-auto">
-              <h3 className="font-semibold text-white">Script Details</h3>
-              <p className="text-sm text-indigo-400 font-medium">{scriptData.title}</p>
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col gap-4 flex-1 overflow-y-auto shadow-2xl">
+              <h3 className="font-bold text-white uppercase tracking-wider text-sm flex items-center gap-2">
+                <Type className="w-4 h-4 text-purple-400" /> Script Timeline
+              </h3>
+              <p className="text-sm bg-indigo-500/10 text-indigo-300 p-4 rounded-2xl border border-indigo-500/20 font-semibold leading-relaxed">
+                {scriptData.title}
+              </p>
               
-              <div className="flex flex-col gap-4 mt-2">
-                {scriptData.scenes.map((scene, i) => (
-                  <div key={i} className={`p-4 rounded-lg border ${currentSceneIndex === i && isPlaying ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/5 bg-black/50'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs px-2 py-1 bg-white/10 rounded-full font-medium">Scene {i + 1}</span>
-                      <span className="text-xs text-white/40 truncate">{scene.imagePrompt}</span>
+              <div className="flex flex-col gap-3 mt-4 relative">
+                {/* Vertical timeline line */}
+                <div className="absolute left-[15px] top-4 bottom-4 w-px bg-white/10" />
+
+                {scriptData.scenes.map((scene, i) => {
+                  const isActive = currentSceneIndex === i && isPlaying;
+                  return (
+                    <div key={i} className={`relative pl-10 transition-all duration-300 ${isActive ? 'scale-[1.02] origin-left' : 'opacity-70 hover:opacity-100'}`}>
+                      {/* Timeline dot */}
+                      <div className={`absolute left-[11px] top-5 w-2 h-2 rounded-full transition-all duration-300 ${isActive ? 'bg-indigo-400 shadow-[0_0_15px_rgba(129,140,248,1)] scale-150' : 'bg-white/20'}`} />
+                      
+                      <div className={`p-4 rounded-2xl border backdrop-blur-md transition-all duration-300 ${isActive ? 'border-indigo-500/50 bg-indigo-500/10 shadow-[0_0_30px_rgba(99,102,241,0.15)]' : 'border-white/5 bg-black/40'}`}>
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md ${isActive ? 'bg-indigo-500 text-white' : 'bg-white/10 text-white/60'}`}>
+                            Scene {i + 1}
+                          </span>
+                        </div>
+                        <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2 font-mono line-clamp-1">{scene.imagePrompt}</p>
+                        <p className="text-sm text-white/90 leading-relaxed font-medium">"{scene.narration}"</p>
+                      </div>
                     </div>
-                    <p className="text-sm text-white/80">"{scene.narration}"</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
         {/* Right Column: Player */}
-        <div className="col-span-2 bg-[#111] border border-white/10 rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
-          <div className="relative w-full max-w-[400px] aspect-[9/16] bg-black rounded-2xl border-4 border-white/5 overflow-hidden shadow-2xl flex items-center justify-center">
+        <div className="col-span-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center relative shadow-2xl">
+          
+          {/* Phone Frame Mockup */}
+          <div className="relative w-full max-w-[380px] aspect-[9/16] bg-[#0a0a0a] rounded-[3rem] border-[12px] border-[#222] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center justify-center group">
             
+            {/* Dynamic Island / Notch */}
+            <div className="absolute top-0 inset-x-0 h-7 flex justify-center z-40">
+               <div className="w-32 h-6 bg-[#222] rounded-b-3xl" />
+            </div>
+
             {/* The actual canvas where the video is rendered */}
             <canvas 
               ref={canvasRef} 
               width={1080} 
               height={1920} 
-              className="w-full h-full object-contain bg-black"
+              className="w-full h-full object-cover bg-[#0a0a0a]"
             />
 
             {!scriptData && !isGenerating && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white/30">
-                <Video className="w-16 h-16 opacity-50" />
-                <p>Preview will appear here</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white/20">
+                <Video className="w-20 h-20 opacity-30" />
+                <p className="font-medium tracking-wide">Preview Ready</p>
               </div>
             )}
 
             {isGenerating && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80 backdrop-blur-sm z-10">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0a0a0a]/90 backdrop-blur-md z-30">
                 <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
-                <p className="text-indigo-400 font-medium animate-pulse">Rendering via Pollinations...</p>
+                <p className="text-indigo-400 font-bold animate-pulse tracking-wide">Building Timeline...</p>
               </div>
             )}
             
             {/* Play overlay button if ready but not playing */}
             {scriptData && !isPlaying && !isGenerating && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/20 transition-all z-20 group cursor-pointer" onClick={() => playVideo(false)}>
-                <div className="w-20 h-20 bg-white text-black rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/20 transition-all z-30 group-hover:bg-black/10 cursor-pointer" onClick={() => playVideo(false)}>
+                <div className="w-20 h-20 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
                   <Play className="w-10 h-10 ml-2" fill="currentColor" />
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Controls */}
-          {scriptData && (
-            <div className="mt-6 flex items-center gap-4 w-full max-w-[400px]">
-              <button
-                onClick={() => playVideo(false)}
-                disabled={isPlaying}
-                className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-              >
-                <Play className="w-4 h-4" fill="currentColor" />
-                Play Preview
-              </button>
-              <button
-                onClick={() => playVideo(true)}
-                disabled={isPlaying || isRecording}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-              >
-                {isRecording ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                Export Video
-              </button>
-            </div>
-          )}
+            {/* Docked Controls inside phone */}
+            {scriptData && (
+              <div className={`absolute bottom-6 inset-x-6 z-40 flex items-center gap-3 transition-transform duration-500 ${isPlaying ? 'translate-y-[200%]' : 'translate-y-0'}`}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); playVideo(false); }}
+                  disabled={isPlaying}
+                  className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-xl border border-white/20 text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-lg"
+                >
+                  <Play className="w-4 h-4" fill="currentColor" />
+                  Preview
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); playVideo(true); }}
+                  disabled={isPlaying || isRecording}
+                  className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(99,102,241,0.4)]"
+                >
+                  {isRecording ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  Export
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
