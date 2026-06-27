@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Book, Code, Rocket, Zap, CreditCard, LayoutTemplate } from "lucide-react";
+import { Footer } from "@/components/Footer";
 
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState("introduction");
@@ -168,6 +169,7 @@ export default function DocsPage() {
 
         </main>
       </div>
+      <Footer />
     </div>
   );
 }

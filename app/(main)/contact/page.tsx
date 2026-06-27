@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Mail, MessageSquare, Send, User } from "lucide-react";
 import { toast } from "sonner";
+import { Footer } from "@/components/Footer";
 
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,6 +124,7 @@ export default function ContactPage() {
           </form>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

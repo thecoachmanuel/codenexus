@@ -18,6 +18,7 @@ import {
   SectionLabel,
 } from "@/components/reusables";
 import { PricingModal } from "@/components/PricingModal";
+import { Footer } from "@/components/Footer";
 
 // Image upload limits per plan
 const IMAGE_LIMITS: Record<string, number> = {
@@ -840,9 +841,7 @@ export default function LandingPage() {
         </Link>
       </section>
 
-      <footer className="relative z-10 border-t border-white/7 py-12 mx-auto px-6 flex flex-wrap items-center justify-center text-white/70">
-        Developed by Coach Manuel
-      </footer>
+      <Footer />
     </main>
   );
 }
