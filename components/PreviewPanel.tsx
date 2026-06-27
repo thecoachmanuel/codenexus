@@ -152,7 +152,8 @@ function buildSandpackFiles(fileData: FileData): {
 export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
   useEffect(() => {
     onError(null);
-  }, [fileData, onError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileData]);
 
   const { files, deps } = useMemo(() => {
     if (!fileData?.files) return { files: {} as Record<string, string>, deps: {} as Record<string, string> };
