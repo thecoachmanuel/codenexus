@@ -26,7 +26,7 @@ export default function AdminVideosPage() {
   const [captionWord, setCaptionWord] = useState("");
   
   // Animation Engine State
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number>(0);
   const playbackStateRef = useRef({
     sceneIndex: 0,
     word: "",
