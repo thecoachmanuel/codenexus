@@ -180,12 +180,14 @@ export function CodePanel({
   }, [fileData]);
 
   useEffect(() => {
-    if (subdomain) {
+    if (vercelInfo?.url) {
+      setLiveUrl(vercelInfo.url);
+    } else if (subdomain) {
       setLiveUrl(`${window.location.protocol}//${subdomain}.${window.location.host}`);
     } else {
       setLiveUrl(null);
     }
-  }, [subdomain]);
+  }, [subdomain, vercelInfo?.url]);
 
   // Environment variables local state
   const [localEnvVars, setLocalEnvVars] = useState<Record<string, string>>(
