@@ -19,10 +19,12 @@ import {
   FileText,
   Folder,
   Settings2,
-  X
+  X,
+  Edit3
 } from "lucide-react";
 import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
+import { EditSubdomainModal } from "./EditSubdomainModal";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
@@ -66,9 +68,10 @@ interface CodePanelProps {
   appTitle: string | null;
   isImproving: boolean;
   isProUser: boolean;
-  onEnvVarsChange?: (envVars: Record<string, string>) => void;
+  onEnvVarsChange?: (vars: Record<string, string>) => void;
   subdomain?: string | null;
-  vercelInfo?: VercelInfo;
+  onSubdomainChange?: (newSubdomain: string) => void;
+  vercelInfo?: { url?: string; projectId?: string; projectName?: string } | null;
   workspaceId?: string | null;
   previewError: string | null;
   setPreviewError: (error: string | null) => void;
@@ -166,6 +169,7 @@ export function CodePanel({
   isProUser,
   onEnvVarsChange,
   subdomain,
+  onSubdomainChange,
   vercelInfo,
   workspaceId,
   previewError,
@@ -398,16 +402,33 @@ yarn start
           </VercelDeployModal>
 
           {liveUrl && (
-            <a
-              href={liveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-8 sm:h-9 items-center justify-center rounded-md px-1.5 sm:px-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-              title="Open Live Site"
-            >
-              <Eye className="h-4 w-4 xl:mr-1.5" />
-              <span className="hidden xl:inline">Live Site</span>
-            </a>
+            <div className="flex items-center">
+              <a
+                href={liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-8 sm:h-9 items-center justify-center rounded-l-md px-1.5 sm:px-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                title="Open Live Site"
+              >
+                <Eye className="h-4 w-4 xl:mr-1.5" />
+                <span className="hidden xl:inline">Live Site</span>
+              </a>
+              {workspaceId && subdomain && onSubdomainChange && (
+                <EditSubdomainModal
+                  workspaceId={workspaceId}
+                  currentSubdomain={subdomain}
+                  onSuccess={onSubdomainChange}
+                >
+                  <Button
+                    variant="ghost"
+                    className="h-8 sm:h-9 rounded-none rounded-r-md border-l border-white/10 px-2 text-white/50 hover:text-white hover:bg-white/10"
+                    title="Edit URL"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                  </Button>
+                </EditSubdomainModal>
+              )}
+            </div>
           )}
 
           <GitHubExportModal

@@ -477,6 +477,7 @@ export function WorkspaceClient({
               onFilePatch={handleFilePatch}
               appTitle={fileData?.title ?? workspace?.title ?? null}
               subdomain={subdomain}
+              onSubdomainChange={setSubdomain}
               isImproving={false}
               isProUser={userPlan === "pro"}
               onEnvVarsChange={handleEnvVarsChange}
