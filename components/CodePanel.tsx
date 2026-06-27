@@ -71,7 +71,7 @@ interface CodePanelProps {
   onEnvVarsChange?: (vars: Record<string, string>) => void;
   subdomain?: string | null;
   onSubdomainChange?: (newSubdomain: string) => void;
-  vercelInfo?: { url?: string; projectId?: string; projectName?: string } | null;
+  vercelInfo?: VercelInfo;
   workspaceId?: string | null;
   previewError: string | null;
   setPreviewError: (error: string | null) => void;
