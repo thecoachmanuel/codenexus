@@ -39,6 +39,17 @@ export function PreviewClient({ fileData, title, isProUser = false }: PreviewCli
             <p className="text-sm opacity-80 break-words">{error}</p>
          </div>
       )}
+
+      {/* Watermark */}
+      <a 
+        href="https://crevoai.website" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-xl hover:bg-black transition-colors"
+      >
+        <span className="text-white/80 text-xs font-medium">Built with</span>
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-300 text-xs font-bold">Crevo AI</span>
+      </a>
     </div>
   );
 }
