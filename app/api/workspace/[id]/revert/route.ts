@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -14,7 +14,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const workspaceId = params.id;
+    const { id: workspaceId } = await params;
     if (!workspaceId) {
       return NextResponse.json({ error: "Workspace ID is required" }, { status: 400 });
     }
