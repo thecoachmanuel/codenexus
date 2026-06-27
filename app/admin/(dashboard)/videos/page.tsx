@@ -25,6 +25,15 @@ export default function AdminVideosPage() {
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const [captionWord, setCaptionWord] = useState("");
   
+  // Animation Engine State
+  const animationFrameRef = useRef<number>();
+  const playbackStateRef = useRef({
+    sceneIndex: 0,
+    word: "",
+    startTime: 0,
+    isPlaying: false
+  });
+  
   // Media Recorder
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -65,7 +74,7 @@ export default function AdminVideosPage() {
         img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(scene.imagePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 10000)}`;
         img.onload = () => {
           imagesCache.current[index] = img;
-          if (index === 0) drawScene(img, ""); // Draw first scene when loaded
+          if (index === 0) drawStaticFrame(img); // Draw first scene when loaded
         };
       });
 
@@ -76,50 +85,71 @@ export default function AdminVideosPage() {
     }
   };
 
-  const drawScene = (img: HTMLImageElement, word: string) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Clear
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw Image (Cover)
-    const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-    const x = (canvas.width / 2) - (img.width / 2) * scale;
-    const y = (canvas.height / 2) - (img.height / 2) * scale;
-    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-
-    // Draw Vignette overlay for text readability
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, "rgba(0,0,0,0.1)");
-    gradient.addColorStop(0.5, "rgba(0,0,0,0)");
-    gradient.addColorStop(1, "rgba(0,0,0,0.8)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw Caption
-    if (word) {
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
+  const renderLoop = () => {
+    const state = playbackStateRef.current;
+    const img = imagesCache.current[state.sceneIndex];
+    if (img && canvasRef.current) {
+      const elapsed = (performance.now() - state.startTime) / 1000; // seconds
       
-      // TikTok style font
-      ctx.font = "bold 120px Inter, sans-serif";
-      
-      const textX = canvas.width / 2;
-      const textY = canvas.height * 0.75;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw stroke
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 20;
-      ctx.lineJoin = "round";
-      ctx.strokeText(word, textX, textY);
+        // Ken Burns Zoom/Pan Math
+        // Starts at 1.0, grows slowly by 3% every second
+        const zoom = 1.0 + (elapsed * 0.03); 
+        const scale = Math.max(canvas.width / img.width, canvas.height / img.height) * zoom;
+        
+        // Pan left slowly
+        const panX = elapsed * 15;
+        
+        const x = (canvas.width / 2) - (img.width / 2) * scale - panX;
+        const y = (canvas.height / 2) - (img.height / 2) * scale;
+        
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
 
-      // Draw fill (vibrant yellow/white)
-      ctx.fillStyle = "#FFDE00"; // TikTok Yellow
-      ctx.fillText(word, textX, textY);
+        // Draw Vignette overlay for text readability
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, "rgba(0,0,0,0.1)");
+        gradient.addColorStop(0.5, "rgba(0,0,0,0)");
+        gradient.addColorStop(1, "rgba(0,0,0,0.8)");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Caption
+        if (state.word) {
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          
+          // TikTok style font
+          ctx.font = "bold 120px Inter, sans-serif";
+          
+          const textX = canvas.width / 2;
+          const textY = canvas.height * 0.75;
+
+          // Draw stroke
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 20;
+          ctx.lineJoin = "round";
+          ctx.strokeText(state.word, textX, textY);
+
+          // Draw fill (vibrant yellow/white)
+          ctx.fillStyle = "#FFDE00"; // TikTok Yellow
+          ctx.fillText(state.word, textX, textY);
+        }
+      }
     }
+    
+    if (playbackStateRef.current.isPlaying) {
+      animationFrameRef.current = requestAnimationFrame(renderLoop);
+    }
+  };
+
+  // Helper to instantly draw a static frame (e.g. for preview before playing)
+  const drawStaticFrame = (img: HTMLImageElement) => {
+    playbackStateRef.current = { ...playbackStateRef.current, sceneIndex: 0, word: "", startTime: performance.now(), isPlaying: false };
+    renderLoop();
   };
 
   const playVideo = async (record = false) => {
@@ -156,13 +186,15 @@ export default function AdminVideosPage() {
 
     setIsPlaying(true);
     setCurrentSceneIndex(0);
+    playbackStateRef.current = { ...playbackStateRef.current, isPlaying: true, startTime: performance.now(), sceneIndex: 0 };
+    renderLoop();
 
     for (let i = 0; i < scriptData.scenes.length; i++) {
       setCurrentSceneIndex(i);
-      const scene = scriptData.scenes[i];
-      const img = imagesCache.current[i];
+      playbackStateRef.current.sceneIndex = i;
+      playbackStateRef.current.startTime = performance.now(); // reset start time for zoom effect
       
-      if (img) drawScene(img, "");
+      const scene = scriptData.scenes[i];
 
       await new Promise<void>((resolve) => {
         const utterance = new SpeechSynthesisUtterance(scene.narration);
@@ -180,14 +212,13 @@ export default function AdminVideosPage() {
             // Extract the word
             const word = scene.narration.substring(event.charIndex, event.charIndex + event.charLength);
             setCaptionWord(word);
-            if (imagesCache.current[i]) {
-              drawScene(imagesCache.current[i], word.toUpperCase());
-            }
+            playbackStateRef.current.word = word.toUpperCase();
           }
         };
 
         utterance.onend = () => {
           setCaptionWord("");
+          playbackStateRef.current.word = "";
           resolve();
         };
 
@@ -196,6 +227,9 @@ export default function AdminVideosPage() {
     }
 
     setIsPlaying(false);
+    playbackStateRef.current.isPlaying = false;
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+
     if (record && mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
     }
