@@ -48,11 +48,11 @@ Ensure there are exactly 4 to 6 scenes. Keep the narration punchy and fast-paced
     let dataText = await response.text();
     
     // Clean up if it returned markdown json
-    if (dataText.startsWith("\`\`\`json")) {
-      dataText = dataText.replace(/^\`\`\`json\n/, "").replace(/\n\`\`\`$/, "");
+    if (dataText.startsWith("```json")) {
+      dataText = dataText.replace(/^```json\n/, "").replace(/\n```$/, "");
     }
-    if (dataText.startsWith("\`\`\`")) {
-      dataText = dataText.replace(/^\`\`\`\n/, "").replace(/\n\`\`\`$/, "");
+    if (dataText.startsWith("```")) {
+      dataText = dataText.replace(/^```\n/, "").replace(/\n```$/, "");
     }
 
     const parsedData = JSON.parse(dataText);

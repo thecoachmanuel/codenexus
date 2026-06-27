@@ -62,7 +62,7 @@ export default function AdminVideosPage() {
       data.scenes.forEach((scene, index) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
-        img.src = \`https://image.pollinations.ai/prompt/\${encodeURIComponent(scene.imagePrompt)}?width=1080&height=1920&nologo=true&seed=\${Math.floor(Math.random() * 10000)}\`;
+        img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(scene.imagePrompt)}?width=1080&height=1920&nologo=true&seed=${Math.floor(Math.random() * 10000)}`;
         img.onload = () => {
           imagesCache.current[index] = img;
           if (index === 0) drawScene(img, ""); // Draw first scene when loaded
@@ -144,7 +144,7 @@ export default function AdminVideosPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = \`\${scriptData.title.replace(/\\s+/g, '_')}.webm\`;
+        a.download = `${scriptData.title.replace(/\s+/g, '_')}.webm`;
         a.click();
         URL.revokeObjectURL(url);
         setIsRecording(false);
@@ -256,7 +256,7 @@ export default function AdminVideosPage() {
               
               <div className="flex flex-col gap-4 mt-2">
                 {scriptData.scenes.map((scene, i) => (
-                  <div key={i} className={\`p-4 rounded-lg border \${currentSceneIndex === i && isPlaying ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/5 bg-black/50'}\`}>
+                  <div key={i} className={`p-4 rounded-lg border ${currentSceneIndex === i && isPlaying ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/5 bg-black/50'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs px-2 py-1 bg-white/10 rounded-full font-medium">Scene {i + 1}</span>
                       <span className="text-xs text-white/40 truncate">{scene.imagePrompt}</span>
