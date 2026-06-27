@@ -13,6 +13,7 @@ import {
 interface PreviewPanelProps {
   fileData: FileData | null;
   onError: (error: string | null) => void;
+  hideStatusBar?: boolean;
 }
 
 function ErrorListener({ onError }: { onError: (error: string | null) => void }) {
@@ -149,7 +150,7 @@ function buildSandpackFiles(fileData: FileData): {
   return { files, deps };
 }
 
-export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
+export function PreviewPanel({ fileData, onError, hideStatusBar = false }: PreviewPanelProps) {
   useEffect(() => {
     onError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,16 +166,18 @@ export function PreviewPanel({ fileData, onError }: PreviewPanelProps) {
   return (
     <div className="flex flex-col h-full w-full bg-[#0a0a0a]">
       {/* Status bar */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/5 bg-[#111] shrink-0">
-        <div className="flex items-center gap-2 text-xs text-white/50">
-          <div
-            className={`h-2 w-2 rounded-full ${
-              isIdle ? "bg-white/20" : "bg-green-400 animate-pulse"
-            }`}
-          />
-          <span>{isIdle ? "Waiting for generated files..." : "⚡ Live Preview (Sandpack)"}</span>
+      {!hideStatusBar && (
+        <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/5 bg-[#111] shrink-0">
+          <div className="flex items-center gap-2 text-xs text-white/50">
+            <div
+              className={`h-2 w-2 rounded-full ${
+                isIdle ? "bg-white/20" : "bg-green-400 animate-pulse"
+              }`}
+            />
+            <span>{isIdle ? "Waiting for generated files..." : "⚡ Live Preview (Sandpack)"}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Preview Container */}
       <div className="flex-1 relative overflow-hidden">

@@ -28,6 +28,7 @@ export function PreviewClient({ fileData, title, isProUser = false }: PreviewCli
          <PreviewPanel 
             fileData={fileData}
             onError={(err) => setError(err)}
+            hideStatusBar={true}
          />
       </div>
       {error && (
