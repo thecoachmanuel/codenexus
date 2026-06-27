@@ -26,19 +26,18 @@ export default function proxy(request: NextRequest) {
 
   // ─── Subdomain Routing ────────────────────────────────────────────────────────
   let subdomain: string | null = null;
-  if (hostname.includes("localhost:3000")) {
-    if (hostname !== "localhost:3000") {
-      subdomain = hostname.replace(".localhost:3000", "");
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "crevoai.website";
+
+  if (hostname.includes(".localhost:3000")) {
+    const extracted = hostname.replace(".localhost:3000", "");
+    if (extracted && extracted !== "www" && extracted !== "localhost:3000") {
+      subdomain = extracted;
     }
-  } else {
-    const cleanHost = hostname.split(":")[0];
-    const parts = cleanHost.split(".");
-    if (parts.length >= 3 && parts[0].startsWith("app-")) {
-      subdomain = parts[0];
-    }
+  } else if (hostname.includes(`.${rootDomain}`) && hostname !== rootDomain && hostname !== `www.${rootDomain}`) {
+    subdomain = hostname.replace(`.${rootDomain}`, "");
   }
 
-  if (subdomain && subdomain !== "www" && !pathname.startsWith('/api')) {
+  if (subdomain && !pathname.startsWith('/api')) {
     return NextResponse.rewrite(new URL(`/preview/${subdomain}${pathname}`, request.url));
   }
   // ──────────────────────────────────────────────────────────────────────────────
