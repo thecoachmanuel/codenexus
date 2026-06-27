@@ -182,11 +182,39 @@ export function PreviewPanel({ fileData, onError, hideStatusBar = false }: Previ
       {/* Preview Container */}
       <div className="flex-1 relative overflow-hidden">
         {isIdle ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0a0a0a]">
-            <Zap className="h-10 w-10 text-white/10" />
-            <div className="text-center">
-              <p className="text-sm text-white/30">Live preview will appear here</p>
-              <p className="text-xs text-white/15 mt-1">Generate an app to get started</p>
+          <div className="absolute inset-0 flex flex-col bg-[#0a0a0a] overflow-hidden pointer-events-none">
+            {/* Header Skeleton */}
+            <div className="flex h-14 items-center justify-between border-b border-white/5 px-6 animate-pulse">
+              <div className="h-5 w-28 rounded bg-white/10" />
+              <div className="flex gap-4">
+                <div className="h-4 w-16 rounded bg-white/5" />
+                <div className="h-4 w-16 rounded bg-white/5" />
+                <div className="h-4 w-16 rounded bg-white/5" />
+              </div>
+            </div>
+
+            {/* Main Content Skeleton */}
+            <div className="flex flex-1 p-8 gap-8 animate-pulse">
+              {/* Left Column */}
+              <div className="flex w-1/2 flex-col justify-center gap-5">
+                <div className="h-10 w-3/4 rounded-lg bg-white/10" />
+                <div className="flex flex-col gap-3">
+                  <div className="h-4 w-full rounded bg-white/5" />
+                  <div className="h-4 w-5/6 rounded bg-white/5" />
+                  <div className="h-4 w-2/3 rounded bg-white/5" />
+                </div>
+                <div className="mt-4 flex gap-3">
+                  <div className="h-9 w-28 rounded-md bg-white/10" />
+                  <div className="h-9 w-28 rounded-md bg-white/5" />
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="flex w-1/2 items-center justify-center">
+                <div className="flex h-full max-h-[400px] w-full items-center justify-center rounded-xl border border-white/5 bg-white/[0.02]">
+                  <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/10 border-t-white/30" />
+                </div>
+              </div>
             </div>
           </div>
         ) : (
