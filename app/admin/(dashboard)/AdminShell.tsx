@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Folder, Settings, Package, Menu, X, CreditCard } from "lucide-react";
+import { LayoutDashboard, Users, Folder, Settings, Package, Menu, X, CreditCard, MessageSquare } from "lucide-react";
 import { LogoutButton } from "./LogoutButton";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/users", label: "Users", icon: Users, exact: false },
   { href: "/admin/transactions", label: "Transactions", icon: CreditCard, exact: false },
+  { href: "/admin/messages", label: "Messages", icon: MessageSquare, exact: false },
   { href: "/admin/projects", label: "Projects", icon: Folder, exact: false },
   { href: "/admin/plans", label: "Plans", icon: Package, exact: false },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: false },
