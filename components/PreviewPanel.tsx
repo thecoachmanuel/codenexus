@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Zap } from "lucide-react";
 import type { FileData } from "@/types/workspace";
 import {
@@ -35,10 +35,21 @@ function ErrorListener({ onError }: { onError: (error: string | null) => void })
 }
 
 function SandpackLoadingOverlay() {
-  const { sandpack } = useSandpack();
-  
-  // Show skeleton if Sandpack hasn't fully booted up the iframe yet
-  if (sandpack.status === "running" || sandpack.status === "done" || sandpack.status === "idle") {
+  const { listen } = useSandpack();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // Listen to bundler messages to know exactly when it finishes bundling
+    const unsubscribe = listen((msg) => {
+      if (msg.type === "done" || msg.type === "success") {
+        setIsReady(true);
+      }
+    });
+    return unsubscribe;
+  }, [listen]);
+
+  // Once the bundler says 'done' or 'success', we hide the skeleton
+  if (isReady) {
     return null;
   }
 
