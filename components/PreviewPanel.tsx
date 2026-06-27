@@ -34,6 +34,58 @@ function ErrorListener({ onError }: { onError: (error: string | null) => void })
   return null;
 }
 
+function SandpackLoadingOverlay() {
+  const { sandpack } = useSandpack();
+  
+  // Show skeleton if Sandpack hasn't fully booted up the iframe yet
+  if (sandpack.status === "running" || sandpack.status === "done" || sandpack.status === "idle") {
+    return null;
+  }
+
+  return (
+    <div className="absolute inset-0 z-50 flex flex-col bg-white overflow-hidden">
+      {/* Mock Header Skeleton */}
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-gray-100 px-4 shadow-sm animate-pulse">
+        <div className="h-6 w-32 rounded bg-gray-200" />
+        <div className="flex gap-4">
+          <div className="h-5 w-16 rounded bg-gray-200" />
+          <div className="h-5 w-16 rounded bg-gray-200" />
+          <div className="h-5 w-16 rounded bg-gray-200" />
+        </div>
+      </div>
+
+      {/* Main Content Skeleton */}
+      <div className="flex flex-1 p-8 gap-8 animate-pulse">
+        {/* Left column (hero/text mockup) */}
+        <div className="hidden sm:flex w-1/2 flex-col justify-center gap-6">
+          <div className="h-12 w-3/4 rounded-lg bg-gray-200" />
+          <div className="h-6 w-full rounded bg-gray-100" />
+          <div className="h-6 w-5/6 rounded bg-gray-100" />
+          <div className="h-6 w-2/3 rounded bg-gray-100" />
+          
+          <div className="mt-4 flex gap-4">
+            <div className="h-10 w-32 rounded-full bg-gray-300" />
+            <div className="h-10 w-32 rounded-full bg-gray-200" />
+          </div>
+        </div>
+
+        {/* Right column (image/card mockup) */}
+        <div className="flex flex-1 sm:w-1/2 items-center justify-center">
+          <div className="flex h-full max-h-[500px] w-full items-center justify-center rounded-2xl bg-gray-100 border border-gray-200">
+            <div className="flex flex-col items-center gap-4">
+              <Zap className="h-10 w-10 animate-pulse text-gray-300" />
+              <div className="text-gray-400 font-medium text-sm animate-pulse flex flex-col items-center">
+                <span>Bundling app...</span>
+                <span className="text-xs opacity-70">Downloading packages</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Config/build-tool files that the Sandpack browser bundler cannot parse
 const SKIP_FILES = new Set([
   "vite.config.js", "vite.config.ts",
@@ -213,6 +265,7 @@ export function PreviewPanel({ fileData, onError, hideStatusBar = false }: Previ
           >
             <ErrorListener onError={onError} />
             <SandpackLayout>
+              <SandpackLoadingOverlay />
               <SandpackPreview
                 showOpenInCodeSandbox={false}
                 showRefreshButton={true}
