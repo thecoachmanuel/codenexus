@@ -64,9 +64,6 @@ export default function SignUpClient() {
       <div className="w-full max-w-sm">
         {/* Logo mark */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white">
-            <Zap className="h-5 w-5 fill-black text-black" />
-          </div>
           <div className="text-center">
             <h1 className="text-lg font-semibold text-white">Create your account</h1>
             <p className="mt-1 text-base text-white/70">
