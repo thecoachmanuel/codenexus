@@ -8,9 +8,10 @@ import {
   Loader2,
   X,
   Sparkles,
-  Wand2,
   Square,
   Undo2,
+  History,
+  Wand2,
   ChevronRight,
   ChevronDown,
   ChevronUp,
@@ -259,8 +260,9 @@ interface ChatPanelProps {
   appTitle: string | null;
 
   suggestions?: string[];
-  onRevert?: () => void;
+  onRevert?: (index?: number) => void;
   canRevert?: boolean;
+  historyLength?: number;
   onCloseMobile?: () => void;
 }
 
@@ -283,6 +285,7 @@ export function ChatPanel({
   suggestions,
   onRevert,
   canRevert,
+  historyLength,
   onCloseMobile,
 }: ChatPanelProps) {
   const { user } = useAuthContext();
@@ -293,6 +296,7 @@ export function ChatPanel({
   const [input, setInput] = useState("");
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const hasAutoSubmittedRef = useRef(false);
   const noCredits = credits <= 0;
@@ -398,11 +402,11 @@ export function ChatPanel({
         <div className="flex items-center gap-1.5">
           {canRevert && onRevert && (
             <button
-              onClick={onRevert}
-              title="Revert last change"
+              onClick={() => setShowHistory(true)}
+              title="Version History"
               className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/60 hover:border-white/40 hover:bg-white/10 hover:text-white transition-all"
             >
-              <Undo2 className="h-3.5 w-3.5" />
+              <History className="h-3.5 w-3.5" />
             </button>
           )}
 
@@ -622,12 +626,71 @@ export function ChatPanel({
           </div>
         </div>
 
+        {/* Mobile Submit Button inside input wrapper */}
+        <div className="md:hidden absolute right-2 bottom-[14px]">
+          {isGenerating || isImproving ? (
+            <button
+              onClick={onStop}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-500 transition-colors"
+            >
+              <Square className="h-3 w-3 fill-current" />
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 text-white disabled:opacity-50 transition-colors"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
         <p className="mt-1.5 text-center text-[10px] text-white/15">
           {isGenerating || isImproving
             ? "Click ■ to stop generation"
             : "⏎ to send · Shift+⏎ for new line"}
         </p>
       </div>
+
+      {/* Version History Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-[#111] border border-white/10 rounded-xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-white/10">
+              <h3 className="text-white font-medium flex items-center gap-2">
+                <History className="w-4 h-4 text-blue-400" />
+                Version History
+              </h3>
+              <button onClick={() => setShowHistory(false)} className="text-white/50 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+              {Array.from({ length: historyLength || 0 }).map((_, idx) => (
+                <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-transparent hover:border-white/10">
+                  <span className="text-white/80 text-sm font-medium">
+                    Version {idx + 1} {idx === 0 && <span className="text-white/40 text-xs ml-1 font-normal">(Initial)</span>}
+                  </span>
+                  <button 
+                    onClick={() => { 
+                      if (onRevert) onRevert(idx); 
+                      setShowHistory(false); 
+                    }}
+                    className="text-xs bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-lg hover:bg-blue-500/20 border border-blue-500/20 transition-all font-medium"
+                  >
+                    Restore
+                  </button>
+                </div>
+              ))}
+              <div className="flex justify-between items-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <span className="text-blue-400 font-medium text-sm">Current Version</span>
+                <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

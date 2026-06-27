@@ -323,23 +323,44 @@ export function WorkspaceClient({
     // fileData intentionally omitted — read via fileDataRef
   );
 
-  const handleRevert = useCallback(() => {
+  const handleRevert = useCallback((targetIndex?: number) => {
     setFileHistory((prev) => {
       if (prev.length === 0) return prev;
+      
       const historyCopy = [...prev];
-      const previousState = historyCopy.pop();
+      let previousState;
+      let newHistory;
+
+      if (targetIndex !== undefined && targetIndex >= 0 && targetIndex < prev.length) {
+        previousState = historyCopy[targetIndex];
+        newHistory = historyCopy.slice(0, targetIndex);
+      } else {
+        previousState = historyCopy.pop();
+        newHistory = historyCopy;
+      }
+
       if (previousState) {
         setFileData(previousState);
         // Silently drop the latest assistant message too
         setMessages((msgs) => {
+          let newMsgs = msgs;
           if (msgs.length > 0 && msgs[msgs.length - 1].role === "assistant") {
-            return msgs.slice(0, -1);
+            newMsgs = msgs.slice(0, -1);
           }
-          return msgs;
+
+          if (workspaceIdRef.current) {
+            fetch(`/api/workspace/${workspaceIdRef.current}/revert`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fileData: previousState, messages: newMsgs }),
+            }).catch(console.error);
+          }
+
+          return newMsgs;
         });
-        toast.success("Reverted to previous state.");
+        toast.success(targetIndex !== undefined ? `Restored Version ${targetIndex + 1}` : "Reverted to previous state.");
       }
-      return historyCopy;
+      return newHistory;
     });
   }, []);
 
@@ -422,6 +443,7 @@ export function WorkspaceClient({
             onStop={handleStop}
             onRevert={handleRevert}
             canRevert={fileHistory.length > 0}
+            historyLength={fileHistory.length}
             userId={userId}
             workspaceId={workspaceId}
             appTitle={fileData?.title ?? workspace?.title ?? null}
