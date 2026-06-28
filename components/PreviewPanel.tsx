@@ -180,77 +180,8 @@ export function buildSandpackFiles(fileData: FileData): {
     if (!allowed.includes(ext)) continue;
 
     // Ensure index.html is placed where the Sandpack react template expects it
-    if (cleanPath === "/index.html" || cleanPath === "/public/index.html") {
+    if (cleanPath === "/index.html") {
       cleanPath = "/public/index.html";
-      
-      // Inject interaction script for Visual Theme Editor click-to-edit
-      if (code.includes("</body>")) {
-        code = code.replace("</body>", `
-<script>
-  let editMode = false;
-  let hoveredEl = null;
-
-  window.addEventListener('message', (e) => {
-    if (e.data?.type === 'set_edit_mode') {
-      editMode = e.data.enabled;
-      if (!editMode && hoveredEl) {
-        hoveredEl.style.outline = '';
-        hoveredEl = null;
-      }
-    }
-  });
-
-  document.addEventListener('mouseover', (e) => {
-    if (!editMode) return;
-    if (hoveredEl) {
-      hoveredEl.style.outline = '';
-    }
-    hoveredEl = e.target;
-    if (hoveredEl) {
-      hoveredEl.style.outline = '2px solid #7c3aed';
-      hoveredEl.style.outlineOffset = '2px';
-      hoveredEl.style.cursor = 'crosshair';
-    }
-  });
-
-  document.addEventListener('mouseout', (e) => {
-    if (!editMode) return;
-    if (hoveredEl) {
-      hoveredEl.style.outline = '';
-      hoveredEl.style.cursor = '';
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!editMode) return;
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (hoveredEl) {
-      hoveredEl.style.outline = '';
-      hoveredEl.style.cursor = '';
-    }
-    
-    const rect = e.target.getBoundingClientRect();
-    window.parent.postMessage({
-      type: 'element_clicked',
-      tagName: e.target.tagName.toLowerCase(),
-      className: typeof e.target.className === 'string' ? e.target.className : '',
-      outerHTML: e.target.outerHTML,
-      rect: {
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height
-      }
-    }, '*');
-    
-    // Auto-disable edit mode
-    window.parent.postMessage({ type: 'edit_mode_disabled' }, '*');
-  }, true);
-</script>
-</body>`);
-      }
     }
 
     files[cleanPath] = code;
