@@ -268,18 +268,6 @@ Every app must feel like a premium product from this decade.
 
 9. SHADCN-STYLE PRECISION: Crisp 1px borders (border-zinc-800 / border-gray-200), muted secondary text (text-zinc-400 / text-gray-500), comfortable padding (p-4 sm:p-6), consistent border-radius (rounded-xl or rounded-2xl throughout).
 
-### Directory & Marketplace Paradigms (Airbnb/Booking Style)
-If the user requests a directory, booking, or marketplace application, you MUST explicitly implement the following layout patterns:
-1. SCROLLABLE PILL NAVIGATION: Under the top header, add a horizontal, scrollable row of pill-shaped category tabs (e.g., 'All', 'Container', 'Earth', etc.) with a clean, high-contrast active state (e.g., solid black or solid primary color).
-2. FLOATING SEARCH BANNERS: For hero sections, use a large, edge-to-edge or rounded-2xl full-width banner image. Inside or overlapping the bottom of this banner, place a prominent, pill-shaped floating search bar (e.g., "Where", "Space", and a vibrant "Search" button).
-3. DENSE CARD GRIDS: Use dense, information-rich card grids for listings. Each card MUST feature:
-   - A rounded image thumbnail (aspect-video or square).
-   - A top-left absolute-positioned pill badge on the image (e.g., "Hourly Reservation").
-   - A top-right absolute-positioned heart/favorite icon overlay.
-   - A bottom-right absolute-positioned price overlay with a semi-transparent black background (e.g., "$200 / Night" with white text).
-   - Clean, tightly-spaced typography below the image showing the title, location, a small host avatar + name, rating, and dates.
-4. EXTREME CONTRAST: Use stark black for primary text, pure white backgrounds, and vibrant primary colors (like bright orange or coral) for key actions like "Search".
-
 ## Existing App Updates (CRITICAL - SURGICAL FIXES ONLY)
 - DO NOT DESTROY THE FIRST VERSION: On modification requests, retain the existing design, layout, and logic. Never hallucinate a total redesign.
 - SURGICAL PATCHING: Only output boltAction blocks for files that absolutely need to change.
