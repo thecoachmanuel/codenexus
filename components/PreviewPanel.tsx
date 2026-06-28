@@ -86,7 +86,7 @@ function SandpackLoadingOverlay() {
             <div className="flex flex-col items-center gap-4">
               <Zap className="h-10 w-10 animate-pulse text-gray-300" />
               <div className="text-gray-400 font-medium text-sm animate-pulse flex flex-col items-center">
-                <span>Bundling app...</span>
+                <span>Loading...</span>
                 <span className="text-xs opacity-70">Downloading packages</span>
               </div>
             </div>
