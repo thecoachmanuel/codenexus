@@ -25,6 +25,7 @@ import {
 import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
 import { EditSubdomainModal } from "./EditSubdomainModal";
+import { VisualThemeEditor } from "./VisualThemeEditor";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
@@ -178,6 +179,41 @@ export function CodePanel({
   const [activeTab, setActiveTab] = useState<ActiveTab>("preview");
   const [isExporting, setIsExporting] = useState(false);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
+
+  // Theme Editor & Click-to-Edit State
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [clickedElement, setClickedElement] = useState<{
+    html: string;
+    tagName: string;
+    className: string;
+    rect: { top: number; left: number; width: number; height: number };
+  } | null>(null);
+  const [editPrompt, setEditPrompt] = useState("");
+
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'element_clicked') {
+        setClickedElement({
+          html: e.data.outerHTML,
+          tagName: e.data.tagName,
+          className: e.data.className,
+          rect: e.data.rect
+        });
+      } else if (e.data?.type === 'edit_mode_disabled') {
+        setIsEditMode(false);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  useEffect(() => {
+    const iframes = document.querySelectorAll('iframe');
+    iframes.forEach(iframe => {
+      iframe.contentWindow?.postMessage({ type: 'set_edit_mode', enabled: isEditMode }, '*');
+    });
+    if (!isEditMode) setClickedElement(null);
+  }, [isEditMode]);
 
   useEffect(() => {
     if (fileData) setActiveTab("preview");
@@ -479,7 +515,61 @@ yarn start
         )}
 
         {/* DYNAMIC CONTENT AREA */}
-        <div className="absolute inset-0 flex">
+        <div className="absolute inset-0 flex relative">
+          
+          {/* Visual Theme Editor */}
+          {(activeTab === "preview" || activeTab === "split") && !isGenerating && !isImproving && (
+            <VisualThemeEditor
+              fileData={fileData}
+              onFilePatch={_onFilePatch}
+              isEditMode={isEditMode}
+              onToggleEditMode={() => setIsEditMode(!isEditMode)}
+            />
+          )}
+
+          {/* Click-to-Edit Popover */}
+          {clickedElement && (activeTab === "preview" || activeTab === "split") && (
+            <div 
+              className="absolute z-50 bg-[#1e1e1e] border border-white/20 rounded-xl shadow-2xl p-4 w-80 flex flex-col gap-3"
+              style={{
+                // naive positioning: adjust left if it's too far right
+                top: Math.max(10, clickedElement.rect.top + clickedElement.rect.height + 60),
+                left: Math.min(Math.max(10, clickedElement.rect.left), typeof window !== 'undefined' ? window.innerWidth - 350 : 0),
+              }}
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-mono text-violet-400 truncate flex-1">
+                  &lt;{clickedElement.tagName} {clickedElement.className ? `class="${clickedElement.className}"` : ''} /&gt;
+                </span>
+                <button onClick={() => setClickedElement(null)} className="text-white/50 hover:text-white ml-2 shrink-0">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <textarea
+                value={editPrompt}
+                onChange={(e) => setEditPrompt(e.target.value)}
+                placeholder="E.g., Make this button wider and change it to red..."
+                className="w-full h-24 bg-black/40 border border-white/10 rounded-md p-2.5 text-sm text-white resize-none focus:outline-none focus:border-violet-500"
+                autoFocus
+              />
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  className="bg-violet-600 hover:bg-violet-700 text-white text-xs h-8"
+                  disabled={!editPrompt.trim()}
+                  onClick={() => {
+                    const fullRequest = `I want to modify the following element:\n\`\`\`html\n${clickedElement.html}\n\`\`\`\n\nRequest: ${editPrompt.trim()}`;
+                    onImprove(fullRequest);
+                    setClickedElement(null);
+                    setEditPrompt("");
+                  }}
+                >
+                  <Bot className="h-3.5 w-3.5 mr-1.5" />
+                  Ask AI to Edit
+                </Button>
+              </div>
+            </div>
+          )}
           {activeTab === "split" ? (
             <PanelGroup orientation="horizontal" className="h-full w-full">
               <Panel defaultSize={50} minSize={20} className="h-full bg-[#1e1e1e]">
