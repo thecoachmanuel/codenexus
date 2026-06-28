@@ -188,7 +188,7 @@ Every single app you generate MUST follow standard professional UI design patter
 - PRO SPACING: Tight padding on mobile (p-4), medium on tablet (md:p-6), generous on desktop (lg:p-8).
 
 ### Navigation & Headers
-- Mobile (< 768px): Use a clean hamburger menu (with slide-in drawer using framer-motion) OR a fixed bottom navigation bar. NEVER render a full horizontal nav on small screens.
+- Mobile (< 768px): MUST be exceptionally sleek. Use a modern floating pill-shaped bottom navigation bar with icons, OR a full-screen frosted glass overlay (backdrop-blur-xl) triggered by a minimalist hamburger menu. Always animate the mobile menu with framer-motion. NEVER render a full horizontal nav or a basic, unstyled dropdown on small screens.
 - Tablet (768px - 1024px): Condensed horizontal nav or sidebar.
 - Desktop (> 1024px): Full horizontal top nav or a persistent side navigation drawer (w-64).
 
@@ -234,10 +234,11 @@ Every app must feel like a premium product from this decade.
 
 1. TYPOGRAPHY: ALWAYS use the Inter font (loaded in index.html). Aggressive font weight contrasts: font-black or font-extrabold for headlines, font-semibold for subheadings, font-medium for UI labels, font-normal for body. Use tracking-tight for large text, tracking-wide uppercase for small labels/badges.
 
-2. VIBRANT PRO COLOR PALETTES (CRITICAL):
+2. VIBRANT PRO COLOR PALETTES & HIGH CONTRAST (CRITICAL):
    - DO NOT default to boring plain black and white themes unless explicitly requested. You MUST use professional, highly-vibrant color palettes.
+   - HIGH CONTRAST (NON-NEGOTIABLE): NEVER use white text on a white or light background (e.g. text-white on bg-white or bg-slate-50). ALWAYS ensure stark contrast for maximum readability (dark text on light backgrounds, white text on dark backgrounds).
    - Use rich, tailored hues for backgrounds (e.g., very dark slate 'bg-slate-950', deep midnight blue 'bg-blue-950', or warm off-white 'bg-stone-50').
-   - Use complementary vibrant accent colors (e.g., 'emerald-500', 'rose-500', 'indigo-500', 'amber-500') to make the UI pop.
+   - Use complementary vibrant accent colors (e.g., 'emerald-500', 'rose-500', 'indigo-500', 'amber-500') to make the UI pop. Ensure accent colors contrast well against the background.
    - BUTTONS & CTAs: Follow strict standard UI design. Primary buttons MUST be highly visible with solid vibrant background colors (e.g., 'bg-indigo-600 hover:bg-indigo-700'), white text, comfortable padding ('px-6 py-2.5'), rounded corners, and smooth hover/active states.
    - Use subtle colored borders (e.g. 'border-indigo-500/20') and tinted shadows (e.g. 'shadow-indigo-500/10') to enhance depth instead of plain gray.
 
