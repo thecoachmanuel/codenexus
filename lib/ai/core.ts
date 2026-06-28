@@ -672,3 +672,4 @@ export async function generateWorkspaceTask(
     enqueue(sseEvent("error", { message: error.message || "An error occurred during generation." }));
   }
 }
+
