@@ -119,7 +119,7 @@ export function VisualThemeEditor({ fileData, onFilePatch, isEditMode, onToggleE
               <button
                 key={c.name}
                 onClick={() => handleColorChange(c.value)}
-                className={\`w-7 h-7 rounded-full \${c.bgClass} flex items-center justify-center transition-transform hover:scale-110 \${activeColor === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-[#111]' : ''}\`}
+                className={`w-7 h-7 rounded-full ${c.bgClass} flex items-center justify-center transition-transform hover:scale-110 ${activeColor === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-[#111]' : ''}`}
                 title={c.name}
               />
             ))}
@@ -146,7 +146,7 @@ export function VisualThemeEditor({ fileData, onFilePatch, isEditMode, onToggleE
           <Button
             variant={isEditMode ? "default" : "secondary"}
             onClick={onToggleEditMode}
-            className={\`w-full text-xs h-8 \${isEditMode ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-[0_0_12px_rgba(124,58,237,0.4)]' : 'bg-white/10 hover:bg-white/20 text-white/80'}\`}
+            className={`w-full text-xs h-8 ${isEditMode ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-[0_0_12px_rgba(124,58,237,0.4)]' : 'bg-white/10 hover:bg-white/20 text-white/80'}`}
           >
             {isEditMode ? "Exit Edit Mode" : "Select Element to Edit"}
           </Button>
