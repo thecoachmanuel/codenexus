@@ -229,38 +229,38 @@ Every single app you generate MUST follow standard professional UI design patter
 
 ## Design Quality (CRITICAL)
 
-### Modern 2024/2025 Aesthetics (NON-NEGOTIABLE)
-Every app must feel like a premium product from this decade.
+### Modern 2025/2026 Aesthetics (NON-NEGOTIABLE)
+Every app must feel like an ultra-premium, Awwwards-winning product from this decade. You must abandon basic, generic UI paradigms and elevate the design to state-of-the-art levels.
 
 1. TYPOGRAPHY: ALWAYS use the Inter font (loaded in index.html). Aggressive font weight contrasts: font-black or font-extrabold for headlines, font-semibold for subheadings, font-medium for UI labels, font-normal for body. Use tracking-tight for large text, tracking-wide uppercase for small labels/badges.
 
 2. VIBRANT PRO COLOR PALETTES (CRITICAL):
-   - DO NOT default to boring plain black and white themes unless explicitly requested. You MUST use professional, highly-vibrant color palettes.
+   - NEVER default to plain white/gray/black themes unless explicitly requested. You MUST use professional, highly-vibrant color palettes.
    - Use rich, tailored hues for backgrounds (e.g., very dark slate 'bg-slate-950', deep midnight blue 'bg-blue-950', or warm off-white 'bg-stone-50').
    - Use complementary vibrant accent colors (e.g., 'emerald-500', 'rose-500', 'indigo-500', 'amber-500') to make the UI pop.
-   - BUTTONS & CTAs: Follow strict standard UI design. Primary buttons MUST be highly visible with solid vibrant background colors (e.g., 'bg-indigo-600 hover:bg-indigo-700'), white text, comfortable padding ('px-6 py-2.5'), rounded corners, and smooth hover/active states.
+   - BUTTONS & CTAs: Follow strict standard UI design. Primary buttons MUST be highly visible with solid vibrant background colors (e.g., 'bg-indigo-600 hover:bg-indigo-700'), white text, comfortable padding ('px-6 py-3'), rounded-full or rounded-xl corners, and smooth hover/active states.
    - Use subtle colored borders (e.g. 'border-indigo-500/20') and tinted shadows (e.g. 'shadow-indigo-500/10') to enhance depth instead of plain gray.
 
-3. GLASSMORPHISM on cards/navs over gradient backgrounds:
-   bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl
+3. ADVANCED GLASSMORPHISM & BLURS:
+   Always utilize backdrop blurs for floating navbars, sticky headers, and overlay cards. Example: bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl. Use inset shadows for premium depth.
 
-4. GRADIENT TEXT for hero headlines:
-   bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent
+4. DYNAMIC GRADIENTS & MESHES:
+   Use complex gradients for hero backgrounds (e.g., radial gradients or animated mesh gradients). Use gradient text for hero headlines (e.g., bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-500 bg-clip-text text-transparent).
 
-5. MICRO-INTERACTIONS with framer-motion on EVERY interactive element:
-   - Cards: whileHover={{ scale: 1.02, y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-   - Buttons: whileTap={{ scale: 0.96 }}
-   - Page entry: initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-   - Lists/grids: staggerChildren: 0.08 on container, each child gets opacity/y animation.
+5. MICRO-INTERACTIONS & MOTION (CRITICAL):
+   You MUST use framer-motion on EVERY interactive element and page load.
+   - Cards: whileHover={{ scale: 1.02, y: -5 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+   - Buttons: whileTap={{ scale: 0.95 }}
+   - Page entry: initial={{ opacity: 0, y: 30, filter: "blur(10px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ duration: 0.6, ease: "easeOut" }}
+   - Lists/grids: staggerChildren: 0.1 on container, each child gets opacity/y animation.
    - Mobile menu: AnimatePresence with x: "-100%" slide-in.
 
-6. RICH LAYOUTS — never output a plain centered box:
-   - Sticky/floating navbar with backdrop blur.
-   - Hero with large gradient or background pattern, bold headline, subtext, 1-2 CTA buttons.
-   - Feature grid: 3-4 cards with icon + title + description.
-   - Stats bar: 3-4 numbers with labels.
-   - Testimonials or social proof section.
-   - Footer with site links, socials, copyright.
+6. RICH, MAGAZINE-STYLE LAYOUTS:
+   Never output a plain centered box. Use bento-box grid layouts, overlapping hero sections, asymmetrical split screens, and large typography.
+   - Feature grid: Use varying span sizes (e.g., col-span-2) to create visual interest.
+   - Hero: Large gradient/pattern background, bold headline, subtext, and floating abstract shapes or mockups.
+   - Stats bar: 3-4 dynamic numbers with labels and icons.
+   - Testimonials: Masonry layout or slick horizontal carousel.
 
 7. ICONS: Use lucide-react on every button, input (as prefix/suffix), nav item, empty state, feature card, and section header. Never leave UI elements iconless. STRICT REQUIREMENT: You MUST explicitly import every icon you use. DO NOT hallucinate icon names that do not exist in Lucide (e.g. NEVER use 'Barbell', use 'Dumbbell' instead). If you are unsure if an icon exists, use a safe generic fallback like 'Circle' or 'Check'.
 
