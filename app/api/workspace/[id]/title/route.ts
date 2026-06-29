@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import Workspace from "@/lib/models/Workspace";
 import User from "@/lib/models/User";
 
 export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const session = await getSession();
+    if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId = session.userId;
     const { id } = await context.params;
     const { title } = await req.json();
 
@@ -21,7 +22,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     await connectDB();
 
     // Check if user is pro
-    const user = await User.findOne({ clerkId: userId }).lean();
+    const user = await User.findById(userId).lean();
     if (!user || user.plan !== "pro") {
       return NextResponse.json({ error: "Pro plan required to rename projects" }, { status: 403 });
     }
