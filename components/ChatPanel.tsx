@@ -264,6 +264,8 @@ interface ChatPanelProps {
   canRevert?: boolean;
   historyLength?: number;
   onCloseMobile?: () => void;
+  isProUser?: boolean;
+  onRename?: (newTitle: string) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -287,6 +289,8 @@ export function ChatPanel({
   canRevert,
   historyLength,
   onCloseMobile,
+  isProUser,
+  onRename,
 }: ChatPanelProps) {
   const { user } = useAuthContext();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -297,9 +301,30 @@ export function ChatPanel({
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState(appTitle || "");
 
   const hasAutoSubmittedRef = useRef(false);
   const noCredits = credits <= 0;
+
+  useEffect(() => {
+    setEditTitle(appTitle || "");
+  }, [appTitle]);
+
+  const handleTitleSubmit = () => {
+    if (editTitle.trim() && editTitle !== appTitle && onRename) {
+      onRename(editTitle.trim());
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleTitleSubmit();
+    if (e.key === "Escape") {
+      setEditTitle(appTitle || "");
+      setIsEditingTitle(false);
+    }
+  };
 
   // The last message is the live-streaming assistant placeholder during improve
   const lastMsg = messages[messages.length - 1];
@@ -397,7 +422,28 @@ export function ChatPanel({
               <X className="h-4 w-4" />
             </button>
           )}
-          <BlueTitle>{appTitle}</BlueTitle>
+          {isEditingTitle ? (
+            <input
+              autoFocus
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onBlur={handleTitleSubmit}
+              onKeyDown={handleTitleKeyDown}
+              className="bg-transparent border-b border-blue-500/50 text-blue-400 font-semibold text-base outline-none w-32 md:w-48"
+            />
+          ) : (
+            <div 
+              className={cn("group flex items-center gap-2", isProUser && onRename ? "cursor-text" : "")}
+              onClick={() => isProUser && onRename && setIsEditingTitle(true)}
+            >
+              <BlueTitle>{appTitle}</BlueTitle>
+              {isProUser && onRename && (
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center h-5 w-5 bg-white/5 rounded">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/40"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
           {canRevert && onRevert && (

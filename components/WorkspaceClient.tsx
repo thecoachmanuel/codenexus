@@ -138,6 +138,28 @@ export function WorkspaceClient({
     );
   };
 
+  const [customTitle, setCustomTitle] = useState<string | null>(null);
+
+  const handleRename = useCallback(async (newTitle: string) => {
+    if (!workspaceIdRef.current) return;
+    try {
+      setCustomTitle(newTitle);
+      const res = await fetch(`/api/workspace/${workspaceIdRef.current}/title`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to rename");
+      }
+      toast.success("Project renamed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to rename project");
+    }
+  }, []);
+
+
   const handleGenerate = useCallback(
     async (prompt: string, imageUrl?: string, retryCount: number = 0) => {
       if (isGenerating) return;
@@ -446,7 +468,9 @@ export function WorkspaceClient({
             historyLength={fileHistory.length}
             userId={userId}
             workspaceId={workspaceId}
-            appTitle={fileData?.title ?? workspace?.title ?? null}
+            appTitle={customTitle ?? fileData?.title ?? workspace?.title ?? null}
+            isProUser={userPlan === "pro"}
+            onRename={handleRename}
             onCloseMobile={() => setMobileTab("preview")}
           />
         </div>
@@ -475,7 +499,7 @@ export function WorkspaceClient({
                 );
               }}
               onFilePatch={handleFilePatch}
-              appTitle={fileData?.title ?? workspace?.title ?? null}
+              appTitle={customTitle ?? fileData?.title ?? workspace?.title ?? null}
               subdomain={subdomain}
               onSubdomainChange={setSubdomain}
               isImproving={false}
